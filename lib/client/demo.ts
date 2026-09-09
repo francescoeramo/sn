@@ -281,7 +281,7 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
       const value = messageInput.parse({ ...action, media_path: media ? 'demo-media' : null });
       const body = value.body;
       const mediaType = info?.mime ?? null;
-      const expires_at = new Date(Date.now() + value.ttl * 1000).toISOString();
+      const expires_at = new Date(Date.parse(now) + value.ttl * 1000).toISOString();
       s.messages.push({
         id,
         sender_id: me,
