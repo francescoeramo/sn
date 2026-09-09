@@ -1,92 +1,144 @@
 # Prompt di progetto — "SN" (nome temporaneo)
 
-Usa questo come prompt/brief per guidare lo sviluppo (con Claude Code o un altro coding agent), o come documento di riferimento del progetto.
+Usa questo come prompt/brief per guidare lo sviluppo (con Claude Code, Astra o un altro coding agent), o come documento di riferimento architetturale del progetto.
+
+---
 
 ## Contesto e obiettivo
 
-Costruisci **SN**, un social network fotografico/video in stile Instagram, ma pensato come alternativa **europea, indipendente e privacy-first** alle piattaforme Big Tech statunitensi. Il progetto è personale, sviluppato da un solo sviluppatore, partendo da infrastruttura interamente free-tier.
+Costruisci ed evolvi **SN**, una piattaforma social/media (foto, video, storie, messaggi) in stile Instagram, ma pensata fin dal principio come alternativa **europea, indipendente, etica e privacy-first** alle piattaforme Big Tech statunitensi. Il progetto parte su infrastruttura gratuita (free-tier Supabase + Vercel Hobby), con codice pulito, auditabile e privo di lock-in proprietario.
 
-Principi guida non negoziabili:
-- **Privacy by design**: raccolta dati minima, nessun tracker pubblicitario di terze parti, nessuna chiamata di rete non necessaria verso servizi esterni (vedi nota sui font più sotto).
-- **Sicurezza reale, non dichiarata**: ogni claim di sicurezza deve corrispondere a un'implementazione verificabile (niente crittografia "finta" o meccanismi fail-open).
-- **Design distintivo**: l'interfaccia deve avere un'identità visiva propria, non l'aspetto di un template Tailwind/shadcn di default o di un progetto generato senza cura ("vibecoded").
-- **Indipendenza**: infrastruttura sostituibile, nessun lock-in permanente su un singolo vendor oltre a quanto strettamente necessario in questa fase (free tier).
+### Principi guida non negoziabili:
+1. **Privacy by design & Zero-Knowledge**: raccolta dati minima, nessun tracker o pixel pubblicitario di terze parti, nessuna chiamata verso servizi esterni non necessari (font di sistema o self-hosted).
+2. **Sicurezza reale, non dichiarata**: ogni affermazione di sicurezza deve corrispondere a un'implementazione crittografica e architetturale verificabile (nessuna crittografia "finta", chiavi gestite client-side, nessun meccanismo fail-open).
+3. **Mindful Engagement (Anti-dipendenza)**: SN rifiuta deliberatamente i meccanismi dopaminergici tossici di TikTok e Instagram (niente slot-machine pull-to-refresh, niente algoritmi oscuri di massimizzazione del tempo speso, niente doomscrolling infinito). L'applicazione deve **attirare e interessare per qualità, bellezza estetica, significato delle relazioni e cura artigianale**, non creando dipendenza compulsiva.
+4. **Libertà di espressione con integrità informativa**: libertà di pensiero e di discussione politica garantita, con divieto assoluto per pornografia e contrasto strutturato alle fake news.
+5. **Indipendenza e sostenibilità**: architettura sostituibile, portabilità dei dati, predisposizione per monetizzazione etica (sponsorizzazioni interne con approvazione umana, senza tracciamento).
 
-## Funzionalità (MVP)
+---
 
-Nucleo minimo per la prima versione web:
-- Registrazione/login sicuro, profilo utente, upload e visualizzazione di foto e video
-- Feed cronologico/algoritmico dei post seguiti
-- Stories (contenuti effimeri, scadenza 24h)
-- Messaggi diretti (1:1, valutare crittografia end-to-end in una fase successiva)
-- Reels/video brevi con player dedicato
-- Like, commenti, follow/unfollow
-- Ricerca utenti/hashtag
-- Notifiche di base
-- Impostazioni privacy account (pubblico/privato) e gestione dati personali (esporta/elimina i miei dati)
+## Filosofia di Design e UX: Coinvolgente ma Rispettosa del Tempo
 
-Fuori dall'MVP ma da tenere in considerazione nell'architettura: live streaming — va progettato in modo che si possa aggiungere senza riscrivere il core.
+SN è pensato per chi vuole ritrovare il piacere di condividere e conversare senza cadere nella trappola del consumo passivo:
 
-Nota infrastrutturale: con Stories/Reels/DM inclusi fin dall'MVP, il volume di media sale rapidamente — monitorare da subito i limiti di storage/banda del piano free di Supabase e prevedere una strategia di compressione/transcodifica lato client per i video prima dell'upload.
+- **Feed Calmo e Finito**: feed rigorosamente **cronologico**. Quando l'utente ha visualizzato tutti i contenuti recenti dei profili seguiti, l'interfaccia mostra un chiaro traguardo visivo (*"Sei in pari. La piazza per ora è tranquilla"*), invitando a chiudere l'app o a esplorare deliberatamente.
+- **Metriche non tossiche (Calm UI)**: i contatori pubblici di like e follower sono rimossi o fortemente attenuati nei feed principali. L'autore può visualizzare le interazioni sul proprio contenuto, ma viene eliminata la gara alla popolarità tipica dei social tradizionali.
+- **Identità visiva distintiva**:
+  - Estetica editoriale europea, accogliente e calda (ispirata alla carta, contrasti morbidi, tipografia pulita e leggibile).
+  - Micro-interazioni fluide, transizioni di stato organiche (stati vuoti curati, feedback tattile/visivo discreto, zero layout shift).
+  - Design responsive nativo: perfetto sia su desktop sia su smartphone.
 
-## Design e identità visiva
+---
 
-- Sistema di design proprio: palette colori, scala tipografica, spaziature e componenti definiti da zero, non default di libreria.
-- Micro-interazioni e dettagli curati (transizioni, stati vuoti, stati di caricamento) che comunichino qualità artigianale.
-- Layout responsive nativo: esperienza ottimizzata sia per desktop sia per mobile web, non solo "adattata".
-- Evitare pattern visivi riconoscibili come output non curato di un LLM (spaziature generiche, ombre di default, icone incoerenti tra loro).
+## Funzionalità del Sistema
 
-## Stack tecnico
+### 1. Feed e Profili
+- Registrazione/login sicuro (con email e invito protetto a livello database).
+- Profili utente con bio, foto/avatar distintivo e **impostazione privata di default** (i post sono visibili solo ai follower approvati).
+- Post con formati testo (fino a 2200 caratteri), foto (JPEG, PNG, WebP) o video (MP4, WebM).
+- Ricerca istantanea di utenti e hashtag `#tag` estratti nativamente.
+- Like, commenti con limiti anti-spam, follow/unfollow, gestione richieste di follow e blocco bidirezionale.
 
-- **Webapp**: Next.js (App Router) + TypeScript + Tailwind, responsive per PC e mobile.
-- **App native future**: React Native, per condividere logica di business, client API e tipi TypeScript con la webapp Next.js (valutare un monorepo, es. Turborepo/pnpm workspaces, per isolare in pacchetti condivisi la logica non legata al rendering).
-- **Backend/DB**: Supabase (piano free) — Postgres, Auth, Storage, Realtime, con Row Level Security attiva su ogni tabella fin dal primo schema.
-- **Font e asset**: self-hosted, niente chiamate runtime a servizi esterni (Google Fonts incluso) per coerenza con l'approccio privacy-first.
-- **Deploy**: Vercel, collegato al branch `main` per il deploy automatico.
-- **CI/CD**: GitHub Actions per lint, type-check, test e scansione automatica delle dipendenze (Dependabot o simile) a ogni push.
+### 2. Storie con Autoplay e Player Avanzato
+- Contenuti effimeri con scadenza reale a 24 ore nel database e nell'interfaccia.
+- **Autoplay intelligente**:
+  - Avanzamento automatico: timer configurato a 5 secondi per immagini, durata effettiva del media per i video (fino a 20s).
+  - Barra di progresso segmentata in alto (un segmento per ciascuna storia attiva dell'utente).
+  - Controlli gestuali/mouse: tap a destra per andare avanti, tap a sinistra per tornare indietro, pressione prolungata (tap-and-hold) per mettere in pausa.
+  - Passaggio fluido alle storie dell'utente successivo al termine della sequenza.
 
-## Federazione (ActivityPub / Fediverse)
+### 3. Reels / Video Brevi
+- Player dedicato per video brevi verticali (massimo 20 secondi).
+- Compressione e ottimizzazione lato client prima dell'upload per preservare le quote del server.
 
-SN deve essere interoperabile con il Fediverse (Mastodon, Pixelfed e simili) tramite il protocollo ActivityPub. Implicazioni architetturali da progettare fin dall'inizio, non da aggiungere dopo:
-- Ogni utente/post deve essere modellato come "Attore"/"Attività" ActivityPub, con endpoint pubblici standard: WebFinger (`/.well-known/webfinger`), Actor profile, inbox/outbox.
-- Firma e verifica delle richieste tramite HTTP Signatures per l'autenticità dei messaggi federati.
-- Consegna delle attività (post, like, follow) ai server remoti in modo asincrono, tramite coda di lavoro (es. Supabase Edge Functions + tabella di coda, o worker esterno se i limiti free-tier lo richiedono) per non bloccare le richieste utente e gestire i retry.
-- Compatibilità del formato media/post con Pixelfed (il progetto Fediverse più vicino per funzione) per garantire un buon rendering incrociato.
-- Politiche di privacy e blocco/defederazione verso istanze specifiche, coerenti con le impostazioni privacy account già previste nell'MVP.
-- Valutare se usare una libreria ActivityPub esistente (es. per Node.js) invece di implementare il protocollo da zero, per ridurre superficie di bug e tempo di sviluppo.
+### 4. Messaggistica Diretta (Chat) Sicura, Multimediale ed Effimera
+Le chat sono consentite esclusivamente tra utenti con follow reciproco e devono garantire:
 
-## Sicurezza (priorità massima)
+- **Vera Crittografia End-to-End (E2EE)**:
+  - Implementata con standard crittografici aperti e verificati (Web Crypto API / SubtleCrypto con X25519 o ECDH P-256 + HKDF + AES-256-GCM, o Signal Double Ratchet).
+  - Le chiavi private risiedono **esclusivamente sul dispositivo dell'utente** (memorizzate in IndexedDB come chiavi non esportabili `extractable: false`).
+  - Il server Supabase memorizza solo ciphertext e nonce/IV opachi: nessun admin o intermediario di rete ha la capacità tecnica di leggere i messaggi (*Blind Storage*).
+- **Media nelle Chat**:
+  - Supporto per invio di foto, brevi note audio e video nei messaggi diretti.
+  - Gli allegati vengono cifrati simmetricamente lato client con chiave usa-e-getta prima dell'upload nello storage del server.
+- **Chat e Messaggi che si Autodistruggono (Effimeri)**:
+  - Scadenza selezionabile dall'utente: **1 ora, 3 ore, 24 ore, 48 ore, 1 settimana, 1 mese**.
+  - Cancellazione garantita: sia lato client (eliminazione da IndexedDB locale) sia lato server (job di pulizia sul database per revocare ciphertext e storage collegati).
+- **Opzioni di Conservazione Flessibile**:
+  - *Solo sul dispositivo*: i messaggi cifrati vengono cancellati dal server subito dopo la ricezione/consegna e conservati solo nel database locale dell'utente.
+  - *Sincronizzati sul server*: i messaggi restano memorizzati sul server in formato cifrato end-to-end per consentire l'accesso da più dispositivi autorizzati dello stesso utente.
 
-- Autenticazione gestita da Supabase Auth con password hashing sicuro; valutare 2FA opzionale.
-- Row Level Security su tutte le tabelle Supabase, nessun accesso diretto ai dati che bypassi le policy.
-- Nessun meccanismo "fail-open": ogni controllo di autenticazione/autorizzazione deve negare l'accesso di default in caso di errore.
-- Header di sicurezza (CSP, HSTS, X-Frame-Options), protezione CSRF/XSS/SQLi by design (query parametrizzate/ORM, sanitizzazione input/output).
-- Rate limiting su endpoint sensibili (login, upload, API pubbliche) e protezione dai timing attack sulle rotte di autenticazione.
-- Dipendenze mantenute aggiornate, con scansione automatica delle CVE.
-- Se in futuro si introduce crittografia end-to-end (es. per messaggi diretti), implementarla con librerie standard verificate, mai algoritmi custom.
+---
 
-## Privacy e conformità (GDPR/DSA)
+## Politica sui Contenuti, Moderazione e Libertà di Espressione
 
-- Base giuridica e consenso chiari per ogni trattamento dati; niente dark pattern nei consensi.
-- Diritto all'oblio e portabilità dati implementati fin dall'MVP (esporta/elimina account e contenuti).
-- Regione dati Supabase in UE (es. Frankfurt) per residenza dati europea.
-- Analytics, se presenti, privacy-friendly e self-hosted (es. Plausible) invece di Google Analytics.
-- Considerare fin da subito gli obblighi del Digital Services Act (DSA) su moderazione e trasparenza, anche se semplificati per un progetto in fase iniziale.
+1. **Divieto Assoluto di Pornografia e Contenuti Adulti (NSFW)**:
+   - È vietata la pubblicazione di materiale pornografico, sessualmente esplicito o CSAM.
+   - Pre-validazione/filtri client-side ove possibile e congelamento immediato dei contenuti segnalati per NSFW in attesa di revisione da parte dei moderatori.
+2. **Contenuti Politici Ammessi (Libertà di Espressione Garantita)**:
+   - La discussione politica, il dibattito di opinione e la critica sono pienamente garantiti. Nessuna censura algoritmica o ideologica su base di opinioni.
+3. **Contrasto alle Fake News e Disinformazione Fattuale**:
+   - I fatti non sono opinioni: per i post con affermazioni fattuali contestate o link a notizie è previsto un sistema di **Note della Comunità (Community Notes / Fact-Checking)**.
+   - Gli utenti possono proporre note contestuali allegando fonti verificabili.
+   - L'approvazione delle note da parte dei moderatori o della comunità rende visibile la nota di contesto sotto il post, **senza cancellare il post originario**, favorendo la trasparenza e il pensiero critico anziché la censura cieca.
+4. **Trasparenza delle Azioni di Moderazione**:
+   - Ogni rimozione o provvedimento è motivato con riferimento esplicito alle regole violate e notificato all'utente, con procedura di ricorso manuale.
 
-## Repository GitHub
+---
 
-- Nome repo: `SN` (o nome definitivo quando scelto), branch principale `main`.
-- README con setup locale, variabili d'ambiente richieste (`.env.example`, mai committare segreti reali).
-- Struttura cartelle chiara (es. `app/`, `components/`, `lib/`, `supabase/` per schema e migrazioni).
-- Licenza da definire (privata per ora, se il progetto resta personale).
+## Predisposizione per Pubblicità Etica (Sostenibilità Futura)
 
-## Vincoli operativi
+Per finanziare i costi di banda e storage al superamento del free-tier, il sistema predispone un modulo di sponsorizzazioni sostenibili ed etiche:
 
-- Ambiente di sviluppo: mai usare `sudo` con npm/npx.
-- Tutto su piano gratuito per ora (Supabase free, Vercel hobby): tenere sotto controllo i limiti (righe DB, storage, banda, invocazioni Edge Function) e prevedere un percorso di upgrade quando necessario.
+- **Nessun Profiling / Zero Tracking**:
+  - Nessun pixel o tracciamento del comportamento utente.
+  - Annunci interni basati unicamente sul contesto (hashtag, temi) o distribuiti a intervalli regolari nel feed cronologico (es. ogni 15 post).
+- **Previa Approvazione Obbligatoria dell'Admin**:
+  - Nessun network pubblicitario programmatico automatizzato di terze parti (no Google Ads, no banner esterni).
+  - Chi richiede uno spazio sponsorizzato (progetti indipendenti, aziende locali, creatori) invia la proposta che rimane in stato `pending_review`.
+  - L'annuncio va online **esclusivamente previa verifica e approvazione manuale dell'amministratore** dal pannello di moderazione.
+  - Segnalazione trasparente: etichetta evidente *"Sponsorizzato · Approvato da SN"*.
 
-## Domande aperte da chiudere prima di iniziare a scrivere codice
+---
 
-1. Approccio alla moderazione dei contenuti (automatica, umana, community, o non prioritaria ora) — rilevante anche per la federazione, dato che i contenuti federati vanno moderati come quelli locali.
-2. Pubblico target/nicchia iniziale (utile per definire priorità delle feature).
-3. Modello di sostenibilità economica, se previsto (nessuna pubblicità è coerente con "privacy-first", ma va deciso come sostenere i costi oltre il free tier, specialmente considerando banda e storage aggiuntivi richiesti da video e federazione).
+## Stack Tecnologico e Architettura
+
+- **Webapp**: Next.js 16 (App Router, Turbopack) + React 19 + TypeScript + Tailwind CSS v4.
+- **Backend & Database**: Supabase (PostgreSQL 15+, Auth GoTrue, Storage, Row Level Security obbligatoria su tutte le tabelle).
+- **Crittografia**: Web Crypto API nativa (`crypto.subtle`) + algoritmi standard verificati (X25519 / AES-GCM / HKDF).
+- **Compressione Media Client-side**: HTML5 Canvas (WebP) e `MediaRecorder` per transcodifica/riduzione peso video prima del caricamento.
+- **Font e Asset**: Self-hosted o font di sistema, zero chiamate verso Google Fonts o CDN esterne.
+- **Testing**: Vitest + PGlite (test unitari ed esecuzione reale di schemi e policy SQL RLS) + Playwright per test E2E (desktop e mobile).
+- **Deploy**: Vercel Hobby + Supabase (regione UE, es. Francoforte).
+- **CI/CD**: GitHub Actions per lint, type-check, test SQL/unitari, build e Playwright.
+
+---
+
+## Federazione Futura (ActivityPub / Fediverse)
+
+La compatibilità con Mastodon e Pixelfed rimane un obiettivo architetturale:
+- Gli UUID `actor_key` e `activity_key` garantiscono identità stabili e indipendenti dall'username.
+- Le tabelle per code di federazione e istanze bloccate sono presenti nello schema (`private.federation_queue`, `private.blocked_instances`).
+- Attualmente gli endpoint `/.well-known/webfinger` e `/ap/*` restituiscono HTTP 503 per sicurezza, in attesa di un'integrazione completa con una libreria validata (es. [Fedify](https://fedify.dev/)) con rigorose difese anti-SSRF.
+
+---
+
+## Sicurezza e Conformità GDPR/DSA
+
+- **Row Level Security (RLS)** totale: nessun accesso anonimo alla community, query dirette controllate tramite token JWT e funzioni `security definer` con `search_path` blindato.
+- **Header di Sicurezza**: CSP rigido con `nonce` e `'strict-dynamic'`, `X-Frame-Options: DENY`, `HSTS`, `Permissions-Policy` restrittivo.
+- **Quote rigide per il Free Tier**: max 20 utenti registrati, max 3 MiB per singolo file, max 40 MiB per utente, max 800 MiB globali con prenotazione atomica dello spazio.
+- **Diritto all'Oblio e Portabilità**: esportazione JSON completa di tutti i propri dati (`GET /api/export`) e cancellazione account sicura (`POST /api/account/delete`) con re-autenticazione password e pulizia a cascata di dati, file di storage e credenziali Auth.
+- **Endpoint Manutenzione Protetto**: `/api/maintenance` protetto da token segreto confrontato con `timingSafeEqual` per epurare storie scadute, messaggi effimeri e file orfani.
+
+---
+
+## Istruzioni Operative per lo Sviluppo
+
+1. **Non rompere la suite di test**: dopo ogni modifica, `npm run lint`, `npm run typecheck`, `npm test` e `npm run build` devono passare con 0 errori.
+2. **Mantenere la modalità Demo**: qualsiasi nuova feature deve continuare a funzionare anche offline in `/demo` tramite IndexedDB o mock client-side.
+3. **Approccio Incrementale**:
+   - Fase 1: Miglioramenti estetici (Calm UI), autoplay storie con progress bar.
+   - Fase 2: Schema DB e logica per messaggi effimeri e media in chat.
+   - Fase 3: Architettura E2EE con Web Crypto API e gestione chiavi locali.
+   - Fase 4: Schema e moderazione per Community Notes (anti-fake news) e Annunci etici con approvazione admin.

@@ -2,6 +2,40 @@ import { describe, it, expect } from 'vitest';
 import { fileKind, hashtags, isActive, postInput } from '../lib/core/rules';
 import { applyDemo, seed } from '../lib/client/demo';
 describe('Regole condivise', () => {
+  it('la demo accetta allegati locali oltre 200 caratteri senza allargare le API', () => {
+    const media = 'data:image/webp;base64,' + 'AAAA'.repeat(100);
+    const next = applyDemo(seed(), {
+      type: 'post',
+      body: 'Foto',
+      kind: 'story',
+      media_path: media,
+      alt: 'Prova',
+    });
+    expect(next.posts[0].media_path).toBe(media);
+    expect(
+      postInput.safeParse({ body: 'Foto', kind: 'post', media_path: media, alt: '' }).success,
+    ).toBe(false);
+  });
+  it('la demo rifiuta URL remoti e allegati oltre quota', () => {
+    expect(() =>
+      applyDemo(seed(), {
+        type: 'post',
+        body: 'Foto',
+        kind: 'post',
+        media_path: 'https://example.com/photo.jpg',
+        alt: '',
+      }),
+    ).toThrow('3 MB');
+    expect(() =>
+      applyDemo(seed(), {
+        type: 'post',
+        body: 'Foto',
+        kind: 'post',
+        media_path: 'data:image/webp;base64,' + 'AAAA'.repeat(1024 * 1024 + 1),
+        alt: '',
+      }),
+    ).toThrow('3 MB');
+  });
   it('estrae hashtag italiani senza duplicati', () =>
     expect(hashtags('Ciao #caffè #Musica #musica')).toEqual(['caffè', 'musica']));
   it('rifiuta SVG e HTML negli upload', () => {

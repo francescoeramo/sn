@@ -1,6 +1,8 @@
 # SN
 
-Social generalista per Francesco e i suoi amici. Beta su invito, moderazione manuale, nessuna pubblicità. L’app e la demo girano in locale senza servizi a pagamento.
+Social generalista per Francesco e i suoi amici. Beta su invito, moderazione manuale, nessuna pubblicità attiva. L’app e la demo girano in locale senza servizi a pagamento.
+
+Il prompt aggiornato è in corso di implementazione incrementale. La prima fase aggiunge storie con avanzamento automatico, controlli di pausa e feed senza contatori pubblici di like. La chat attuale conserva ancora messaggi in chiaro: E2EE, allegati chat, scadenze, Community Notes e sponsorizzazioni sono nelle fasi successive, non sono funzionalità già disponibili.
 
 ## Provalo adesso
 
@@ -59,9 +61,9 @@ Fonti consultate: [Supabase Free](https://supabase.com/pricing), [Vercel Hobby](
 
 ## Repository e deploy
 
-Il repository locale usa `main`. Il codice rimane privato (`UNLICENSED`): la preferenza per dipendenze open source non equivale alla pubblicazione del codice personale. Le dipendenze hanno versioni bloccate e lockfile incluso.
+Il repository [francescoeramo/sn](https://github.com/francescoeramo/sn) è pubblico, come richiesto dal proprietario il 9 settembre 2026, e usa `main`. La licenza del codice non è ancora stata scelta (`UNLICENSED`): repository pubblico e licenza open source sono decisioni distinte. Le dipendenze hanno versioni bloccate e lockfile incluso.
 
-Per GitHub: crea un repository privato `SN`, aggiungi il remote e pubblica `main`. Il workflow `ci.yml` esegue lint, TypeScript, test SQL/unitari, audit npm, build e test browser. Dependabot controlla dipendenze e Actions. Nessun repository remoto è stato creato in questa sessione.
+Il workflow `ci.yml` esegue lint, TypeScript, test SQL/unitari, audit npm, build e test browser. Dependabot controlla dipendenze e Actions. Il remote `origin` punta alla repository GitHub.
 
 Per Vercel Hobby: importa quel repository come Next.js, imposta le variabili di `.env.example`, collega `main` e scegli una regione compatibile col database. Non usare chiavi segrete con prefisso `NEXT_PUBLIC_`. Non è stato effettuato un deploy remoto.
 

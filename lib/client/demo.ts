@@ -170,7 +170,27 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
   const id = crypto.randomUUID();
   switch (action.type) {
     case 'post': {
-      const p = postInput.parse(action);
+      const media = action.media_path;
+      if (media !== null) {
+        if (
+          media.length > Math.ceil((LIMITS.file * 4) / 3) + 100 ||
+          !/^data:(?:image\/(?:jpeg|png|webp)|video\/(?:mp4|webm));base64,[A-Za-z0-9+/]*={0,2}$/.test(
+            media,
+          )
+        ) {
+          throw new Error('Scegli un’immagine o un video entro 3 MB.');
+        }
+        const encoded = media.slice(media.indexOf(',') + 1);
+        const bytes =
+          Math.floor((encoded.length * 3) / 4) -
+          (encoded.endsWith('==') ? 2 : encoded.endsWith('=') ? 1 : 0);
+        if (bytes > LIMITS.file) throw new Error('Il file supera 3 MB.');
+      }
+      // The shared schema validates post fields; data URLs are local to this adapter, never API paths.
+      const p = {
+        ...postInput.parse({ ...action, media_path: media ? 'demo-media' : null }),
+        media_path: media,
+      };
       if (p.kind === 'reel' && !p.media_path?.startsWith('data:video/'))
         throw new Error('Per un reel serve un video.');
       s.posts.unshift({

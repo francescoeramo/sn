@@ -12,7 +12,6 @@ import {
   Settings,
   Plus,
   ArrowUpRight,
-  ArrowRight,
   ImagePlus,
   Video,
   Clock3,
@@ -32,7 +31,8 @@ import {
 import type { Action, Snapshot, Post } from '@/lib/core/types';
 import { LIMITS, isActive, hashtags, relativeTime } from '@/lib/core/rules';
 import { loadDemo, saveDemo, applyDemo, clearDemo, seed } from '@/lib/client/demo';
-import { Avatar, Empty, Media, Modal } from './primitives';
+import { Avatar, Empty, Modal } from './primitives';
+import { StoryPlayer } from './story-player';
 import { AuthScreen } from './auth-screen';
 import { Composer } from './composer';
 import { PostCard } from './post-card';
@@ -104,8 +104,8 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
       const next = demo ? await loadDemo() : await request('bootstrap');
       setState(next);
     } catch (error) {
-      if ((error as { status?: number }).status !== 401)
-        setNotice(error instanceof Error ? error.message : 'Caricamento non riuscito.');
+      if ((error as { status?: number }).status === 401) setState(null);
+      else setNotice(error instanceof Error ? error.message : 'Caricamento non riuscito.');
     } finally {
       setLoading(false);
     }
@@ -633,7 +633,8 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                   <div className="feed-end">
                     <span>✳</span>
                     <p>
-                      Per ora, tutto qui.<small>La piazza torna quando vuoi.</small>
+                      Sei in pari.
+                      <small>La piazza per ora è tranquilla. Puoi tornare più tardi.</small>
                     </p>
                   </div>
                 )}
@@ -1120,25 +1121,13 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
         />
       )}
       {story && (
-        <Modal
-          title={profiles.find((p) => p.id === story.author_id)?.display_name ?? 'Storia'}
+        <StoryPlayer
+          stories={stories}
+          startId={story.id}
+          profiles={profiles}
+          demo={demo}
           onClose={() => setStory(null)}
-        >
-          <div className="story-progress" />
-          <Media post={story} demo={demo} />
-          <p>{story.body}</p>
-          <p className="muted fine">Scade {new Date(story.expires_at!).toLocaleString('it-IT')}</p>
-          <button
-            className="secondary"
-            onClick={() => {
-              const own = stories.filter((s) => s.author_id === story.author_id);
-              const idx = own.findIndex((s) => s.id === story.id);
-              setStory(own[idx + 1] ?? null);
-            }}
-          >
-            Continua <ArrowRight size={17} />
-          </button>
-        </Modal>
+        />
       )}
       {deleteOpen && (
         <Modal

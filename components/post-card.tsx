@@ -118,7 +118,7 @@ export function PostCard({
           onClick={() => act({ type: 'like', post_id: post.id })}
         >
           <Heart size={22} fill={liked ? 'currentColor' : 'none'} />
-          <span>{likes.length || 'Mi piace'}</span>
+          <span>Mi piace</span>
         </button>
         <button
           onClick={() => setCommentsOpen(!commentsOpen)}
@@ -135,6 +135,15 @@ export function PostCard({
           })}
         </span>
       </div>
+      {post.author_id === state.me.id && likes.length > 0 && (
+        <details className="author-interactions">
+          <summary>Le interazioni sul tuo post</summary>
+          <p>
+            {likes.length} {likes.length === 1 ? 'persona ha' : 'persone hanno'} messo mi piace.
+            Questo conteggio è visibile qui solo a te.
+          </p>
+        </details>
+      )}
       {comments.length > 0 && !commentsOpen && (
         <button className="comment-preview" onClick={() => setCommentsOpen(true)}>
           <strong>

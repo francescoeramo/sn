@@ -1,5 +1,118 @@
 @import 'tailwindcss';
 
+.story-segments {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 12px;
+}
+.story-segments progress {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  flex: 1;
+  height: 3px;
+  border: 0;
+  border-radius: 4px;
+  overflow: hidden;
+  accent-color: #796097;
+}
+.story-segments progress::-webkit-progress-bar {
+  background: #e6e0ed;
+}
+.story-segments progress::-webkit-progress-value {
+  background: #796097;
+}
+.story-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.story-controls {
+  display: flex;
+}
+.story-stage {
+  position: relative;
+  height: min(54dvh, 520px);
+  overflow: hidden;
+  border-radius: 12px;
+  background: #ece6f1;
+  isolation: isolate;
+}
+.story-stage > img,
+.story-stage > video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.story-tap-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.story-tap-zone.previous {
+  left: 0;
+}
+.story-tap-zone.next {
+  right: 0;
+}
+.story-tap-zone > span {
+  position: absolute;
+  top: 50%;
+  display: flex;
+  background: #ffffffc7;
+  border-radius: 50%;
+  color: #756580;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.story-tap-zone.previous > span {
+  left: 8px;
+}
+.story-tap-zone.next > span {
+  right: 8px;
+}
+.story-tap-zone:hover > span,
+.story-tap-zone:focus-visible > span {
+  opacity: 1;
+}
+.story-tap-zone[aria-disabled='true'] > span {
+  visibility: hidden;
+}
+.story-state {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #fffef6e8;
+  font-size: 12px;
+  pointer-events: none;
+}
+.story-caption {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.author-interactions {
+  padding: 0 20px 13px;
+  font-size: 11px;
+  color: #827589;
+}
+.author-interactions summary {
+  cursor: pointer;
+}
+.author-interactions p {
+  margin: 9px 0 0;
+  font-size: 11px;
+}
+
 :root {
   --paper: #f7f7f2;
   --card: #fff;
