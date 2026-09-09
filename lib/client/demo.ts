@@ -1,5 +1,5 @@
 import type { Action, Snapshot, Profile } from '@/lib/core/types';
-import { isActive, LIMITS, postInput } from '@/lib/core/rules';
+import { isActive, LIMITS, postInput, messageInput, localMediaInfo } from '@/lib/core/rules';
 const uid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const ago = (minutes: number) => new Date(Date.now() - minutes * 60000).toISOString();
 const people: [string, string, string, string][] = [
@@ -95,7 +95,10 @@ export function seed(): Snapshot {
         sender_id: uid(2),
         recipient_id: uid(1),
         body: 'Eccoci! Mi piace l’idea di un posto solo nostro. ☀️',
+        media_path: null,
+        media_type: null,
         created_at: ago(9),
+        expires_at: null,
       },
     ],
     notifications: [
@@ -128,9 +131,20 @@ export async function loadDemo(): Promise<Snapshot> {
   const db = await openDB();
   try {
     return await new Promise((resolve, reject) => {
-      const req = db.transaction('state').objectStore('state').get('snapshot');
-      req.onsuccess = () => resolve(req.result ?? seed());
+      const tx = db.transaction('state', 'readwrite');
+      const store = tx.objectStore('state');
+      const req = store.get('snapshot');
+      let loaded: Snapshot;
+      req.onsuccess = () => {
+        const state: Snapshot = req.result ?? seed();
+        state.messages = state.messages.filter((m) => isActive(m));
+        state.posts = state.posts.filter((p) => isActive(p));
+        loaded = state;
+        store.put(state, 'snapshot');
+      };
       req.onerror = () => reject(req.error);
+      tx.oncomplete = () => resolve(loaded);
+      tx.onabort = () => reject(tx.error);
     });
   } finally {
     db.close();
@@ -141,7 +155,14 @@ export async function saveDemo(state: Snapshot) {
   try {
     await new Promise<void>((resolve, reject) => {
       const tx = db.transaction('state', 'readwrite');
-      tx.objectStore('state').put(state, 'snapshot');
+      tx.objectStore('state').put(
+        {
+          ...state,
+          messages: state.messages.filter((m) => isActive(m)),
+          posts: state.posts.filter((p) => isActive(p)),
+        },
+        'snapshot',
+      );
       tx.oncomplete = () => resolve();
       tx.onerror = () =>
         reject(new Error('Spazio del browser esaurito. Esporta i dati prima di cancellarli.'));
@@ -255,12 +276,21 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
         )
       )
         throw new Error('Potete scrivervi quando vi seguite a vicenda.');
+      const media = action.media_path ?? null;
+      const info = media ? localMediaInfo(media, true) : null;
+      const value = messageInput.parse({ ...action, media_path: media ? 'demo-media' : null });
+      const body = value.body;
+      const mediaType = info?.mime ?? null;
+      const expires_at = new Date(Date.now() + value.ttl * 1000).toISOString();
       s.messages.push({
         id,
         sender_id: me,
         recipient_id: action.user_id,
-        body: action.body.trim(),
+        body,
+        media_path: media,
+        media_type: mediaType,
         created_at: now,
+        expires_at,
       });
       break;
     }
@@ -313,12 +343,16 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
     }
   }
   s.posts = s.posts.filter((p) => isActive(p));
+  s.messages = s.messages.filter((m) => isActive(m));
   s.usage.bytes = s.posts
     .filter((p) => p.author_id === me)
     .reduce(
       (n, p) => n + (p.media_path?.startsWith('data:') ? Math.ceil(p.media_path.length * 0.75) : 0),
       0,
     );
+  s.usage.bytes += s.messages
+    .filter((m) => m.sender_id === me && m.media_path?.startsWith('data:'))
+    .reduce((n, m) => n + localMediaInfo(m.media_path!, true).bytes, 0);
   s.usage.total_bytes = s.usage.bytes;
   if (s.usage.bytes > LIMITS.user) throw new Error('Spazio disponibile esaurito.');
   return s;

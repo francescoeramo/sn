@@ -185,6 +185,86 @@ test('messaggi: invio nella demo e nessuna risposta simulata', async ({ page }) 
   await expect(page.getByRole('log')).toContainText('Prova di un messaggio reale nella demo');
   await expect(page.locator('.chat-bubble')).toHaveCount(2);
 });
+test('chat: allegato senza testo, scadenza e pulizia locale dopo riapertura', async ({ page }) => {
+  await page.goto('/demo');
+  await page
+    .getByRole('button', { name: 'Messaggi', exact: true })
+    .filter({ visible: true })
+    .click();
+  await page.getByRole('button', { name: 'Giulia', exact: true }).click();
+  await page.getByLabel('Scadenza dei messaggi').selectOption('3600');
+  const png = await page.evaluate(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 20;
+    canvas.height = 20;
+    canvas.getContext('2d')!.fillRect(0, 0, 20, 20);
+    return canvas.toDataURL().split(',')[1];
+  });
+  await page
+    .getByLabel('Allega alla chat')
+    .setInputFiles({ name: 'foto.png', mimeType: 'image/png', buffer: Buffer.from(png, 'base64') });
+  await expect(page.getByAltText('Anteprima allegato')).toBeVisible();
+  await page.getByRole('button', { name: 'Invia messaggio', exact: true }).click();
+  await expect(page.getByRole('log').getByRole('img')).toBeVisible();
+  await expect(page.getByRole('log')).toContainText('Scade tra');
+  await page.evaluate(async () => {
+    await new Promise<void>((resolve, reject) => {
+      const req = indexedDB.open('sn-demo', 1);
+      req.onsuccess = () => {
+        const db = req.result;
+        const tx = db.transaction('state', 'readwrite');
+        const store = tx.objectStore('state');
+        const get = store.get('snapshot');
+        get.onsuccess = () => {
+          const s = get.result;
+          for (const m of s.messages) if (m.media_path) m.expires_at = '2020-01-01T00:00:00Z';
+          store.put(s, 'snapshot');
+        };
+        tx.oncomplete = () => {
+          db.close();
+          resolve();
+        };
+        tx.onerror = () => reject(tx.error);
+      };
+    });
+  });
+  await page.reload();
+  await page
+    .getByRole('button', { name: 'Messaggi', exact: true })
+    .filter({ visible: true })
+    .click();
+  await page.getByRole('button', { name: 'Giulia', exact: true }).click();
+  await expect(page.getByRole('log').getByRole('img')).toHaveCount(0);
+  const attachments = await page.evaluate(
+    async () =>
+      new Promise<number>((resolve) => {
+        const req = indexedDB.open('sn-demo', 1);
+        req.onsuccess = () => {
+          const db = req.result;
+          const get = db.transaction('state').objectStore('state').get('snapshot');
+          get.onsuccess = () => {
+            resolve(
+              get.result.messages.filter((m: { media_path: string | null }) => m.media_path).length,
+            );
+            db.close();
+          };
+        };
+      }),
+  );
+  expect(attachments).toBe(0);
+});
+test('chat: impedisce l’invio a chi non ricambia il follow', async ({ page }) => {
+  await page.goto('/demo');
+  await page
+    .getByRole('button', { name: 'Messaggi', exact: true })
+    .filter({ visible: true })
+    .click();
+  await page.getByRole('button', { name: 'Sara', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Invia messaggio', exact: true })).toHaveCount(0);
+  await expect(
+    page.getByText('Potete scrivervi quando vi seguite a vicenda.', { exact: false }),
+  ).toBeVisible();
+});
 test('API: nessun accesso anonimo, CSRF respinto e federazione chiusa', async ({ request }) => {
   const bootstrap = await request.get('/api/bootstrap');
   expect([401, 503]).toContain(bootstrap.status());

@@ -9,8 +9,8 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   await headers();
   return (
-    <html lang="it">
-      <body>{children}</body>
+    <html lang="it" suppressHydrationWarning>
+      <body suppressHydrationWarning>{children}</body>
     </html>
   );
 }

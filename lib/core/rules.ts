@@ -16,6 +16,32 @@ export const postInput = z
   })
   .refine((v) => v.body.length > 0 || v.media_path, 'Scrivi qualcosa o allega un file.')
   .refine((v) => v.kind === 'post' || v.media_path, 'Storie e reel richiedono un file.');
+export const EPHEMERAL_OPTIONS = [
+  { label: '1 ora', seconds: 3600 },
+  { label: '3 ore', seconds: 10800 },
+  { label: '24 ore', seconds: 86400 },
+  { label: '48 ore', seconds: 172800 },
+  { label: '1 settimana', seconds: 604800 },
+  { label: '1 mese', seconds: 2592000 },
+] as const;
+export const messageInput = z
+  .object({
+    user_id: userId,
+    body: z.string().trim().max(2000),
+    media_path: z.string().max(200).nullable().optional(),
+    media_type: z.string().max(50).nullable().optional(),
+    ttl: z
+      .union([
+        z.literal(3600),
+        z.literal(10800),
+        z.literal(86400),
+        z.literal(172800),
+        z.literal(604800),
+        z.literal(2592000),
+      ])
+      .default(86400),
+  })
+  .refine((v) => v.body.length > 0 || v.media_path, 'Scrivi un messaggio o allega un file.');
 export const credentials = z.object({
   email: z.email().max(254),
   password: z.string().min(12).max(128),
@@ -59,4 +85,22 @@ export function relativeTime(time: string) {
       : minutes < 1440
         ? `${Math.floor(minutes / 60)} h`
         : `${Math.floor(minutes / 1440)} g`;
+}
+
+export function chatFileKind(mime: string) {
+  return ['audio/webm', 'audio/ogg', 'audio/mp4'].includes(mime) ? 'audio' : fileKind(mime);
+}
+export function localMediaInfo(media: string, chat = false) {
+  if (media.length > Math.ceil((LIMITS.file * 4) / 3) + 100)
+    throw new Error('Il file supera 3 MB.');
+  const match = /^data:([^;]+);base64,([A-Za-z0-9+/]+={0,2})$/.exec(media);
+  if (!match || !(chat ? chatFileKind(match[1]) : fileKind(match[1])))
+    throw new Error('Scegli un allegato locale entro 3 MB.');
+  const encoded = match[2];
+  const bytes =
+    Math.floor((encoded.length * 3) / 4) -
+    (encoded.endsWith('==') ? 2 : encoded.endsWith('=') ? 1 : 0);
+  if (!bytes || bytes > LIMITS.file || encoded.length % 4)
+    throw new Error('Il file supera 3 MB o non è valido.');
+  return { mime: match[1], bytes };
 }

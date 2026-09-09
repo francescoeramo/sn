@@ -31,7 +31,10 @@ export type Message = {
   sender_id: string;
   recipient_id: string;
   body: string;
+  media_path: string | null;
+  media_type: string | null;
   created_at: string;
+  expires_at: string | null;
 };
 export type Notice = {
   id: string;
@@ -77,7 +80,14 @@ export type Action =
   | { type: 'comment'; post_id: string; body: string }
   | { type: 'follow'; user_id: string }
   | { type: 'accept'; user_id: string; accept: boolean }
-  | { type: 'message'; user_id: string; body: string }
+  | {
+      type: 'message';
+      user_id: string;
+      body: string;
+      media_path?: string | null;
+      media_type?: string | null;
+      ttl?: number;
+    }
   | { type: 'profile'; display_name: string; bio: string; is_private: boolean }
   | { type: 'read-notifications' }
   | { type: 'delete-post'; post_id: string }

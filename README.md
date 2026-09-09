@@ -2,7 +2,7 @@
 
 Social generalista per Francesco e i suoi amici. Beta su invito, moderazione manuale, nessuna pubblicità attiva. L’app e la demo girano in locale senza servizi a pagamento.
 
-Il prompt aggiornato è in corso di implementazione incrementale. La prima fase aggiunge storie con avanzamento automatico, controlli di pausa e feed senza contatori pubblici di like. La chat attuale conserva ancora messaggi in chiaro: E2EE, allegati chat, scadenze, Community Notes e sponsorizzazioni sono nelle fasi successive, non sono funzionalità già disponibili.
+Il prompt aggiornato è in corso di implementazione incrementale. La prima fase aggiunge storie con avanzamento automatico, controlli di pausa e feed senza contatori pubblici di like. La seconda fase aggiunge foto, video, file audio e sei scadenze in chat, con revoca degli allegati scaduti. La chat conserva ancora messaggi in chiaro: E2EE, conservazione solo sul dispositivo, Community Notes e sponsorizzazioni restano da implementare.
 
 ## Provalo adesso
 

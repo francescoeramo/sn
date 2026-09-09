@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { fileKind, hashtags, isActive, postInput } from '../lib/core/rules';
+import {
+  fileKind,
+  hashtags,
+  isActive,
+  postInput,
+  messageInput,
+  localMediaInfo,
+} from '../lib/core/rules';
 import { applyDemo, seed } from '../lib/client/demo';
 describe('Regole condivise', () => {
   it('la demo accetta allegati locali oltre 200 caratteri senza allargare le API', () => {
@@ -35,6 +42,34 @@ describe('Regole condivise', () => {
         alt: '',
       }),
     ).toThrow('3 MB');
+  });
+  it('accetta solo le sei scadenze previste e usa 24 ore come valore iniziale', () => {
+    const input = { user_id: seed().profiles[1].id, body: 'Ciao' };
+    expect(messageInput.parse(input).ttl).toBe(86400);
+    for (const ttl of [0, 42, -1, null, 2592001])
+      expect(messageInput.safeParse({ ...input, ttl }).success).toBe(false);
+  });
+  it('i messaggi demo supportano audio e scadenza senza fidarsi del MIME dichiarato', () => {
+    const s = seed();
+    const next = applyDemo(s, {
+      type: 'message',
+      user_id: s.profiles[1].id,
+      body: '',
+      media_path: 'data:audio/webm;base64,AAAA',
+      media_type: 'image/png',
+      ttl: 3600,
+    });
+    const message = next.messages.at(-1)!;
+    expect(message.media_type).toBe('audio/webm');
+    expect(Date.parse(message.expires_at!) - Date.parse(message.created_at)).toBe(3600000);
+    expect(next.usage.bytes).toBe(3);
+    expect(() => localMediaInfo('data:audio/webm;base64,AAAA')).toThrow();
+  });
+  it('rimuove dalla demo i messaggi scaduti con i loro allegati', () => {
+    const s = seed();
+    s.messages[0].expires_at = '2020-01-01T00:00:00Z';
+    const next = applyDemo(s, { type: 'read-notifications' });
+    expect(next.messages).toHaveLength(0);
   });
   it('estrae hashtag italiani senza duplicati', () =>
     expect(hashtags('Ciao #caffè #Musica #musica')).toEqual(['caffè', 'musica']));

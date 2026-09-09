@@ -1,6 +1,6 @@
 import { PGlite } from '@electric-sql/pglite';
 import { beforeAll, afterAll, describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 
 let db: PGlite;
 const alice = '00000000-0000-4000-8000-000000000001';
@@ -38,7 +38,10 @@ beforeAll(async () => {
     create schema storage;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
     create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text,name text unique,metadata jsonb,owner_id text);
     alter table storage.objects enable row level security;grant usage on schema storage to authenticated;grant select,insert,delete,update on storage.objects to authenticated;`);
-  await db.exec(readFileSync('supabase/migrations/20260909094232_initial_social.sql', 'utf8'));
+  for (const file of readdirSync('supabase/migrations')
+    .filter((f) => f.endsWith('.sql'))
+    .sort())
+    await db.exec(readFileSync('supabase/migrations/' + file, 'utf8'));
   for (const [id, email, name] of [
     [alice, 'a@example.test', 'alice'],
     [bob, 'b@example.test', 'bob'],
@@ -136,7 +139,7 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
         bob,
         alice,
       ]),
-    ).rejects.toThrow('row-level security');
+    ).rejects.toThrow('Accesso negato');
   });
   it('consente DM reciproci, invisibili a terzi', async () => {
     await asUser(alice, 'insert into public.follows(follower_id,following_id) values($1,$2)', [
@@ -151,6 +154,64 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
     );
     expect(await asUser(eve, 'select * from public.messages')).toHaveLength(0);
     expect(await asUser(alice, 'select * from public.messages')).toHaveLength(1);
+  });
+  it('impone scadenze consentite nel database e nasconde messaggi e media scaduti', async () => {
+    await expect(
+      asUser(
+        bob,
+        "insert into public.messages(sender_id,recipient_id,body,ttl_seconds) values($1,$2,'TTL abusivo',42)",
+        [bob, alice],
+      ),
+    ).rejects.toThrow('check constraint');
+    const path = bob + '/00000000-0000-4000-8000-000000000557';
+    await asUser(
+      bob,
+      "insert into public.media_assets(path,owner_id,bytes,mime) values($1,$2,100,'audio/webm')",
+      [path, bob],
+    );
+    await asUser(
+      bob,
+      `insert into storage.objects(bucket_id,name,metadata) values('media',$1,'{"size":100,"mimetype":"audio/webm"}')`,
+      [path],
+    );
+    await asUser(
+      bob,
+      'insert into public.messages(sender_id,recipient_id,media_path,ttl_seconds) values($1,$2,$3,3600)',
+      [bob, alice, path],
+    );
+    const rows = await asUser<{ expires_at: string; created_at: string; media_type: string }>(
+      alice,
+      'select * from public.messages where media_path=$1',
+      [path],
+    );
+    expect(rows[0].media_type).toBe('audio/webm');
+    expect(Date.parse(rows[0].expires_at) - Date.parse(rows[0].created_at)).toBe(3600000);
+    expect(await asUser(alice, 'select * from storage.objects where name=$1', [path])).toHaveLength(
+      1,
+    );
+    expect(await asUser(eve, 'select * from storage.objects where name=$1', [path])).toHaveLength(
+      0,
+    );
+    await expect(
+      asUser(
+        bob,
+        "insert into public.posts(author_id,body,media_path) values($1,'Riutilizzo',$2)",
+        [bob, path],
+      ),
+    ).rejects.toThrow('File già usato in chat');
+    await db.query(
+      "update public.messages set expires_at=now()-interval '1 second' where media_path=$1",
+      [path],
+    );
+    expect(
+      await asUser(alice, 'select * from public.messages where media_path=$1', [path]),
+    ).toHaveLength(0);
+    expect(await asUser(bob, 'select * from storage.objects where name=$1', [path])).toHaveLength(
+      0,
+    );
+    expect(await asUser(alice, 'select * from storage.objects where name=$1', [path])).toHaveLength(
+      0,
+    );
   });
   it('lega like e commenti alla visibilità del post', async () => {
     const posts = await asUser<{ id: string }>(alice, 'select id from public.posts');
@@ -255,7 +316,7 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
         "insert into public.messages(sender_id,recipient_id,body) values($1,$2,'Ancora qui')",
         [bob, alice],
       ),
-    ).rejects.toThrow('row-level security');
+    ).rejects.toThrow('Accesso negato');
   });
   it('disabilitando un account nega accesso anche a un token già emesso', async () => {
     await db.query('update public.profiles set disabled=true where id=$1', [bob]);

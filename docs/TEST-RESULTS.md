@@ -1,14 +1,14 @@
 # Risultati delle verifiche
 
-Data: 9 settembre 2026. Ambito: prima fase del prompt aggiornato, feed tranquillo e storie automatiche.
+Data: 9 settembre 2026. Ambito: prime due fasi del prompt aggiornato: feed, storie e chat effimera con allegati.
 
 | Controllo           | Risultato                                        |
 | ------------------- | ------------------------------------------------ |
 | `npm run lint`      | Superato                                         |
 | `npm run typecheck` | Superato                                         |
-| `npm test`          | 33 test superati, inclusi schema e RLS su PGlite |
+| `npm test`          | 37 test superati, inclusi schema e RLS su PGlite |
 | `npm run build`     | Superato                                         |
-| `npm run test:e2e`  | 20 test superati, desktop e mobile               |
+| `npm run test:e2e`  | 24 test superati, desktop e mobile               |
 
 I test browser verificano pubblicazione e persistenza nella demo, interazioni, ricerca, profilo, esportazione e messaggi. Per le storie coprono avanzamento automatico, pausa, pressione prolungata, navigazione, sequenze dello stesso autore, video e chiusura alla fine. Verificano inoltre l’assenza di conteggi pubblici dei like, il termine del feed, il rifiuto delle richieste API anonime e CSRF e la federazione chiusa.
 
@@ -17,3 +17,5 @@ La validazione degli allegati demo accetta immagini e video locali entro 3 MiB e
 Controllo visivo locale del lettore di storie completato; nessun errore rilevato dal browser durante la verifica.
 
 Questi risultati non certificano Auth e Storage su Supabase cloud: il collaudo dedicato e il deploy del sito non sono stati eseguiti. La chat resta priva di E2EE; le successive fasi del prompt sono ancora da implementare. Per i controlli cloud rimanenti, vedere [VERIFICA.md](VERIFICA.md).
+
+La seconda fase aggiunge verifiche SQL sulle sei durate consentite, accesso agli audio, isolamento dai terzi e revoca dopo la scadenza. Le prove browser coprono invio di un allegato senza testo, anteprima, pulizia IndexedDB alla riapertura e blocco dell’invio senza follow reciproco.

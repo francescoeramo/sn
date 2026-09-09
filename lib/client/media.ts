@@ -97,3 +97,25 @@ export function asDataURL(file: File): Promise<string> {
     reader.readAsDataURL(file);
   });
 }
+
+export async function prepareChatMedia(
+  file: File,
+  onProgress: (value: string) => void,
+): Promise<File> {
+  if (!file.type.startsWith('audio/')) return prepareMedia(file, onProgress);
+  if (
+    !['audio/webm', 'audio/ogg', 'audio/mp4'].includes(file.type) ||
+    !file.size ||
+    file.size > LIMITS.file
+  )
+    throw new Error('Scegli un audio WebM, Ogg o M4A entro 3 MB.');
+  onProgress('Controllo l’audio…');
+  const context = new AudioContext();
+  try {
+    const audio = await context.decodeAudioData(await file.arrayBuffer());
+    if (audio.duration > 60) throw new Error('Scegli una nota audio di massimo 60 secondi.');
+    return file;
+  } finally {
+    await context.close();
+  }
+}

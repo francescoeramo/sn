@@ -1,6 +1,6 @@
 import 'server-only';
 import { z } from 'zod';
-import { LIMITS, postInput, userId } from '@/lib/core/rules';
+import { LIMITS, postInput, userId, messageInput } from '@/lib/core/rules';
 import { identity, checked, adminDatabase, ApiError } from './supabase';
 
 export async function snapshot() {
@@ -20,7 +20,12 @@ export async function snapshot() {
     db.from('comments').select('*').order('created_at', { ascending: false }).limit(300),
     db.from('likes').select('*').limit(1000),
     db.from('follows').select('*'),
-    db.from('messages').select('*').order('created_at', { ascending: false }).limit(100),
+    db
+      .from('messages')
+      .select('*')
+      .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
+      .order('created_at', { ascending: false })
+      .limit(100),
     db.from('notifications').select('*').order('created_at', { ascending: false }).limit(50),
     db.from('reports').select('*').order('created_at', { ascending: false }).limit(50),
     db.from('blocks').select('*'),
@@ -114,11 +119,15 @@ export async function mutate(input: unknown) {
       break;
     }
     case 'message': {
-      const v = z.object({ user_id: userId, body: z.string().trim().min(1).max(2000) }).parse(obj);
+      const v = messageInput.parse(obj);
       checked(
-        await db
-          .from('messages')
-          .insert({ sender_id: user.id, recipient_id: v.user_id, body: v.body }),
+        await db.from('messages').insert({
+          sender_id: user.id,
+          recipient_id: v.user_id,
+          body: v.body,
+          media_path: v.media_path ?? null,
+          ttl_seconds: v.ttl,
+        }),
       );
       break;
     }

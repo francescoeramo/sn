@@ -16,7 +16,6 @@ import {
   Video,
   Clock3,
   ChevronRight,
-  Send,
   LockKeyhole,
   RefreshCw,
   X,
@@ -32,6 +31,7 @@ import type { Action, Snapshot, Post } from '@/lib/core/types';
 import { LIMITS, isActive, hashtags, relativeTime } from '@/lib/core/rules';
 import { loadDemo, saveDemo, applyDemo, clearDemo, seed } from '@/lib/client/demo';
 import { Avatar, Empty, Modal } from './primitives';
+import { ChatConversation } from './chat-conversation';
 import { StoryPlayer } from './story-player';
 import { AuthScreen } from './auth-screen';
 import { Composer } from './composer';
@@ -102,6 +102,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
   const refresh = useCallback(async () => {
     try {
       const next = demo ? await loadDemo() : await request('bootstrap');
+      if (demo) await saveDemo(next);
       setState(next);
     } catch (error) {
       if ((error as { status?: number }).status === 401) setState(null);
@@ -134,7 +135,11 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
   useEffect(() => {
     const timer = setInterval(() => {
       setClock(Date.now());
-      if (view === 'messages' && !demo && document.visibilityState === 'visible' && !locked.current)
+      if (
+        (demo || view === 'messages') &&
+        document.visibilityState === 'visible' &&
+        !locked.current
+      )
         void refresh();
     }, 30000);
     return () => clearInterval(timer);
@@ -693,63 +698,28 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                     ))}
                 </div>
                 {currentConversation ? (
-                  <>
-                    <div className="chat-heading">
-                      <Avatar person={currentConversation} />
-                      <div>
-                        <strong>{currentConversation.display_name}</strong>
-                        <small>@{currentConversation.username}</small>
-                      </div>
-                    </div>
-                    <div className="chat-log" role="log" aria-label="Messaggi della conversazione">
-                      {state.messages
-                        .filter(
-                          (m) =>
-                            (m.sender_id === conversation && m.recipient_id === me.id) ||
-                            (m.recipient_id === conversation && m.sender_id === me.id),
-                        )
-                        .sort((a, b) => a.created_at.localeCompare(b.created_at))
-                        .map((m) => (
-                          <div
-                            className={`chat-bubble ${m.sender_id === me.id ? 'own' : ''}`}
-                            key={m.id}
-                          >
-                            <p>{m.body}</p>
-                            <time>{relativeTime(m.created_at)}</time>
-                          </div>
-                        ))}
-                    </div>
-                    <form
-                      className="chat-form"
-                      onSubmit={async (e) => {
-                        e.preventDefault();
-                        const form = e.currentTarget;
-                        if (
-                          await act({
-                            type: 'message',
-                            user_id: conversation!,
-                            body: String(new FormData(form).get('body')),
-                          })
-                        )
-                          form.reset();
-                      }}
-                    >
-                      <input
-                        name="body"
-                        placeholder="Scrivi un messaggio…"
-                        aria-label="Scrivi un messaggio"
-                        required
-                        maxLength={2000}
-                      />
-                      <button className="primary" disabled={busy} aria-label="Invia messaggio">
-                        <Send size={18} />
-                      </button>
-                    </form>
-                    <p className="muted fine">
-                      Potete scrivervi quando vi seguite a vicenda. Aggiornamento ogni 30 secondi
-                      mentre questa schermata è aperta.
-                    </p>
-                  </>
+                  <ChatConversation
+                    key={currentConversation.id}
+                    me={me}
+                    person={currentConversation}
+                    demo={demo}
+                    messages={state.messages.filter(
+                      (m) =>
+                        (m.sender_id === conversation && m.recipient_id === me.id) ||
+                        (m.recipient_id === conversation && m.sender_id === me.id),
+                    )}
+                    allowed={
+                      state.follows.some(
+                        (f) =>
+                          f.follower_id === me.id && f.following_id === conversation && f.accepted,
+                      ) &&
+                      state.follows.some(
+                        (f) =>
+                          f.follower_id === conversation && f.following_id === me.id && f.accepted,
+                      )
+                    }
+                    onSend={act}
+                  />
                 ) : (
                   <Empty title="Scegli una persona.">
                     Le conversazioni iniziano con due parole.

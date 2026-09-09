@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { timingSafeEqual } from 'node:crypto';
 import { BodyTooLarge, readLimited } from '@/lib/core/http';
-import { credentials, LIMITS, fileKind, userId } from '@/lib/core/rules';
+import { credentials, LIMITS, fileKind, chatFileKind, userId } from '@/lib/core/rules';
 import { database, identity, checked, adminDatabase, ApiError } from '@/lib/server/supabase';
 import { snapshot, mutate, exportData, deleteAccount } from '@/lib/server/social';
 
@@ -110,6 +110,7 @@ export async function GET(request: NextRequest, { params }: Context) {
         .or(
           `and(sender_id.eq.${user.id},recipient_id.eq.${other}),and(sender_id.eq.${other},recipient_id.eq.${user.id})`,
         )
+        .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
         .order('created_at', { ascending: false })
         .limit(50);
       const before = request.nextUrl.searchParams.get('before');
@@ -183,7 +184,12 @@ export async function POST(request: NextRequest, { params }: Context) {
         headers: { 'Content-Type': contentType },
       }).formData();
       const file = form.get('file');
-      if (!(file instanceof File) || !fileKind(file.type) || file.size > LIMITS.file || !file.size)
+      if (
+        !(file instanceof File) ||
+        !(form.get('scope') === 'chat' ? chatFileKind(file.type) : fileKind(file.type)) ||
+        file.size > LIMITS.file ||
+        !file.size
+      )
         throw new ApiError('Carica un’immagine o un video entro 3 MB.');
       const bytes = new Uint8Array(await file.arrayBuffer());
       const match =
@@ -193,9 +199,11 @@ export async function POST(request: NextRequest, { params }: Context) {
             ? bytes[0] === 137 && bytes[1] === 80
             : file.type === 'image/webp'
               ? new TextDecoder().decode(bytes.slice(8, 12)) === 'WEBP'
-              : file.type === 'video/mp4'
+              : ['video/mp4', 'audio/mp4'].includes(file.type)
                 ? new TextDecoder().decode(bytes.slice(4, 8)) === 'ftyp'
-                : bytes[0] === 26 && bytes[1] === 69 && bytes[2] === 223 && bytes[3] === 163;
+                : file.type === 'audio/ogg'
+                  ? new TextDecoder().decode(bytes.slice(0, 4)) === 'OggS'
+                  : bytes[0] === 26 && bytes[1] === 69 && bytes[2] === 223 && bytes[3] === 163;
       if (!match) throw new ApiError('Il contenuto del file non corrisponde al formato.');
       const path = `${user.id}/${crypto.randomUUID()}`;
       checked(
@@ -224,6 +232,7 @@ export async function POST(request: NextRequest, { params }: Context) {
         throw new ApiError('Accesso negato.', 403);
       const admin = adminDatabase();
       checked(await admin.from('posts').delete().lt('expires_at', new Date().toISOString()));
+      checked(await admin.from('messages').delete().lt('expires_at', new Date().toISOString()));
       const assets = checked(await admin.rpc('claim_media_cleanup')) as string[];
       let removed = 0;
       for (const path of assets) {
