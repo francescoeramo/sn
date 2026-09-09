@@ -1,0 +1,6 @@
+node_modules
+.next
+package-lock.json
+SN-prompt-progetto.md
+artifacts
+supabase/migrations

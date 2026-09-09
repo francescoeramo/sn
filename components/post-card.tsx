@@ -1,0 +1,225 @@
+'use client';
+import { useState } from 'react';
+import {
+  Heart,
+  MessageCircle,
+  MoreHorizontal,
+  Send,
+  Flag,
+  Trash2,
+  LockKeyhole,
+} from 'lucide-react';
+import type { Post, Snapshot, Action } from '@/lib/core/types';
+import { relativeTime } from '@/lib/core/rules';
+import { Avatar, Media, Modal } from './primitives';
+export function PostCard({
+  post,
+  state,
+  demo,
+  onAction,
+  onProfile,
+  onTag,
+}: {
+  post: Post;
+  state: Snapshot;
+  demo: boolean;
+  onAction: (a: Action) => Promise<boolean>;
+  onProfile: (id: string) => void;
+  onTag: (tag: string) => void;
+}) {
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [menu, setMenu] = useState(false);
+  const [report, setReport] = useState(false);
+  const [remove, setRemove] = useState(false);
+  const [pending, setPending] = useState(false);
+  const author = state.profiles.find((p) => p.id === post.author_id);
+  const likes = state.likes.filter((l) => l.post_id === post.id);
+  const liked = likes.some((l) => l.user_id === state.me.id);
+  const comments = state.comments
+    .filter((c) => c.post_id === post.id)
+    .sort((a, b) => a.created_at.localeCompare(b.created_at));
+  const act = async (a: Action) => {
+    setPending(true);
+    try {
+      return await onAction(a);
+    } finally {
+      setPending(false);
+    }
+  };
+  return (
+    <article className="post-card">
+      <header className="post-header">
+        <button className="person-button" onClick={() => onProfile(post.author_id)}>
+          <Avatar person={author} />
+          <span>
+            <strong>{author?.display_name ?? 'Utente'}</strong>
+            <small>
+              @{author?.username ?? 'utente'} <span>·</span> {relativeTime(post.created_at)}{' '}
+              {author?.is_private && <LockKeyhole size={11} />}
+            </small>
+          </span>
+        </button>
+        <div className="post-menu">
+          <button
+            className="icon-button"
+            aria-label="Opzioni del post"
+            aria-expanded={menu}
+            onClick={() => setMenu(!menu)}
+          >
+            <MoreHorizontal size={21} />
+          </button>
+          {menu && (
+            <div className="popover">
+              {post.author_id === state.me.id ? (
+                <button
+                  onClick={() => {
+                    setRemove(true);
+                    setMenu(false);
+                  }}
+                >
+                  <Trash2 size={16} />
+                  Elimina post
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    setReport(true);
+                    setMenu(false);
+                  }}
+                >
+                  <Flag size={16} />
+                  Segnala post
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </header>
+      {post.body && (
+        <p className="post-body">
+          {post.body.split(/(#[\p{L}\p{N}_]+)/gu).map((part, i) =>
+            part.startsWith('#') ? (
+              <button className="hashtag" key={i} onClick={() => onTag(part)}>
+                {part}
+              </button>
+            ) : (
+              part
+            ),
+          )}
+        </p>
+      )}
+      <Media post={post} demo={demo} />
+      <div className="post-actions">
+        <button
+          className={liked ? 'liked' : ''}
+          aria-label={liked ? 'Togli mi piace' : 'Mi piace'}
+          aria-pressed={liked}
+          disabled={pending}
+          onClick={() => act({ type: 'like', post_id: post.id })}
+        >
+          <Heart size={22} fill={liked ? 'currentColor' : 'none'} />
+          <span>{likes.length || 'Mi piace'}</span>
+        </button>
+        <button
+          onClick={() => setCommentsOpen(!commentsOpen)}
+          aria-expanded={commentsOpen}
+          aria-label="Commenti"
+        >
+          <MessageCircle size={22} />
+          <span>{comments.length || 'Commenta'}</span>
+        </button>
+        <span className="post-date">
+          {new Date(post.created_at).toLocaleDateString('it-IT', {
+            day: 'numeric',
+            month: 'short',
+          })}
+        </span>
+      </div>
+      {comments.length > 0 && !commentsOpen && (
+        <button className="comment-preview" onClick={() => setCommentsOpen(true)}>
+          <strong>
+            {state.profiles
+              .find((p) => p.id === comments[0].author_id)
+              ?.display_name.split(' ')[0] ?? 'Utente'}
+          </strong>{' '}
+          {comments[0].body}
+        </button>
+      )}
+      {commentsOpen && (
+        <section className="comments" aria-label="Commenti del post">
+          {comments.map((c) => (
+            <div className="comment" key={c.id}>
+              <Avatar person={state.profiles.find((p) => p.id === c.author_id)} size="small" />
+              <p>
+                <strong>
+                  {state.profiles.find((p) => p.id === c.author_id)?.display_name ?? 'Utente'}
+                </strong>
+                <span>{c.body}</span>
+              </p>
+            </div>
+          ))}
+          <form
+            className="comment-form"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const form = e.currentTarget;
+              const body = String(new FormData(form).get('body'));
+              if (await act({ type: 'comment', post_id: post.id, body })) form.reset();
+            }}
+          >
+            <input
+              name="body"
+              aria-label="Scrivi un commento"
+              placeholder="Aggiungi una risposta…"
+              maxLength={1000}
+              required
+            />
+            <button className="icon-button" disabled={pending} aria-label="Invia commento">
+              <Send size={18} />
+            </button>
+          </form>
+        </section>
+      )}
+      {report && (
+        <Modal title="Segnala questo post" onClose={() => setReport(false)}>
+          <p>La segnalazione sarà letta dal moderatore della beta.</p>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (
+                await act({
+                  type: 'report',
+                  post_id: post.id,
+                  reason: String(new FormData(e.currentTarget).get('reason')),
+                })
+              )
+                setReport(false);
+            }}
+          >
+            <label>
+              Che cosa non va?
+              <textarea name="reason" required minLength={5} maxLength={1000} rows={4} />
+            </label>
+            <button className="primary" disabled={pending}>
+              Invia segnalazione
+            </button>
+          </form>
+        </Modal>
+      )}
+      {remove && (
+        <Modal title="Eliminare il post?" onClose={() => setRemove(false)}>
+          <p>Il post e le risposte saranno rimossi. Questa operazione non si può annullare.</p>
+          <button
+            className="danger"
+            disabled={pending}
+            onClick={async () => {
+              if (await act({ type: 'delete-post', post_id: post.id })) setRemove(false);
+            }}
+          >
+            Elimina post
+          </button>
+        </Modal>
+      )}
+    </article>
+  );
+}

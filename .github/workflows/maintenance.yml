@@ -1,0 +1,21 @@
+name: Media cleanup
+# Enable scheduled calls only after deployment by adding a schedule trigger.
+on:
+  workflow_dispatch:
+permissions: {}
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Remove expired media and finish pending account deletion
+        env:
+          SN_ORIGIN: ${{ secrets.SN_ORIGIN }}
+          SN_CRON_SECRET: ${{ secrets.SN_CRON_SECRET }}
+        run: |
+          test -n "$SN_ORIGIN"
+          test -n "$SN_CRON_SECRET"
+          curl --fail --silent --show-error --max-time 120 \
+            -X POST "$SN_ORIGIN/api/maintenance" \
+            -H "Origin: $SN_ORIGIN" \
+            -H "Authorization: Bearer $SN_CRON_SECRET"
