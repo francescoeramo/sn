@@ -56,7 +56,7 @@ export async function GET(request: NextRequest, { params }: Context) {
       const posts = checked(
         await db
           .from('posts')
-          .select('*')
+          .select('*, notes:community_notes(*)')
           .lt('created_at', before)
           .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
           .order('created_at', { ascending: false })
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest, { params }: Context) {
         checked(
           await db
             .from('posts')
-            .select('*')
+            .select('*, notes:community_notes(*)')
             .ilike('body', `%${escaped}%`)
             .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
             .order('created_at', { ascending: false })

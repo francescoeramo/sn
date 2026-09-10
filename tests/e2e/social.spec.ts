@@ -356,6 +356,42 @@ test('chat cifrata: cambio chiave blocca nuovi invii finché i codici non sono a
     .click();
   await expect(page.getByRole('button', { name: 'Invia messaggio', exact: true })).toBeEnabled();
 });
+test('note della comunità: proposta, revisione motivata e post originale conservato', async ({
+  page,
+}) => {
+  await page.goto('/demo');
+  const post = page.locator('.post-card').first();
+  await post.getByRole('button', { name: 'Aggiungi contesto e fonti' }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog
+    .getByLabel('Quale contesto manca?')
+    .fill('La fonte aggiunge un dettaglio verificabile alla discussione.');
+  await dialog.getByLabel('Fonti HTTPS, una per riga').fill('https://example.org/fonte');
+  await dialog.getByRole('button', { name: 'Invia alla revisione' }).click();
+  await expect(post.getByText('La tua nota è in revisione')).toBeVisible();
+  await expect(post.locator('.context-note')).toHaveCount(0);
+  await page
+    .getByRole('button', { name: 'Impostazioni', exact: true })
+    .filter({ visible: true })
+    .click();
+  await page.getByRole('button', { name: 'Apri moderazione', exact: true }).click();
+  const review = page.getByRole('region', { name: 'Revisione note' });
+  await expect(review).toContainText('Ho fatto una playlist');
+  await review.getByLabel('Motivo della decisione').fill('La fonte è pertinente e verificabile.');
+  await review.getByRole('button', { name: 'Salva decisione' }).click();
+  await expect(review).toContainText('Nessuna nota in attesa.');
+  await page
+    .getByRole('button', { name: 'La tua piazza', exact: true })
+    .filter({ visible: true })
+    .click();
+  await expect(page.locator('.context-note')).toContainText(
+    'La fonte aggiunge un dettaglio verificabile',
+  );
+  await expect(page.locator('.post-card').first()).toContainText('Ho fatto una playlist');
+  await expect(page.locator('.context-note a')).toHaveAttribute('rel', 'noopener noreferrer');
+  await page.reload();
+  await expect(page.locator('.context-note')).toBeVisible();
+});
 test('API: nessun accesso anonimo, CSRF respinto e federazione chiusa', async ({ request }) => {
   const bootstrap = await request.get('/api/bootstrap');
   expect([401, 503]).toContain(bootstrap.status());

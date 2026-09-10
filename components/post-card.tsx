@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import type { Post, Snapshot, Action } from '@/lib/core/types';
 import { relativeTime } from '@/lib/core/rules';
+import { PostNotes } from './community-notes';
 import { Avatar, Media, Modal } from './primitives';
 export function PostCard({
   post,
@@ -109,6 +110,7 @@ export function PostCard({
         </p>
       )}
       <Media post={post} demo={demo} />
+      <PostNotes loadedNotes={post.notes} postId={post.id} state={state} onAction={act} />
       <div className="post-actions">
         <button
           className={liked ? 'liked' : ''}

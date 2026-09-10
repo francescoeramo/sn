@@ -1,6 +1,13 @@
 import 'server-only';
 import { z } from 'zod';
-import { LIMITS, postInput, userId, encryptedMessageInput } from '@/lib/core/rules';
+import {
+  LIMITS,
+  postInput,
+  userId,
+  encryptedMessageInput,
+  noteInput,
+  noteReviewInput,
+} from '@/lib/core/rules';
 import { identity, checked, adminDatabase, ApiError } from './supabase';
 
 export async function snapshot() {
@@ -13,7 +20,7 @@ export async function snapshot() {
       .limit(20),
     db
       .from('posts')
-      .select('*')
+      .select('*, notes:community_notes(*)')
       .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
       .order('created_at', { ascending: false })
       .limit(40),
@@ -30,6 +37,11 @@ export async function snapshot() {
     db.from('reports').select('*').order('created_at', { ascending: false }).limit(50),
     db.from('blocks').select('*'),
     db.rpc('my_usage'),
+    db
+      .from('community_notes')
+      .select('*, post:posts(body)')
+      .order('created_at', { ascending: false })
+      .limit(500),
   ]);
   const [
     profiles,
@@ -42,8 +54,10 @@ export async function snapshot() {
     reports,
     blocks,
     usage,
+    notes,
   ] = results.map((r) => checked(r));
   return {
+    notes,
     me: profile,
     profiles,
     posts,
@@ -71,6 +85,22 @@ export async function mutate(input: unknown) {
   const { db, user } = await identity();
   const obj = z.object({ type: z.string() }).passthrough().parse(input);
   switch (obj.type) {
+    case 'propose-note': {
+      const value = noteInput.parse(obj);
+      checked(await db.from('community_notes').insert({ ...value, author_id: user.id }));
+      break;
+    }
+    case 'review-note': {
+      const value = noteReviewInput.parse(obj);
+      checked(
+        await db.rpc('review_community_note', {
+          note_id: value.note_id,
+          approve: value.approve,
+          reason: value.reason,
+        }),
+      );
+      break;
+    }
     case 'post': {
       const v = postInput.parse(obj);
       checked(await db.from('posts').insert({ ...v, author_id: user.id }));
@@ -215,6 +245,7 @@ export async function exportData() {
     ['follows', ''],
     ['messages', ''],
     ['chat_devices', 'user_id'],
+    ['community_notes', 'author_id'],
   ]) {
     const rows: unknown[] = [];
     for (let offset = 0; ; offset += 500) {

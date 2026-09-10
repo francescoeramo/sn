@@ -5,6 +5,7 @@ import {
   isActive,
   postInput,
   messageInput,
+  noteInput,
   localMediaInfo,
 } from '../lib/core/rules';
 import { applyDemo, seed } from '../lib/client/demo';
@@ -70,6 +71,51 @@ describe('Regole condivise', () => {
     s.messages[0].expires_at = '2020-01-01T00:00:00Z';
     const next = applyDemo(s, { type: 'read-notifications' });
     expect(next.messages).toHaveLength(0);
+  });
+  it('le note richiedono fonti HTTPS e restano nascoste fino alla revisione', () => {
+    const state = seed(),
+      input = {
+        post_id: state.posts[0].id,
+        body: 'Questa affermazione richiede più contesto.',
+        sources: ['https://example.org/fonte'],
+      };
+    for (const sources of [
+      [],
+      ['javascript:alert(1)'],
+      ['https://user:pass@example.org'],
+      ['http://example.org'],
+    ])
+      expect(noteInput.safeParse({ ...input, sources }).success).toBe(false);
+    const proposed = applyDemo(state, { type: 'propose-note', ...input });
+    expect(proposed.notes[0].status).toBe('pending');
+    expect(proposed.posts).toEqual(state.posts);
+    expect(() =>
+      applyDemo(
+        { ...proposed, isAdmin: false },
+        {
+          type: 'review-note',
+          note_id: proposed.notes[0].id,
+          approve: true,
+          reason: 'Fonte verificata e pertinente.',
+        },
+      ),
+    ).toThrow('Accesso negato');
+    const approved = applyDemo(proposed, {
+      type: 'review-note',
+      note_id: proposed.notes[0].id,
+      approve: true,
+      reason: 'Fonte verificata e pertinente.',
+    });
+    expect(approved.notes[0].status).toBe('approved');
+    expect(approved.posts).toEqual(state.posts);
+    expect(() =>
+      applyDemo(approved, {
+        type: 'review-note',
+        note_id: approved.notes[0].id,
+        approve: false,
+        reason: 'Cambio non ammesso.',
+      }),
+    ).toThrow('già esaminata');
   });
   it('estrae hashtag italiani senza duplicati', () =>
     expect(hashtags('Ciao #caffè #Musica #musica')).toEqual(['caffè', 'musica']));

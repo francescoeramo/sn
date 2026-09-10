@@ -2,7 +2,7 @@
 
 Social generalista per Francesco e i suoi amici. Beta su invito, moderazione manuale, nessuna pubblicità attiva. L’app e la demo girano in locale senza servizi a pagamento.
 
-Il prompt aggiornato è in corso di implementazione incrementale. La prima fase aggiunge storie con avanzamento automatico, controlli di pausa e feed senza contatori pubblici di like. La seconda fase aggiunge foto, video, file audio e sei scadenze in chat, con revoca degli allegati scaduti. La terza fase cifra i nuovi messaggi e allegati con Web Crypto, conserva le chiavi private nei browser e offre conservazione sincronizzata o solo sul dispositivo dopo la consegna. Lo storico precedente resta in chiaro. Community Notes e sponsorizzazioni restano da implementare. Limiti e verifiche del protocollo sono in [docs/CRITTOGRAFIA.md](docs/CRITTOGRAFIA.md).
+Il prompt aggiornato è in corso di implementazione incrementale. La prima fase aggiunge storie con avanzamento automatico, controlli di pausa e feed senza contatori pubblici di like. La seconda fase aggiunge foto, video, file audio e sei scadenze in chat, con revoca degli allegati scaduti. La terza fase cifra i nuovi messaggi e allegati con Web Crypto, conserva le chiavi private nei browser e offre conservazione sincronizzata o solo sul dispositivo dopo la consegna. Lo storico precedente resta in chiaro. Le Note della comunità permettono di proporre contesto con fonti HTTPS e pubblicarlo dopo una revisione manuale motivata. Le sponsorizzazioni restano da implementare. Limiti e verifiche del protocollo sono in [docs/CRITTOGRAFIA.md](docs/CRITTOGRAFIA.md).
 
 ## Provalo adesso
 

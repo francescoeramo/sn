@@ -21,3 +21,11 @@ I nuovi messaggi scadono dopo 24 ore per impostazione iniziale. Le alternative s
 Foto e video usano la preparazione locale già presente; i file audio WebM, Ogg e M4A vengono controllati nel browser (massimo 60 secondi). Il server controlla formato e limite di 3 MiB, ma non certifica la durata dei file ricevuti direttamente via API. Gli allegati chat sono riservati ai partecipanti e non possono essere riutilizzati nei post. Le policy revocano l’accesso alla scadenza; l’endpoint manutenzione elimina record e file. Va programmato prima di aprire la beta.
 
 La demo elimina i contenuti scaduti da IndexedDB all’apertura e durante gli aggiornamenti. Un browser chiuso non può eseguire lavori di pulizia. La chat mostra le scadenze, permette l’invio di soli allegati e conserva la bozza in caso di errore. Questa fase non introduce E2EE né la modalità di conservazione solo sul dispositivo.
+
+## Note della comunità
+
+Ogni membro può proporre una nota di 20–1200 caratteri con 1–3 fonti HTTPS su un post che può leggere. La proposta resta visibile soltanto all’autore della nota e ai moderatori fino all’approvazione. È consentita una sola proposta in attesa per autore e post. Il limite anti-spam è dieci proposte all’ora.
+
+Il moderatore controlla post e fonti, approva o respinge e scrive una motivazione di almeno dieci caratteri. La decisione è atomica, viene notificata all’autore e non cancella né modifica il post. La nota approvata segue la visibilità del post, anche nella ricerca e nei caricamenti successivi. Una nota respinta resta consultabile dal suo autore con la motivazione; può proporne una nuova.
+
+Le fonti sono link aperti deliberatamente dall’utente: SN non le visita, non genera anteprime remote e non dichiara di averne verificato automaticamente il contenuto. Le opinioni e la discussione politica sono ammesse; il testo dell’interfaccia distingue il contesto fattuale dalle opinioni. La coda mostra al massimo 500 note recenti: la paginazione della coda resta necessaria prima di ampliare la beta.

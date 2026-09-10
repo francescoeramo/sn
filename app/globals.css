@@ -2374,3 +2374,57 @@ label small {
   min-height: 44px;
   font-size: 14px;
 }
+
+.post-notes {
+  padding: 0 22px 14px;
+  font-size: 13px;
+}
+.context-note {
+  border-left: 3px solid var(--violet);
+  background: #f3f0f8;
+  padding: 16px;
+  margin: 12px 0;
+  border-radius: 0 12px 12px 0;
+}
+.context-note p,
+.my-note p,
+.note-review p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 8px 0;
+}
+.note-sources {
+  margin: 10px 0;
+  padding-left: 18px;
+}
+.note-sources a {
+  color: var(--violet-dark);
+  text-decoration: underline;
+  overflow-wrap: anywhere;
+}
+.context-note details,
+.my-note {
+  font-size: 12px;
+  margin: 10px 0;
+}
+.notes-review {
+  padding-bottom: 24px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--line);
+}
+.note-review {
+  padding: 18px;
+  margin: 16px 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.note-review blockquote {
+  white-space: pre-wrap;
+  border-left: 2px solid var(--line);
+  padding-left: 12px;
+  font-size: 13px;
+}
+.note-review h3 {
+  margin: 14px 0 6px;
+  font-size: 15px;
+}

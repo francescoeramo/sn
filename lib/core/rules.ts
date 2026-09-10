@@ -157,3 +157,32 @@ export const encryptedMessageInput = z.object({
     z.literal(2592000),
   ]),
 });
+
+export const noteInput = z.object({
+  post_id: userId,
+  body: z.string().trim().min(20).max(1200),
+  sources: z
+    .array(
+      z
+        .string()
+        .trim()
+        .max(500)
+        .transform((value, ctx) => {
+          try {
+            const url = new URL(value);
+            if (url.protocol !== 'https:' || url.username || url.password) throw new Error();
+            return url.href;
+          } catch {
+            ctx.addIssue({ code: 'custom', message: 'Inserisci una fonte HTTPS valida.' });
+            return z.NEVER;
+          }
+        }),
+    )
+    .min(1)
+    .max(3),
+});
+export const noteReviewInput = z.object({
+  note_id: userId,
+  approve: z.boolean(),
+  reason: z.string().trim().min(10).max(500),
+});

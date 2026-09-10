@@ -9,6 +9,7 @@ export type Profile = {
   created_at: string;
 };
 export type Post = {
+  notes?: CommunityNote[];
   id: string;
   author_id: string;
   body: string;
@@ -56,7 +57,21 @@ export type Report = {
   status: string;
   created_at: string;
 };
+export type CommunityNote = {
+  post?: { body: string } | null;
+  id: string;
+  post_id: string;
+  author_id: string;
+  body: string;
+  sources: string[];
+  status: 'pending' | 'approved' | 'rejected';
+  review_reason: string;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+};
 export type Snapshot = {
+  notes: CommunityNote[];
   me: Profile;
   profiles: Profile[];
   posts: Post[];
@@ -78,6 +93,8 @@ export type Snapshot = {
   nextCursor: string | null;
 };
 export type Action =
+  | { type: 'propose-note'; post_id: string; body: string; sources: string[] }
+  | { type: 'review-note'; note_id: string; approve: boolean; reason: string }
   | { type: 'post'; body: string; kind: Post['kind']; media_path: string | null; alt: string }
   | { type: 'like'; post_id: string }
   | { type: 'comment'; post_id: string; body: string }

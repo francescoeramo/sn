@@ -85,6 +85,12 @@ export default function Privacy() {
         è manuale. Il moderatore può rimuovere il contenuto; per contestare una decisione usa il
         contatto del servizio quando la beta sarà aperta.
       </p>
+      <p>
+        Le Note della comunità aggiungono contesto e fonti ai post. Le proposte sono visibili al
+        loro autore e ai moderatori; diventano visibili a chi può leggere il post solo dopo
+        l’approvazione manuale. Ogni decisione include una motivazione. Le opinioni e il dibattito
+        politico sono ammessi.
+      </p>
       <h2>Costi della beta</h2>
       <p>
         Iscrizione e utilizzo sono gratuiti. Le quote limitano persone e upload. Non ci sono

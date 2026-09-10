@@ -1,6 +1,14 @@
 import { clearChatStore } from './chat-store';
 import type { Action, Snapshot, Profile } from '@/lib/core/types';
-import { isActive, LIMITS, postInput, messageInput, localMediaInfo } from '@/lib/core/rules';
+import {
+  isActive,
+  LIMITS,
+  postInput,
+  messageInput,
+  noteInput,
+  noteReviewInput,
+  localMediaInfo,
+} from '@/lib/core/rules';
 const uid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const ago = (minutes: number) => new Date(Date.now() - minutes * 60000).toISOString();
 const people: [string, string, string, string][] = [
@@ -21,6 +29,7 @@ export function seed(): Snapshot {
     created_at: ago(1500),
   }));
   return {
+    notes: [],
     me: profiles[0],
     profiles,
     posts: [
@@ -138,6 +147,7 @@ export async function loadDemo(): Promise<Snapshot> {
       let loaded: Snapshot;
       req.onsuccess = () => {
         const state: Snapshot = req.result ?? seed();
+        state.notes ??= [];
         state.messages = state.messages.filter((m) => isActive(m));
         state.posts = state.posts.filter((p) => isActive(p));
         loaded = state;
@@ -188,10 +198,54 @@ export async function clearDemo() {
 }
 export function applyDemo(source: Snapshot, action: Action): Snapshot {
   const s = structuredClone(source);
+  s.notes ??= [];
   const me = s.me.id;
   const now = new Date().toISOString();
   const id = crypto.randomUUID();
   switch (action.type) {
+    case 'propose-note': {
+      const value = noteInput.parse(action);
+      if (!s.posts.some((p) => p.id === value.post_id && isActive(p)))
+        throw new Error('Post non disponibile.');
+      if (
+        s.notes.some(
+          (n) => n.post_id === value.post_id && n.author_id === me && n.status === 'pending',
+        )
+      )
+        throw new Error('Hai già una nota in revisione su questo post.');
+      s.notes.unshift({
+        id,
+        ...value,
+        author_id: me,
+        status: 'pending',
+        review_reason: '',
+        reviewed_by: null,
+        reviewed_at: null,
+        created_at: now,
+      });
+      break;
+    }
+    case 'review-note': {
+      if (!s.isAdmin) throw new Error('Accesso negato.');
+      const value = noteReviewInput.parse(action);
+      const note = s.notes.find((n) => n.id === value.note_id);
+      if (!note || note.status !== 'pending')
+        throw new Error('Nota già esaminata o non disponibile.');
+      note.status = value.approve ? 'approved' : 'rejected';
+      note.review_reason = value.reason;
+      note.reviewed_by = me;
+      note.reviewed_at = now;
+      s.notifications.unshift({
+        id,
+        user_id: note.author_id,
+        actor_id: me,
+        kind: value.approve ? 'note_approved' : 'note_rejected',
+        post_id: note.post_id,
+        read: false,
+        created_at: now,
+      });
+      break;
+    }
     case 'post': {
       const media = action.media_path;
       if (media !== null) {
@@ -361,6 +415,7 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
   }
   s.posts = s.posts.filter((p) => isActive(p));
   s.messages = s.messages.filter((m) => isActive(m));
+  s.notes = s.notes.filter((n) => s.posts.some((p) => p.id === n.post_id));
   s.usage.bytes = s.posts
     .filter((p) => p.author_id === me)
     .reduce(

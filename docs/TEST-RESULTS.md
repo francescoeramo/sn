@@ -6,9 +6,9 @@ Data: 10 settembre 2026. Ambito: prime tre fasi del prompt aggiornato: feed, sto
 | ------------------- | ------------------------------------------------ |
 | `npm run lint`      | Superato                                         |
 | `npm run typecheck` | Superato                                         |
-| `npm test`          | 43 test superati, inclusi schema e RLS su PGlite |
+| `npm test`          | 45 test superati, inclusi schema e RLS su PGlite |
 | `npm run build`     | Superato                                         |
-| `npm run test:e2e`  | 28 test superati, desktop e mobile               |
+| `npm run test:e2e`  | 30 test superati, desktop e mobile               |
 
 I test browser verificano pubblicazione e persistenza nella demo, interazioni, ricerca, profilo, esportazione e messaggi. Per le storie coprono avanzamento automatico, pausa, pressione prolungata, navigazione, sequenze dello stesso autore, video e chiusura alla fine. Verificano inoltre l’assenza di conteggi pubblici dei like, il termine del feed, il rifiuto delle richieste API anonime e CSRF e la federazione chiusa.
 
@@ -21,3 +21,5 @@ Questi risultati non certificano Auth e Storage su Supabase cloud: il collaudo d
 La seconda fase aggiunge verifiche SQL sulle sei durate consentite, accesso agli audio, isolamento dai terzi e revoca dopo la scadenza. Le prove browser coprono invio di un allegato senza testo, anteprima, pulizia IndexedDB alla riapertura e blocco dell’invio senza follow reciproco.
 
 La terza fase verifica ECDH/HKDF/AES-GCM con più browser, chiavi private non esportabili, integrità di messaggi e allegati, scadenze autenticate e rifiuto dei nuovi messaggi in chiaro. Le prove browser verificano ciphertext in IndexedDB, decifratura dopo ricaricamento e blocco dell’invio quando cambia una chiave. La funzione di consegna è testata contro chiamate di estranei e revoca l’accesso al blob nella stessa transazione. Controllo visivo della nuova chat completato senza errori browser.
+
+Le Note della comunità sono testate nel database contro letture di estranei, proposte su post privati non accessibili, fonti non HTTPS e approvazioni senza privilegi. Il percorso browser copre proposta, stato in attesa, revisione motivata, pubblicazione della nota e conservazione del post originale dopo ricaricamento.

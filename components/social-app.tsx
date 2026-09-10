@@ -38,6 +38,7 @@ import { ChatConversation } from './chat-conversation';
 import { StoryPlayer } from './story-player';
 import { AuthScreen } from './auth-screen';
 import { Composer } from './composer';
+import { NotesReview } from './community-notes';
 import { PostCard } from './post-card';
 
 type View =
@@ -195,11 +196,15 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
       setNotice(
         action.type === 'post'
           ? 'Pubblicato.'
-          : action.type === 'report'
-            ? 'Segnalazione inviata.'
-            : action.type === 'profile'
-              ? 'Profilo aggiornato.'
-              : '',
+          : action.type === 'propose-note'
+            ? 'Nota inviata alla revisione.'
+            : action.type === 'review-note'
+              ? 'Decisione salvata.'
+              : action.type === 'report'
+                ? 'Segnalazione inviata.'
+                : action.type === 'profile'
+                  ? 'Profilo aggiornato.'
+                  : '',
       );
       return true;
     } catch (error) {
@@ -773,15 +778,19 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                           >
                             {actor?.display_name ?? 'Utente'}
                           </button>{' '}
-                          {n.kind === 'likes'
-                            ? 'ha messo mi piace al tuo post.'
-                            : n.kind === 'comments'
-                              ? 'ha risposto al tuo post.'
-                              : n.kind === 'message'
-                                ? 'ti ha scritto.'
-                                : n.kind === 'request'
-                                  ? 'ha chiesto di seguirti.'
-                                  : 'ha iniziato a seguirti.'}
+                          {n.kind === 'note_approved'
+                            ? 'ha approvato la tua nota della comunità.'
+                            : n.kind === 'note_rejected'
+                              ? 'non ha approvato la tua nota. Il motivo è disponibile sotto il post.'
+                              : n.kind === 'likes'
+                                ? 'ha messo mi piace al tuo post.'
+                                : n.kind === 'comments'
+                                  ? 'ha risposto al tuo post.'
+                                  : n.kind === 'message'
+                                    ? 'ti ha scritto.'
+                                    : n.kind === 'request'
+                                      ? 'ha chiesto di seguirti.'
+                                      : 'ha iniziato a seguirti.'}
                         </p>
                         <small>{relativeTime(n.created_at)}</small>
                         {pending && (
@@ -814,6 +823,17 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
             )}
             {view === 'settings' && (
               <>
+                {state.isAdmin && (
+                  <section className="panel">
+                    <h2>Moderazione</h2>
+                    <p className="muted">
+                      Leggi le segnalazioni e verifica le note proposte dalla comunità.
+                    </p>
+                    <button className="secondary" onClick={() => navigate('moderation')}>
+                      Apri moderazione
+                    </button>
+                  </section>
+                )}
                 <section className="panel">
                   <h2>Come ti presenti</h2>
                   <form
@@ -942,6 +962,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
             )}
             {view === 'moderation' && (
               <section className="panel">
+                <NotesReview state={state} onAction={act} />
                 <h2>Segnalazioni da leggere</h2>
                 <p className="muted">
                   La beta usa moderazione manuale. Le decisioni automatiche potranno essere aggiunte

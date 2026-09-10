@@ -378,6 +378,72 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
     );
     expect(await asUser(bob, "select * from public.posts where kind='story'")).toHaveLength(0);
   });
+  it('le note rispettano la privacy del post e solo un moderatore può pubblicarle', async () => {
+    const [{ id: post }] = await asUser<{ id: string }>(
+      alice,
+      'select id from public.posts where author_id=$1',
+      [alice],
+    );
+    await expect(
+      asUser(
+        eve,
+        'insert into public.community_notes(post_id,author_id,body,sources) values($1,$2,$3,$4)',
+        [post, eve, 'Nota su un post privato non accessibile.', ['https://example.org/fonte']],
+      ),
+    ).rejects.toThrow('Accesso negato');
+    await expect(
+      asUser(
+        bob,
+        'insert into public.community_notes(post_id,author_id,body,sources) values($1,$2,$3,$4)',
+        [post, bob, 'Una fonte non sicura non va accettata.', ['javascript:alert(1)']],
+      ),
+    ).rejects.toThrow('HTTPS');
+    await asUser(
+      bob,
+      'insert into public.community_notes(post_id,author_id,body,sources) values($1,$2,$3,$4)',
+      [
+        post,
+        bob,
+        'La fonte aggiunge contesto a questa affermazione.',
+        ['https://example.org/fonte'],
+      ],
+    );
+    const [{ id }] = await asUser<{ id: string }>(
+      bob,
+      'select id from public.community_notes where post_id=$1',
+      [post],
+    );
+    expect(await asUser(alice, 'select * from public.community_notes')).toHaveLength(0);
+    await expect(
+      asUser(bob, 'select public.review_community_note($1,true,$2)', [
+        id,
+        'Fonte controllata e coerente.',
+      ]),
+    ).rejects.toThrow('Accesso negato');
+    await expect(
+      asUser(bob, "update public.community_notes set status='approved' where id=$1", [id]),
+    ).rejects.toThrow('permission denied');
+    await db.query('insert into private.admins(user_id) values($1)', [eve]);
+    expect(
+      await asUser(eve, 'select * from public.community_notes where id=$1', [id]),
+    ).toHaveLength(1);
+    await expect(
+      asUser(eve, 'select public.review_community_note($1,true,$2)', [id, 'ok']),
+    ).rejects.toThrow('Motiva');
+    await asUser(eve, 'select public.review_community_note($1,true,$2)', [
+      id,
+      'Fonte verificata, aggiunge contesto.',
+    ]);
+    expect(
+      await asUser(alice, "select * from public.community_notes where status='approved'"),
+    ).toHaveLength(1);
+    expect(await asUser(alice, 'select * from public.posts where id=$1', [post])).toHaveLength(1);
+    await db.query('delete from private.admins where user_id=$1', [eve]);
+    expect(await asUser(eve, 'select * from public.community_notes')).toHaveLength(0);
+    expect(
+      await asUser(bob, "select * from public.notifications where kind='note_approved'"),
+    ).toHaveLength(1);
+  });
   it('un blocco revoca visibilità e follow in entrambe le direzioni', async () => {
     await asUser(alice, 'insert into public.blocks(blocker_id,blocked_id) values($1,$2)', [
       alice,
