@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import {
   Heart,
+  Bookmark,
   MessageCircle,
   MoreHorizontal,
   Send,
@@ -29,6 +30,9 @@ export function PostCard({
   onTag: (tag: string) => void;
 }) {
   const [commentsOpen, setCommentsOpen] = useState(false);
+  const [revealed, setRevealed] = useState(false);
+  const concealed = Boolean(post.content_warning) && !revealed;
+  const saved = state.bookmarks.some((b) => b.user_id === state.me.id && b.post_id === post.id);
   const [menu, setMenu] = useState(false);
   const [report, setReport] = useState(false);
   const [remove, setRemove] = useState(false);
@@ -96,27 +100,47 @@ export function PostCard({
           )}
         </div>
       </header>
-      {post.body && (
-        <p className="post-body">
-          {post.body.split(/(#[\p{L}\p{N}_]+)/gu).map((part, i) =>
-            part.startsWith('#') ? (
-              <button className="hashtag" key={i} onClick={() => onTag(part)}>
-                {part}
-              </button>
-            ) : (
-              part
-            ),
-          )}
-        </p>
+      {post.content_warning && (
+        <div className="content-warning">
+          <span>Avviso di contenuto</span>
+          <p>{post.content_warning}</p>
+          <button
+            className="secondary"
+            aria-expanded={!concealed}
+            aria-controls={`post-content-${post.id}`}
+            onClick={() => setRevealed(!revealed)}
+          >
+            {concealed ? 'Mostra contenuto' : 'Nascondi contenuto'}
+          </button>
+        </div>
       )}
-      <Media post={post} demo={demo} />
-      <PostNotes loadedNotes={post.notes} postId={post.id} state={state} onAction={act} />
+      <div id={`post-content-${post.id}`}>
+        {!concealed && (
+          <>
+            {post.body && (
+              <p className="post-body">
+                {post.body.split(/(#[\p{L}\p{N}_]+)/gu).map((part, i) =>
+                  part.startsWith('#') ? (
+                    <button className="hashtag" key={i} onClick={() => onTag(part)}>
+                      {part}
+                    </button>
+                  ) : (
+                    part
+                  ),
+                )}
+              </p>
+            )}
+            <Media post={post} demo={demo} />
+            <PostNotes loadedNotes={post.notes} postId={post.id} state={state} onAction={act} />
+          </>
+        )}
+      </div>
       <div className="post-actions">
         <button
           className={liked ? 'liked' : ''}
           aria-label={liked ? 'Togli mi piace' : 'Mi piace'}
           aria-pressed={liked}
-          disabled={pending}
+          disabled={pending || concealed}
           onClick={() => act({ type: 'like', post_id: post.id })}
         >
           <Heart size={22} fill={liked ? 'currentColor' : 'none'} />
@@ -126,9 +150,20 @@ export function PostCard({
           onClick={() => setCommentsOpen(!commentsOpen)}
           aria-expanded={commentsOpen}
           aria-label="Commenti"
+          disabled={concealed}
         >
           <MessageCircle size={22} />
           <span>{comments.length || 'Commenta'}</span>
+        </button>
+        <button
+          className={saved ? 'saved' : ''}
+          aria-label={saved ? 'Rimuovi dai salvati' : 'Salva post'}
+          aria-pressed={saved}
+          disabled={pending}
+          onClick={() => act({ type: 'bookmark', post_id: post.id, saved: !saved })}
+        >
+          <Bookmark size={21} fill={saved ? 'currentColor' : 'none'} />
+          <span>{saved ? 'Salvato' : 'Salva'}</span>
         </button>
         <span className="post-date">
           {new Date(post.created_at).toLocaleDateString('it-IT', {
@@ -146,7 +181,7 @@ export function PostCard({
           </p>
         </details>
       )}
-      {comments.length > 0 && !commentsOpen && (
+      {!concealed && comments.length > 0 && !commentsOpen && (
         <button className="comment-preview" onClick={() => setCommentsOpen(true)}>
           <strong>
             {state.profiles
@@ -156,7 +191,7 @@ export function PostCard({
           {comments[0].body}
         </button>
       )}
-      {commentsOpen && (
+      {!concealed && commentsOpen && (
         <section className="comments" aria-label="Commenti del post">
           {comments.map((c) => (
             <div className="comment" key={c.id}>

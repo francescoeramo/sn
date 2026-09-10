@@ -7,8 +7,53 @@ import {
   encryptedMessageInput,
   noteInput,
   noteReviewInput,
+  bookmarkInput,
 } from '@/lib/core/rules';
 import { identity, checked, adminDatabase, ApiError } from './supabase';
+import type { Bookmark, Post, SavedCursor, SavedPage } from '@/lib/core/types';
+
+type Database = Awaited<ReturnType<typeof identity>>['db'];
+async function bookmarksFor(db: Database): Promise<Bookmark[]> {
+  const rows: Bookmark[] = [];
+  for (let offset = 0; ; offset += 1000) {
+    const batch = checked(
+      await db
+        .from('bookmarks')
+        .select('*')
+        .order('post_id')
+        .range(offset, offset + 999),
+    ) as Bookmark[];
+    rows.push(...batch);
+    if (batch.length < 1000) return rows;
+  }
+}
+async function savedPageFor(db: Database, before?: SavedCursor): Promise<SavedPage> {
+  let query = db
+    .from('bookmarks')
+    .select('created_at,post_id,post:posts!inner(*,notes:community_notes(*))')
+    .order('created_at', { ascending: false })
+    .order('post_id', { ascending: false })
+    .limit(40);
+  if (before)
+    query = query.or(
+      `created_at.lt.${before.created_at},and(created_at.eq.${before.created_at},post_id.lt.${before.post_id})`,
+    );
+  const rows = checked(await query) as unknown as {
+    created_at: string;
+    post_id: string;
+    post: Post;
+  }[];
+  const last = rows.at(-1);
+  return {
+    posts: rows.map((r) => r.post),
+    nextCursor:
+      rows.length === 40 && last ? { created_at: last.created_at, post_id: last.post_id } : null,
+  };
+}
+export async function savedPage(before?: SavedCursor) {
+  const { db } = await identity();
+  return savedPageFor(db, before);
+}
 
 export async function snapshot() {
   const { db, user, profile } = await identity();
@@ -56,7 +101,10 @@ export async function snapshot() {
     usage,
     notes,
   ] = results.map((r) => checked(r));
+  const [bookmarks, saved] = await Promise.all([bookmarksFor(db), savedPageFor(db)]);
   return {
+    bookmarks,
+    saved,
     notes,
     me: profile,
     profiles,
@@ -104,6 +152,20 @@ export async function mutate(input: unknown) {
     case 'post': {
       const v = postInput.parse(obj);
       checked(await db.from('posts').insert({ ...v, author_id: user.id }));
+      break;
+    }
+    case 'bookmark': {
+      const value = bookmarkInput.parse(obj);
+      checked(
+        value.saved
+          ? await db
+              .from('bookmarks')
+              .upsert(
+                { user_id: user.id, post_id: value.post_id },
+                { onConflict: 'user_id,post_id', ignoreDuplicates: true },
+              )
+          : await db.from('bookmarks').delete().eq('user_id', user.id).eq('post_id', value.post_id),
+      );
       break;
     }
     case 'like': {
@@ -238,6 +300,7 @@ export async function exportData() {
     ['posts', 'author_id'],
     ['comments', 'author_id'],
     ['likes', 'user_id'],
+    ['bookmarks', 'user_id'],
     ['media_assets', 'owner_id'],
     ['notifications', 'user_id'],
     ['reports', 'reporter_id'],

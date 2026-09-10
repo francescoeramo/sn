@@ -9,9 +9,10 @@ import {
   chatFileKind,
   userId,
   publicDeviceInput,
+  savedCursorInput,
 } from '@/lib/core/rules';
 import { database, identity, checked, adminDatabase, ApiError } from '@/lib/server/supabase';
-import { snapshot, mutate, exportData, deleteAccount } from '@/lib/server/social';
+import { snapshot, mutate, exportData, deleteAccount, savedPage } from '@/lib/server/social';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -48,6 +49,15 @@ export async function GET(request: NextRequest, { params }: Context) {
   try {
     const route = (await params).path.join('/');
     if (route === 'bootstrap') return json(await snapshot());
+    if (route === 'saved') {
+      const before = request.nextUrl.searchParams.get('before');
+      const postId = request.nextUrl.searchParams.get('post_id');
+      const cursor =
+        before !== null || postId !== null
+          ? savedCursorInput.parse({ created_at: before, post_id: postId })
+          : undefined;
+      return json(await savedPage(cursor));
+    }
     if (route === 'posts') {
       const { db } = await identity();
       const before = z.iso

@@ -10,12 +10,18 @@ export const userId = z.string().uuid();
 export const postInput = z
   .object({
     body: z.string().trim().max(2200),
+    content_warning: z.string().trim().max(160).default(''),
     kind: z.enum(['post', 'story', 'reel']),
     media_path: z.string().max(200).nullable(),
     alt: z.string().trim().max(300),
   })
   .refine((v) => v.body.length > 0 || v.media_path, 'Scrivi qualcosa o allega un file.')
   .refine((v) => v.kind === 'post' || v.media_path, 'Storie e reel richiedono un file.');
+export const bookmarkInput = z.object({ post_id: userId, saved: z.boolean() });
+export const savedCursorInput = z.object({
+  created_at: z.iso.datetime({ offset: true }),
+  post_id: userId,
+});
 export const EPHEMERAL_OPTIONS = [
   { label: '1 ora', seconds: 3600 },
   { label: '3 ore', seconds: 10800 },

@@ -9,6 +9,7 @@ export type Profile = {
   created_at: string;
 };
 export type Post = {
+  content_warning?: string;
   notes?: CommunityNote[];
   id: string;
   author_id: string;
@@ -70,7 +71,12 @@ export type CommunityNote = {
   reviewed_at: string | null;
   created_at: string;
 };
+export type Bookmark = { user_id: string; post_id: string; created_at: string };
+export type SavedCursor = { created_at: string; post_id: string };
+export type SavedPage = { posts: Post[]; nextCursor: SavedCursor | null };
 export type Snapshot = {
+  bookmarks: Bookmark[];
+  saved: SavedPage;
   notes: CommunityNote[];
   me: Profile;
   profiles: Profile[];
@@ -95,7 +101,15 @@ export type Snapshot = {
 export type Action =
   | { type: 'propose-note'; post_id: string; body: string; sources: string[] }
   | { type: 'review-note'; note_id: string; approve: boolean; reason: string }
-  | { type: 'post'; body: string; kind: Post['kind']; media_path: string | null; alt: string }
+  | {
+      type: 'post';
+      body: string;
+      kind: Post['kind'];
+      media_path: string | null;
+      alt: string;
+      content_warning?: string;
+    }
+  | { type: 'bookmark'; post_id: string; saved: boolean }
   | { type: 'like'; post_id: string }
   | { type: 'comment'; post_id: string; body: string }
   | { type: 'follow'; user_id: string }

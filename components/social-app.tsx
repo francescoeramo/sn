@@ -26,6 +26,7 @@ import {
   Users,
   Check,
   Ban,
+  Bookmark,
 } from 'lucide-react';
 import type { Action, Snapshot, Post } from '@/lib/core/types';
 import { LIMITS, isActive, hashtags, relativeTime } from '@/lib/core/rules';
@@ -93,6 +94,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
   const [loading, setLoading] = useState(configured);
   const [view, setView] = useState<View>('home');
   const [profileId, setProfileId] = useState<string | null>(null);
+  const [profileTab, setProfileTab] = useState<'posts' | 'saved'>('posts');
   const [filter, setFilter] = useState<'following' | 'all'>('following');
   const [query, setQuery] = useState('');
   const [composer, setComposer] = useState<Post['kind'] | null>(null);
@@ -194,17 +196,21 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
       if (demo) await saveDemo(next);
       setState(next);
       setNotice(
-        action.type === 'post'
-          ? 'Pubblicato.'
-          : action.type === 'propose-note'
-            ? 'Nota inviata alla revisione.'
-            : action.type === 'review-note'
-              ? 'Decisione salvata.'
-              : action.type === 'report'
-                ? 'Segnalazione inviata.'
-                : action.type === 'profile'
-                  ? 'Profilo aggiornato.'
-                  : '',
+        action.type === 'bookmark'
+          ? action.saved
+            ? 'Post salvato. Lo trovi nel tuo profilo, solo per te.'
+            : 'Post rimosso dai salvati.'
+          : action.type === 'post'
+            ? 'Pubblicato.'
+            : action.type === 'propose-note'
+              ? 'Nota inviata alla revisione.'
+              : action.type === 'review-note'
+                ? 'Decisione salvata.'
+                : action.type === 'report'
+                  ? 'Segnalazione inviata.'
+                  : action.type === 'profile'
+                    ? 'Profilo aggiornato.'
+                    : '',
       );
       return true;
     } catch (error) {
@@ -218,6 +224,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
   function navigate(next: View, id?: string) {
     setView(next);
     setProfileId(id ?? null);
+    setProfileTab('posts');
     setNotice('');
     window.scrollTo({ top: 0, behavior: 'instant' });
   }
@@ -263,18 +270,43 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
   );
   const focusProfile = profiles.find((p) => p.id === (profileId ?? me.id));
   const terms = query.trim().toLocaleLowerCase('it');
-  const feed = visiblePosts.filter(
-    (p) =>
-      p.kind !== 'story' &&
-      (view === 'reels'
-        ? p.kind === 'reel'
-        : view === 'profile'
-          ? p.author_id === focusProfile?.id
-          : view === 'search'
-            ? p.body.toLocaleLowerCase('it').includes(terms)
-            : filter === 'all' || p.author_id === me.id || followed.has(p.author_id)),
+  const showingSaved = view === 'profile' && focusProfile?.id === me.id && profileTab === 'saved';
+  const savedIds = new Set(
+    state.bookmarks.filter((b) => b.user_id === me.id).map((b) => b.post_id),
   );
-  const tags = [...new Set(visiblePosts.flatMap((p) => hashtags(p.body)))].slice(0, 4);
+  const savedPosts = demo
+    ? state.bookmarks
+        .filter((b) => b.user_id === me.id)
+        .flatMap((b) =>
+          visiblePosts.filter((p) => {
+            const author = profiles.find((a) => a.id === p.author_id);
+            return (
+              p.id === b.post_id &&
+              author &&
+              (!author.is_private || author.id === me.id || followed.has(author.id)) &&
+              !state.blocks.some(
+                (block) => block.blocker_id === author.id && block.blocked_id === me.id,
+              )
+            );
+          }),
+        )
+    : state.saved.posts.filter((p) => isActive(p, clock) && savedIds.has(p.id));
+  const feed = showingSaved
+    ? savedPosts.filter((p) => p.kind !== 'story')
+    : visiblePosts.filter(
+        (p) =>
+          p.kind !== 'story' &&
+          (view === 'reels'
+            ? p.kind === 'reel'
+            : view === 'profile'
+              ? p.author_id === focusProfile?.id
+              : view === 'search'
+                ? p.body.toLocaleLowerCase('it').includes(terms)
+                : filter === 'all' || p.author_id === me.id || followed.has(p.author_id)),
+      );
+  const tags = [
+    ...new Set(visiblePosts.filter((p) => !p.content_warning).flatMap((p) => hashtags(p.body))),
+  ].slice(0, 4);
   const potentialFriends = profiles
     .filter((p) => p.id !== me.id && !followed.has(p.id))
     .slice(0, 3);
@@ -373,6 +405,13 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
           <span className="beta-pill">
             <i /> BETA PRIVATA
           </span>
+          <button
+            className="mobile-settings icon-button"
+            aria-label="Il tuo profilo"
+            onClick={() => navigate('profile')}
+          >
+            <UserRound size={21} />
+          </button>
           <button
             className="mobile-settings icon-button"
             aria-label="Impostazioni"
@@ -590,6 +629,30 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                 </div>
               </section>
             )}
+            {view === 'profile' && focusProfile?.id === me.id && (
+              <>
+                <div className="profile-tabs" aria-label="Contenuti del tuo profilo">
+                  <button
+                    aria-pressed={profileTab === 'posts'}
+                    onClick={() => setProfileTab('posts')}
+                  >
+                    I tuoi post
+                  </button>
+                  <button
+                    aria-pressed={profileTab === 'saved'}
+                    onClick={() => setProfileTab('saved')}
+                  >
+                    <Bookmark size={17} /> Salvati
+                  </button>
+                </div>
+                {showingSaved && (
+                  <p className="saved-help">
+                    Solo tu puoi vedere questa raccolta. Un post non sarà più visibile qui se viene
+                    eliminato o se perdi l’accesso.
+                  </p>
+                )}
+              </>
+            )}
             {['home', 'search', 'profile', 'reels'].includes(view) && (
               <>
                 {feed.map((post) => (
@@ -606,14 +669,18 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                 {!feed.length && (
                   <Empty
                     title={
-                      view === 'reels'
-                        ? 'Il primo reel potrebbe essere tuo.'
-                        : view === 'search'
-                          ? 'Nessun post trovato.'
-                          : 'Qui c’è spazio per iniziare.'
+                      showingSaved
+                        ? 'Tieni da parte ciò che vuoi ritrovare.'
+                        : view === 'reels'
+                          ? 'Il primo reel potrebbe essere tuo.'
+                          : view === 'search'
+                            ? 'Nessun post trovato.'
+                            : 'Qui c’è spazio per iniziare.'
                     }
                   >
-                    {view === 'reels' ? (
+                    {showingSaved ? (
+                      <>Usa «Salva» sotto un post per ritrovarlo qui. La raccolta è privata.</>
+                    ) : view === 'reels' ? (
                       <>
                         Condividi un video breve, fino a 20 secondi.
                         <button className="secondary" onClick={() => setComposer('reel')}>
@@ -627,7 +694,47 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                     )}
                   </Empty>
                 )}
-                {state.nextCursor && (
+                {showingSaved && !demo && state.saved.nextCursor && (
+                  <button
+                    className="secondary full"
+                    disabled={busy}
+                    onClick={async () => {
+                      const cursor = state.saved.nextCursor!;
+                      setBusy(true);
+                      try {
+                        const page = await request(
+                          `saved?before=${encodeURIComponent(cursor.created_at)}&post_id=${cursor.post_id}`,
+                        );
+                        setState((s) =>
+                          s
+                            ? {
+                                ...s,
+                                saved: {
+                                  posts: [
+                                    ...new Map(
+                                      [...s.saved.posts, ...page.posts].map((p) => [p.id, p]),
+                                    ).values(),
+                                  ],
+                                  nextCursor: page.nextCursor,
+                                },
+                              }
+                            : s,
+                        );
+                      } catch (error) {
+                        setNotice(
+                          error instanceof Error
+                            ? error.message
+                            : 'Caricamento non riuscito. Riprova.',
+                        );
+                      } finally {
+                        setBusy(false);
+                      }
+                    }}
+                  >
+                    {busy ? 'Caricamento…' : 'Carica altri salvati'}
+                  </button>
+                )}
+                {!showingSaved && state.nextCursor && (
                   <button
                     className="secondary full"
                     disabled={busy}

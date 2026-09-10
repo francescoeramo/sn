@@ -6,6 +6,7 @@ import {
   postInput,
   messageInput,
   noteInput,
+  bookmarkInput,
   noteReviewInput,
   localMediaInfo,
 } from '@/lib/core/rules';
@@ -29,6 +30,8 @@ export function seed(): Snapshot {
     created_at: ago(1500),
   }));
   return {
+    bookmarks: [],
+    saved: { posts: [], nextCursor: null },
     notes: [],
     me: profiles[0],
     profiles,
@@ -148,6 +151,8 @@ export async function loadDemo(): Promise<Snapshot> {
       req.onsuccess = () => {
         const state: Snapshot = req.result ?? seed();
         state.notes ??= [];
+        state.bookmarks ??= [];
+        state.saved ??= { posts: [], nextCursor: null };
         state.messages = state.messages.filter((m) => isActive(m));
         state.posts = state.posts.filter((p) => isActive(p));
         loaded = state;
@@ -199,6 +204,8 @@ export async function clearDemo() {
 export function applyDemo(source: Snapshot, action: Action): Snapshot {
   const s = structuredClone(source);
   s.notes ??= [];
+  s.bookmarks ??= [];
+  s.saved ??= { posts: [], nextCursor: null };
   const me = s.me.id;
   const now = new Date().toISOString();
   const id = crypto.randomUUID();
@@ -280,6 +287,34 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
         created_at: now,
         expires_at: p.kind === 'story' ? new Date(Date.now() + 86400000).toISOString() : null,
       });
+      break;
+    }
+    case 'bookmark': {
+      const value = bookmarkInput.parse(action);
+      if (value.saved) {
+        const post = s.posts.find((p) => p.id === value.post_id);
+        const author = s.profiles.find((p) => p.id === post?.author_id);
+        const blocked = s.blocks.some(
+          (b) =>
+            (b.blocker_id === me && b.blocked_id === post?.author_id) ||
+            (b.blocked_id === me && b.blocker_id === post?.author_id),
+        );
+        const follows = s.follows.some(
+          (f) => f.follower_id === me && f.following_id === post?.author_id && f.accepted,
+        );
+        if (
+          !post ||
+          !author ||
+          !isActive(post) ||
+          post.kind === 'story' ||
+          blocked ||
+          (author.is_private && author.id !== me && !follows)
+        )
+          throw new Error('Post non disponibile.');
+        if (!s.bookmarks.some((b) => b.user_id === me && b.post_id === post.id))
+          s.bookmarks.unshift({ user_id: me, post_id: post.id, created_at: now });
+      } else
+        s.bookmarks = s.bookmarks.filter((b) => b.user_id !== me || b.post_id !== value.post_id);
       break;
     }
     case 'like': {
@@ -432,5 +467,6 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
     );
   s.usage.total_bytes = s.usage.bytes;
   if (s.usage.bytes > LIMITS.user) throw new Error('Spazio disponibile esaurito.');
+  s.bookmarks = s.bookmarks.filter((b) => s.posts.some((p) => p.id === b.post_id));
   return s;
 }

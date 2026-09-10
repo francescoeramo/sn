@@ -23,3 +23,13 @@ La seconda fase aggiunge verifiche SQL sulle sei durate consentite, accesso agli
 La terza fase verifica ECDH/HKDF/AES-GCM con più browser, chiavi private non esportabili, integrità di messaggi e allegati, scadenze autenticate e rifiuto dei nuovi messaggi in chiaro. Le prove browser verificano ciphertext in IndexedDB, decifratura dopo ricaricamento e blocco dell’invio quando cambia una chiave. La funzione di consegna è testata contro chiamate di estranei e revoca l’accesso al blob nella stessa transazione. Controllo visivo della nuova chat completato senza errori browser.
 
 Le Note della comunità sono testate nel database contro letture di estranei, proposte su post privati non accessibili, fonti non HTTPS e approvazioni senza privilegi. Il percorso browser copre proposta, stato in attesa, revisione motivata, pubblicazione della nota e conservazione del post originale dopo ricaricamento.
+
+## 10 settembre 2026 — salvati e avvisi
+
+- Lint e TypeScript: superati.
+- Unitari e SQL PGlite: 51 test superati, incluse policy dei salvati, revoca per blocco/scadenza, isolamento dai moderatori e vincoli degli avvisi.
+- Build produzione Turbopack: superata fuori sandbox dopo rinnovo della cache che conservava un errore di apertura porta.
+- Audit npm: zero vulnerabilità.
+- Browser: 34/36 superati al primo giro desktop/mobile. I due test delle storie avevano un'aspettativa errata sulla chiusura dopo «Salta»: corretto il test per il passaggio all'autore successivo, entrambi superati al secondo giro. Nuovi test di salvataggi e avvisi dei post riconfermati (4/4).
+- Controllo visivo desktop/mobile effettuato. Il detector segnala due convenzioni preesistenti (font Arial e bordo laterale nelle note); nessun nuovo finding introdotto da queste funzioni.
+- Nessuna migrazione cloud o verifica Auth/Storage remota eseguita: applicare tutte le migrazioni sul progetto SN dedicato e completare il collaudo prima degli inviti reali. Le policy seguono la documentazione [RLS di Supabase](https://supabase.com/docs/guides/database/postgres/row-level-security).

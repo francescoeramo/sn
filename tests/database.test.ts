@@ -444,6 +444,139 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
       await asUser(bob, "select * from public.notifications where kind='note_approved'"),
     ).toHaveLength(1);
   });
+  it('i salvati sono privati anche per moderatori e non autorizzano post privati', async () => {
+    const [{ id }] = await asUser<{ id: string }>(
+      alice,
+      'select id from public.posts where author_id=$1 limit 1',
+      [alice],
+    );
+    const before = await asUser(alice, 'select * from public.notifications');
+    await asUser(
+      bob,
+      'insert into public.bookmarks(user_id,post_id) values($1,$2) on conflict do nothing',
+      [bob, id],
+    );
+    await asUser(
+      bob,
+      'insert into public.bookmarks(user_id,post_id) values($1,$2) on conflict do nothing',
+      [bob, id],
+    );
+    expect(await asUser(bob, 'select * from public.bookmarks')).toHaveLength(1);
+    expect(await asUser(alice, 'select * from public.bookmarks')).toHaveLength(0);
+    expect(await asUser(alice, 'select * from public.notifications')).toEqual(before);
+    await db.query('insert into private.admins(user_id) values($1)', [eve]);
+    try {
+      expect(await asUser(eve, 'select * from public.bookmarks')).toHaveLength(0);
+      await expect(
+        asUser(eve, 'insert into public.bookmarks(user_id,post_id) values($1,$2)', [eve, id]),
+      ).rejects.toThrow('row-level security');
+      await expect(
+        asUser(alice, 'insert into public.bookmarks(user_id,post_id) values($1,$2)', [bob, id]),
+      ).rejects.toThrow('row-level security');
+      expect(await asUser(eve, 'delete from public.bookmarks returning post_id')).toHaveLength(0);
+      await expect(asUser(bob, 'update public.bookmarks set user_id=$1', [eve])).rejects.toThrow(
+        'permission denied',
+      );
+      await db.exec('set role anon');
+      try {
+        await expect(db.query('select * from public.bookmarks')).rejects.toThrow(
+          'permission denied',
+        );
+      } finally {
+        await db.exec('reset role');
+      }
+    } finally {
+      await db.query('delete from private.admins where user_id=$1', [eve]);
+    }
+  });
+  it('gli avvisi sono persistenti, limitati e non cambiano la privacy', async () => {
+    await asUser(
+      alice,
+      "insert into public.posts(author_id,body,content_warning) values($1,'Finale del film','Spoiler')",
+      [alice],
+    );
+    const rows = await asUser<{ id: string; content_warning: string }>(
+      alice,
+      "select id,content_warning from public.posts where body='Finale del film'",
+    );
+    expect(rows[0].content_warning).toBe('Spoiler');
+    expect(await asUser(eve, 'select * from public.posts where id=$1', [rows[0].id])).toHaveLength(
+      0,
+    );
+    await expect(
+      asUser(alice, 'insert into public.posts(author_id,body,content_warning) values($1,$2,$3)', [
+        alice,
+        'Test',
+        'x'.repeat(161),
+      ]),
+    ).rejects.toThrow('check constraint');
+    await asUser(alice, 'insert into public.bookmarks(user_id,post_id) values($1,$2)', [
+      alice,
+      rows[0].id,
+    ]);
+    await asUser(alice, 'delete from public.posts where id=$1', [rows[0].id]);
+    expect(
+      (await db.query('select * from public.bookmarks where post_id=$1', [rows[0].id])).rows,
+    ).toHaveLength(0);
+  });
+  it('non salva storie e contenuti scaduti e conserva un ordine stabile a parità di data', async () => {
+    const ids = [crypto.randomUUID(), crypto.randomUUID(), crypto.randomUUID()].sort().reverse();
+    // Fixtures created by SQL owner; insert guards require authenticated author identity.
+    await db.exec(`select set_config('request.jwt.claim.sub','${alice}',false)`);
+    for (const id of ids) {
+      await db.query("insert into public.posts(id,author_id,body) values($1,$2,'Archivio')", [
+        id,
+        alice,
+      ]);
+      await asUser(alice, 'insert into public.bookmarks(user_id,post_id) values($1,$2)', [
+        alice,
+        id,
+      ]);
+    }
+    await db.query(
+      "update public.bookmarks set created_at='2026-01-01' where post_id=any($1::uuid[])",
+      [ids],
+    );
+    const first = await asUser<{ post_id: string }>(
+      alice,
+      'select post_id from public.bookmarks where post_id=any($1::uuid[]) order by created_at desc,post_id desc limit 2',
+      [ids],
+    );
+    const next = await asUser<{ post_id: string }>(
+      alice,
+      "select post_id from public.bookmarks where post_id=any($1::uuid[]) and (created_at,post_id)<('2026-01-01'::timestamptz,$2::uuid) order by created_at desc,post_id desc",
+      [ids, first[1].post_id],
+    );
+    expect([...first, ...next].map((row) => row.post_id)).toEqual(ids);
+    await db.query("update public.posts set expires_at=now()-interval '1 second' where id=$1", [
+      ids[0],
+    ]);
+    expect(
+      await asUser(alice, 'select * from public.bookmarks where post_id=$1', [ids[0]]),
+    ).toHaveLength(0);
+    await expect(
+      asUser(
+        alice,
+        'insert into public.bookmarks(user_id,post_id) values($1,$2) on conflict do nothing',
+        [alice, ids[0]],
+      ),
+    ).rejects.toThrow('row-level security');
+    await asUser(alice, 'delete from public.bookmarks where post_id=$1', [ids[1]]);
+    const path = `${alice}/${crypto.randomUUID()}`;
+    await asUser(
+      alice,
+      'insert into public.media_assets(path,owner_id,bytes,mime) values($1,$2,10,$3)',
+      [path, alice, 'image/png'],
+    );
+    await db.query("update public.posts set kind='story',media_path=$2 where id=$1", [
+      ids[1],
+      path,
+    ]);
+    await expect(
+      asUser(alice, 'insert into public.bookmarks(user_id,post_id) values($1,$2)', [alice, ids[1]]),
+    ).rejects.toThrow('row-level security');
+    await db.query('delete from public.posts where id=any($1::uuid[])', [ids]);
+  });
   it('un blocco revoca visibilità e follow in entrambe le direzioni', async () => {
     await asUser(alice, 'insert into public.blocks(blocker_id,blocked_id) values($1,$2)', [
       alice,
@@ -453,6 +586,7 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
       await asUser(bob, 'select * from public.posts where author_id=$1', [alice]),
     ).toHaveLength(0);
     expect(await asUser(bob, 'select * from public.follows')).toHaveLength(0);
+    expect(await asUser(bob, 'select * from public.bookmarks')).toHaveLength(0);
     await expect(
       asUser(
         bob,

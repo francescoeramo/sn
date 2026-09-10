@@ -89,9 +89,11 @@ function StoryFrame({
   const [muted, setMuted] = useState(true);
   const [error, setError] = useState('');
   const [blocked, setBlocked] = useState(false);
+  const [revealed, setRevealed] = useState(false);
+  const concealed = Boolean(post.content_warning) && !revealed;
   const isVideo = post.media_type?.startsWith('video/') ?? false;
   const src = demo ? post.media_path! : `/api/media?path=${encodeURIComponent(post.media_path!)}`;
-  const stopped = paused || holding || hidden || blocked || !ready || Boolean(error);
+  const stopped = concealed || paused || holding || hidden || blocked || !ready || Boolean(error);
   const advance = useEffectEvent(() => {
     if (!completed.current) {
       completed.current = true;
@@ -153,6 +155,19 @@ function StoryFrame({
     else void element.play().catch(() => setBlocked(true));
   }, [stopped]);
 
+  if (concealed)
+    return (
+      <section className="content-warning story-warning" aria-label="Avviso della storia">
+        <span>Avviso di contenuto</span>
+        <p>{post.content_warning}</p>
+        <button className="primary" onClick={() => setRevealed(true)}>
+          Mostra storia
+        </button>
+        <button className="text-button" onClick={onNext}>
+          Salta questa storia
+        </button>
+      </section>
+    );
   const navigate = (direction: 'previous' | 'next') => {
     if (direction === 'previous') onPrevious();
     else onNext();

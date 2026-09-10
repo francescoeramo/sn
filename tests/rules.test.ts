@@ -158,3 +158,43 @@ describe('Regole condivise', () => {
     ).toBe(false);
   });
 });
+
+describe('Salvataggi e avvisi nella demo', () => {
+  it('salva senza duplicati o notifiche, rimuove senza toccare il post', () => {
+    const state = seed();
+    const action = { type: 'bookmark' as const, post_id: state.posts[0].id, saved: true };
+    const saved = applyDemo(applyDemo(state, action), action);
+    expect(saved.bookmarks).toHaveLength(1);
+    expect(saved.notifications).toEqual(state.notifications);
+    const removed = applyDemo(saved, { ...action, saved: false });
+    expect(removed.bookmarks).toHaveLength(0);
+    expect(removed.posts).toEqual(state.posts);
+  });
+  it('nega salvataggi senza accesso, di storie e di post scaduti', () => {
+    const state = seed();
+    const action = { type: 'bookmark' as const, post_id: state.posts[0].id, saved: true };
+    state.profiles[1].is_private = true;
+    state.follows = [];
+    expect(() => applyDemo(state, action)).toThrow('non disponibile');
+    state.profiles[1].is_private = false;
+    state.posts[0].expires_at = new Date(0).toISOString();
+    expect(() => applyDemo(state, action)).toThrow('non disponibile');
+    expect(() =>
+      applyDemo(state, { ...action, post_id: state.posts.find((p) => p.kind === 'story')!.id }),
+    ).toThrow('non disponibile');
+  });
+  it('conserva l’avviso e respinge input troppo lunghi senza perdere la bozza', () => {
+    const state = seed();
+    const action = {
+      type: 'post' as const,
+      body: 'Il finale',
+      kind: 'post' as const,
+      media_path: null,
+      alt: '',
+      content_warning: ' Spoiler ',
+    };
+    expect(applyDemo(state, action).posts[0].content_warning).toBe('Spoiler');
+    expect(() => applyDemo(state, { ...action, content_warning: 'x'.repeat(161) })).toThrow();
+    expect(state.posts).toHaveLength(6);
+  });
+});

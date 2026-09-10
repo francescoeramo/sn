@@ -410,3 +410,108 @@ test('API: nessun accesso anonimo, CSRF respinto e federazione chiusa', async ({
   expect(page.headers()['content-security-policy']).toContain("'strict-dynamic'");
   expect(page.headers()['x-frame-options']).toBe('DENY');
 });
+
+test('salvati: raccolta privata nel profilo, persistenza e rimozione', async ({
+  page,
+}, testInfo) => {
+  await page.goto('/demo');
+  const post = page.locator('article').first();
+  await post.getByRole('button', { name: 'Salva post', exact: true }).click();
+  await expect(post.getByRole('button', { name: 'Rimuovi dai salvati' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await page.reload();
+  await page.getByRole('button', { name: 'Il tuo profilo', exact: true }).click();
+  await page.getByRole('button', { name: 'Salvati', exact: true }).click();
+  await expect(page.locator('article')).toHaveCount(1);
+  await expect(
+    page.getByText('Solo tu puoi vedere questa raccolta.', { exact: false }),
+  ).toBeVisible();
+  await page.screenshot({ path: `artifacts/saved-${testInfo.project.name}.png`, fullPage: true });
+  await page.getByRole('button', { name: 'Rimuovi dai salvati' }).click();
+  await expect(page.locator('article')).toHaveCount(0);
+  await expect(page.getByText('Tieni da parte ciò che vuoi ritrovare.')).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Rimuovi dai salvati' })).toHaveCount(0);
+  await page
+    .locator('article')
+    .first()
+    .getByRole('button', { name: /Giulia Rossi/ })
+    .click();
+  await expect(page.getByRole('button', { name: 'Salvati', exact: true })).toHaveCount(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+test('avviso: testo, media e commenti si aprono solo su richiesta', async ({ page }, testInfo) => {
+  await page.goto('/demo');
+  await page.getByRole('button', { name: 'Che cosa vuoi raccontare?' }).click();
+  await page.getByLabel('Testo del post').fill('Il finale è una sorpresa #finale');
+  await page.getByLabel('Avviso di contenuto (facoltativo)').fill('Spoiler sul film');
+  const png = await page.evaluate(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 8;
+    return canvas.toDataURL('image/png').split(',')[1];
+  });
+  await page.locator('input[type=file]').setInputFiles({
+    name: 'scena.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(png, 'base64'),
+  });
+  await page.getByLabel('Descrivi il contenuto').fill('La scena finale');
+  await page.getByRole('button', { name: 'Pubblica', exact: true }).click();
+  const post = page.locator('article').filter({ hasText: 'Spoiler sul film' });
+  await expect(post).toBeVisible();
+  await expect(post.getByText('Il finale è una sorpresa', { exact: false })).toHaveCount(0);
+  await expect(post.locator('img')).toHaveCount(0);
+  await expect(post.getByRole('button', { name: 'Commenti', exact: true })).toBeDisabled();
+  await page.screenshot({ path: `artifacts/warning-${testInfo.project.name}.png`, fullPage: true });
+  await post.getByRole('button', { name: 'Mostra contenuto' }).click();
+  await expect(post.getByAltText('La scena finale')).toBeVisible();
+  await post.getByRole('button', { name: 'Commenti', exact: true }).click();
+  await post.getByLabel('Scrivi un commento').fill('Una risposta con spoiler');
+  await post.getByRole('button', { name: 'Invia commento' }).click();
+  await post.getByRole('button', { name: 'Nascondi contenuto' }).click();
+  await expect(post.getByText('Una risposta con spoiler')).toHaveCount(0);
+  await expect(post.locator('img')).toHaveCount(0);
+  await page.reload();
+  await expect(post.getByRole('button', { name: 'Mostra contenuto' })).toHaveAttribute(
+    'aria-expanded',
+    'false',
+  );
+});
+
+test('avviso delle storie: nessun media o autoplay prima della scelta', async ({ page }) => {
+  await page.goto('/demo');
+  const png = await page.evaluate(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 8;
+    return canvas.toDataURL('image/png').split(',')[1];
+  });
+  await page.getByRole('button', { name: 'La tua storia', exact: true }).click();
+  await page.getByLabel('Testo del post').fill('Dettaglio da scoprire');
+  await page.getByLabel('Avviso di contenuto (facoltativo)').fill('Spoiler nella storia');
+  await page.locator('input[type=file]').setInputFiles({
+    name: 'storia.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(png, 'base64'),
+  });
+  await page.getByLabel('Descrivi il contenuto').fill('Immagine protetta da avviso');
+  await page.getByRole('button', { name: 'Pubblica', exact: true }).click();
+  await page.getByRole('button', { name: 'Francesco', exact: true }).click();
+  await expect(page.getByText('Spoiler nella storia')).toBeVisible();
+  await expect(page.getByRole('dialog').locator('img,video')).toHaveCount(0);
+  await page.clock.install();
+  await page.clock.runFor(6000);
+  await expect(page.getByText('Spoiler nella storia')).toBeVisible();
+  await page.getByRole('button', { name: 'Mostra storia' }).click();
+  await expect(page.getByAltText('Immagine protetta da avviso')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Francesco', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Mostra storia' })).toBeVisible();
+  await page.getByRole('button', { name: 'Salta questa storia' }).click();
+  await expect(
+    page.getByRole('dialog').getByRole('heading', { name: 'Giulia Rossi' }),
+  ).toBeVisible();
+  await expect(page.getByText('Spoiler nella storia')).toHaveCount(0);
+});

@@ -2,7 +2,7 @@
 
 Social generalista per Francesco e i suoi amici. Beta su invito, moderazione manuale, nessuna pubblicità attiva. L’app e la demo girano in locale senza servizi a pagamento.
 
-Il prompt aggiornato è in corso di implementazione incrementale. La prima fase aggiunge storie con avanzamento automatico, controlli di pausa e feed senza contatori pubblici di like. La seconda fase aggiunge foto, video, file audio e sei scadenze in chat, con revoca degli allegati scaduti. La terza fase cifra i nuovi messaggi e allegati con Web Crypto, conserva le chiavi private nei browser e offre conservazione sincronizzata o solo sul dispositivo dopo la consegna. Lo storico precedente resta in chiaro. Le Note della comunità permettono di proporre contesto con fonti HTTPS e pubblicarlo dopo una revisione manuale motivata. Le sponsorizzazioni restano da implementare. Limiti e verifiche del protocollo sono in [docs/CRITTOGRAFIA.md](docs/CRITTOGRAFIA.md).
+Il prompt aggiornato è in corso di implementazione incrementale. La prima fase aggiunge storie con avanzamento automatico, controlli di pausa e feed senza contatori pubblici di like. La seconda fase aggiunge foto, video, file audio e sei scadenze in chat, con revoca degli allegati scaduti. La terza fase cifra i nuovi messaggi e allegati con Web Crypto, conserva le chiavi private nei browser e offre conservazione sincronizzata o solo sul dispositivo dopo la consegna. Lo storico precedente resta in chiaro. Le Note della comunità permettono di proporre contesto con fonti HTTPS e pubblicarlo dopo una revisione manuale motivata. La direzione aggiornata esclude pubblicità e monetizzazione via ads. Limiti e verifiche del protocollo sono in [docs/CRITTOGRAFIA.md](docs/CRITTOGRAFIA.md).
 
 ## Provalo adesso
 
@@ -16,15 +16,25 @@ Apri **http://127.0.0.1:3000/demo**. Non servono chiavi API. Le modifiche della 
 
 ## Cosa c’è
 
-| Funzione            | Implementazione                                                                                                                          |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Feed e profili      | Post testuali, foto/video, feed cronologico, ricerca utenti/hashtag, profili pubblici nella community o privati                          |
-| Interazioni         | Like, commenti, richieste di follow, approvazione/rifiuto, blocchi, notifiche                                                            |
-| Storie e reel       | Storie con scadenza nel DB e nell’interfaccia, reel con player nativo, compressione immagini e tentativo di ricodifica video nel browser |
-| Messaggi            | 1:1 tra utenti che si seguono a vicenda; polling solo mentre la schermata è aperta; nessuna E2EE                                         |
-| Account e controllo | Supabase Auth, inviti monouso legati all’email, esportazione JSON, eliminazione account, segnalazioni e pannello moderazione             |
+| Funzione            | Implementazione                                                                                                                               |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Feed e profili      | Post testuali, foto/video, feed cronologico, ricerca utenti/hashtag, profili pubblici nella community o privati                               |
+| Interazioni         | Like, commenti, richieste di follow, approvazione/rifiuto, blocchi, notifiche                                                                 |
+| Storie e reel       | Storie con scadenza nel DB e nell’interfaccia, reel con player nativo, compressione immagini e tentativo di ricodifica video nel browser      |
+| Messaggi            | 1:1 tra contatti reciproci, nuovi messaggi e allegati cifrati con chiavi locali; storico precedente in chiaro; limiti in docs/CRITTOGRAFIA.md |
+| Account e controllo | Supabase Auth, inviti monouso legati all’email, esportazione JSON, eliminazione account, segnalazioni e pannello moderazione                  |
 
 Le API reali richiedono un progetto Supabase con la migrazione applicata. I test locali verificano le policy SQL; non sostituiscono il collaudo di Auth, Storage e invio email su un progetto completo. Vedi [stato delle verifiche](docs/VERIFICA.md) e [limiti della prima versione](docs/ARCHITETTURA.md).
+
+## Salvataggi e avvisi di contenuto
+
+Ogni post o reel può essere salvato nella raccolta privata **Il tuo profilo → Salvati**. Non vengono inviate notifiche agli autori. La raccolta carica manualmente i risultati successivi e rispetta sempre la visibilità del post: blocchi, scadenze ed eliminazioni revocano l'accesso anche ai salvati. Le storie non si salvano.
+
+Nel compositore puoi inserire un avviso facoltativo (massimo 160 caratteri). Testo, media e commenti rimangono nascosti fino a **Mostra contenuto**; le storie attendono **Mostra storia** prima di caricare il media e avviare il timer. L'avviso non modifica la privacy e non autorizza contenuti vietati dalle regole.
+
+Per le API reali applicare anche `supabase/migrations/20260910173013_bookmarks_and_content_warnings.sql` dopo le migrazioni precedenti. La migrazione è verificata localmente; non è stata applicata a un progetto cloud in questa sessione. La demo aggiorna automaticamente i dati locali esistenti.
+
+La direzione confermata è in [PRODUCT.md](PRODUCT.md); priorità, stato e dipendenze in [ROADMAP.md](docs/ROADMAP.md).
 
 ## Collegamento a Supabase
 
@@ -55,7 +65,7 @@ Per un’istanza Supabase locale completa servono Docker funzionante e i comandi
 
 Le quote sono inferiori allo storage Free indicato da Supabase al 9 settembre 2026. Il traffico e le dimensioni del database restano da monitorare nelle dashboard: i limiti dei file non garantiscono un tetto alla banda consumata dalle visualizzazioni. Non attivare upgrade, componenti a pagamento o addebiti automatici. Font di sistema, illustrazioni locali e nessun servizio AI a consumo.
 
-Nell’account collegato ci sono già due progetti Supabase attivi (`sport-odds-fra`, `fudit`); nessuno è stato modificato. Il piano Free consente due progetti attivi. Per pubblicare occorre rendere disponibile uno slot o scegliere un’altra infrastruttura gratuita.
+Nell’account collegato è presente il progetto Supabase `fudit`; nessuno è stato modificato. Per pubblicare occorre verificare la disponibilità dello slot o scegliere un’altra infrastruttura gratuita.
 
 Fonti consultate: [Supabase Free](https://supabase.com/pricing), [Vercel Hobby](https://vercel.com/docs/plans/hobby). I piani possono cambiare. Vercel Hobby è destinato all’uso personale non commerciale: rivalutare i termini prima di aggiungere donazioni o altre attività economiche.
 

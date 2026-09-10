@@ -29,3 +29,9 @@ Ogni membro può proporre una nota di 20–1200 caratteri con 1–3 fonti HTTPS 
 Il moderatore controlla post e fonti, approva o respinge e scrive una motivazione di almeno dieci caratteri. La decisione è atomica, viene notificata all’autore e non cancella né modifica il post. La nota approvata segue la visibilità del post, anche nella ricerca e nei caricamenti successivi. Una nota respinta resta consultabile dal suo autore con la motivazione; può proporne una nuova.
 
 Le fonti sono link aperti deliberatamente dall’utente: SN non le visita, non genera anteprime remote e non dichiara di averne verificato automaticamente il contenuto. Le opinioni e la discussione politica sono ammesse; il testo dell’interfaccia distingue il contesto fattuale dalle opinioni. La coda mostra al massimo 500 note recenti: la paginazione della coda resta necessaria prima di ampliare la beta.
+
+## Aggiornamento del 10 settembre 2026
+
+Il proprietario conferma assenza di pubblicità e di monetizzazione via ads: questo sostituisce la precedente predisposizione per sponsorizzazioni. Il riferimento corrente è `PRODUCT.md`; la roadmap distingue gli obiettivi dal lavoro già realizzato.
+
+Salvataggi privati per post/reel e avvisi di contenuto sono aggiunti alla demo e alle API, con una migrazione separata. Salvare non estende l'accesso al post e non genera notifiche. La raccolta appartiene al singolo utente, anche se moderatore. Gli avvisi nascondono testo, media e commenti fino alla scelta del lettore; quelli delle storie sospendono caricamento e autoplay prima della scelta. La federazione resta disattivata.

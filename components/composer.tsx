@@ -20,6 +20,7 @@ export function Composer({
   const [kind, setKind] = useState<Post['kind']>(initialKind);
   const [body, setBody] = useState('');
   const [alt, setAlt] = useState('');
+  const [warning, setWarning] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
@@ -72,7 +73,14 @@ export function Composer({
                 path = result.path;
               }
             }
-            const ok = await onPost({ type: 'post', body, kind, media_path: path, alt });
+            const ok = await onPost({
+              type: 'post',
+              body,
+              kind,
+              media_path: path,
+              alt,
+              content_warning: warning,
+            });
             if (ok) onClose();
             else setStatus('Il post non è stato pubblicato. La bozza è ancora qui.');
           } catch (error) {
@@ -95,6 +103,21 @@ export function Composer({
           rows={5}
         />
         <small className="counter">{body.length} / 2200</small>
+        <label>
+          Avviso di contenuto (facoltativo)
+          <input
+            value={warning}
+            onChange={(e) => setWarning(e.target.value)}
+            maxLength={160}
+            placeholder="Es. Spoiler sul finale"
+            aria-describedby="warning-help"
+            disabled={busy}
+          />
+          <small id="warning-help">
+            Testo e media restano nascosti finché chi legge sceglie di aprirli. L’avviso non cambia
+            la privacy del post né le regole della community.
+          </small>
+        </label>
         <label className="file-picker">
           <ImagePlus size={21} />
           <span>{file ? file.name : 'Aggiungi foto o video'}</span>
