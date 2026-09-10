@@ -104,3 +104,56 @@ export function localMediaInfo(media: string, chat = false) {
     throw new Error('Il file supera 3 MB o non è valido.');
   return { mime: match[1], bytes };
 }
+
+const b64 = (max: number) =>
+  z
+    .string()
+    .min(1)
+    .max(max)
+    .regex(/^[A-Za-z0-9+/]+={0,2}$/);
+export const publicDeviceInput = z.object({
+  id: userId,
+  user_id: userId,
+  label: z.string().min(1).max(60),
+  public_key: z
+    .object({
+      kty: z.literal('EC'),
+      crv: z.literal('P-256'),
+      x: z.string().length(43),
+      y: z.string().length(43),
+      ext: z.boolean().optional(),
+      key_ops: z.array(z.string()).max(0).optional(),
+    })
+    .strict(),
+});
+export const sealedInput = z.object({
+  version: z.literal(1),
+  context: z.object({
+    id: userId,
+    sender_id: userId,
+    recipient_id: userId,
+    expires_at: z.iso.datetime(),
+    retention: z.enum(['synced', 'device']),
+  }),
+  sender: publicDeviceInput,
+  salt: b64(44),
+  iv: b64(16),
+  ciphertext: b64(13000),
+  keys: z
+    .record(userId, z.object({ iv: b64(16), ciphertext: b64(64) }))
+    .refine((v) => Object.keys(v).length >= 2 && Object.keys(v).length <= 10),
+});
+export const encryptedMessageInput = z.object({
+  id: userId,
+  user_id: userId,
+  media_path: z.string().max(200).nullable().optional(),
+  encrypted: sealedInput,
+  ttl: z.union([
+    z.literal(3600),
+    z.literal(10800),
+    z.literal(86400),
+    z.literal(172800),
+    z.literal(604800),
+    z.literal(2592000),
+  ]),
+});

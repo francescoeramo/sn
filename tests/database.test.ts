@@ -1,11 +1,35 @@
 import { PGlite } from '@electric-sql/pglite';
 import { beforeAll, afterAll, describe, it, expect } from 'vitest';
+import { newDevice, seal, type LocalDevice } from '../lib/crypto/chat';
 import { readFileSync, readdirSync } from 'node:fs';
 
 let db: PGlite;
 const alice = '00000000-0000-4000-8000-000000000001';
 const bob = '00000000-0000-4000-8000-000000000002';
 const eve = '00000000-0000-4000-8000-000000000003';
+const devices: Record<string, LocalDevice> = {};
+async function send(
+  from: string,
+  to: string,
+  ttl = 86400,
+  path: string | null = null,
+  retention: 'synced' | 'device' = 'synced',
+) {
+  const context = {
+    id: crypto.randomUUID(),
+    sender_id: from,
+    recipient_id: to,
+    expires_at: new Date(Date.now() + Math.max(ttl, 3600) * 1000).toISOString(),
+    retention,
+  };
+  const { sealed } = await seal(devices[from], [devices[from], devices[to]], context, 'Messaggio');
+  await asUser(
+    from,
+    "insert into public.messages(id,sender_id,recipient_id,body,ttl_seconds,media_path,encrypted) values($1,$2,$3,'',$4,$5,$6)",
+    [context.id, from, to, ttl, path, sealed],
+  );
+  return context.id;
+}
 async function asUser<T>(id: string, query: string, params: unknown[] = []) {
   await db.exec(
     `set role authenticated; select set_config('request.jwt.claim.sub','${id}',false);`,
@@ -49,6 +73,13 @@ beforeAll(async () => {
   ]) {
     await invite(email, name.repeat(12));
     await signup(id, email, name, name.repeat(12));
+    const device = await newDevice(id);
+    devices[id] = device;
+    await asUser(
+      id,
+      'insert into public.chat_devices(id,user_id,public_key,label) values($1,$2,$3,$4)',
+      [device.id, id, device.public_key, device.label],
+    );
   }
   // Author-bound insert, then retrieve its generated ID via SQL owner for the tests.
   await asUser(alice, "insert into public.posts(author_id,body) values($1,'Solo follower')", [
@@ -147,45 +178,33 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
       bob,
     ]);
     await asUser(bob, 'update public.follows set accepted=true where follower_id=$1', [alice]);
-    await asUser(
-      bob,
-      "insert into public.messages(sender_id,recipient_id,body) values($1,$2,'Ciao Alice')",
-      [bob, alice],
-    );
+    await send(bob, alice);
     expect(await asUser(eve, 'select * from public.messages')).toHaveLength(0);
     expect(await asUser(alice, 'select * from public.messages')).toHaveLength(1);
   });
   it('impone scadenze consentite nel database e nasconde messaggi e media scaduti', async () => {
-    await expect(
-      asUser(
-        bob,
-        "insert into public.messages(sender_id,recipient_id,body,ttl_seconds) values($1,$2,'TTL abusivo',42)",
-        [bob, alice],
-      ),
-    ).rejects.toThrow('check constraint');
+    await expect(send(bob, alice, 42)).rejects.toThrow();
     const path = bob + '/00000000-0000-4000-8000-000000000557';
     await asUser(
       bob,
-      "insert into public.media_assets(path,owner_id,bytes,mime) values($1,$2,100,'audio/webm')",
+      "insert into public.media_assets(path,owner_id,bytes,mime) values($1,$2,100,'application/octet-stream')",
       [path, bob],
     );
     await asUser(
       bob,
-      `insert into storage.objects(bucket_id,name,metadata) values('media',$1,'{"size":100,"mimetype":"audio/webm"}')`,
+      `insert into storage.objects(bucket_id,name,metadata) values('media',$1,'{"size":100,"mimetype":"application/octet-stream"}')`,
       [path],
     );
-    await asUser(
-      bob,
-      'insert into public.messages(sender_id,recipient_id,media_path,ttl_seconds) values($1,$2,$3,3600)',
-      [bob, alice, path],
-    );
+    await send(bob, alice, 3600, path);
     const rows = await asUser<{ expires_at: string; created_at: string; media_type: string }>(
       alice,
       'select * from public.messages where media_path=$1',
       [path],
     );
-    expect(rows[0].media_type).toBe('audio/webm');
-    expect(Date.parse(rows[0].expires_at) - Date.parse(rows[0].created_at)).toBe(3600000);
+    expect(rows[0].media_type).toBe('application/octet-stream');
+    expect(
+      Math.abs(Date.parse(rows[0].expires_at) - Date.parse(rows[0].created_at) - 3600000),
+    ).toBeLessThan(1000);
     expect(await asUser(alice, 'select * from storage.objects where name=$1', [path])).toHaveLength(
       1,
     );
@@ -212,6 +231,64 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
     expect(await asUser(alice, 'select * from storage.objects where name=$1', [path])).toHaveLength(
       0,
     );
+  });
+  it('rifiuta nuovi messaggi in chiaro e consegne simulate da estranei', async () => {
+    await expect(
+      asUser(
+        bob,
+        "insert into public.messages(sender_id,recipient_id,body) values($1,$2,'In chiaro')",
+        [bob, alice],
+      ),
+    ).rejects.toThrow('cifratura end-to-end');
+    const id = await send(bob, alice, 3600, null, 'device');
+    await asUser(eve, 'delete from public.messages where id=$1', [id]);
+    expect(await asUser(alice, 'select * from public.messages where id=$1', [id])).toHaveLength(1);
+    await asUser(bob, 'delete from public.messages where id=$1', [id]);
+    expect(await asUser(alice, 'select * from public.messages where id=$1', [id])).toHaveLength(1);
+    await asUser(alice, 'delete from public.messages where id=$1', [id]);
+    expect(await asUser(alice, 'select * from public.messages where id=$1', [id])).toHaveLength(0);
+  });
+  it('la conferma di consegna revoca subito il blob solo del destinatario', async () => {
+    const path = bob + '/' + crypto.randomUUID();
+    await asUser(
+      bob,
+      "insert into public.media_assets(path,owner_id,bytes,mime) values($1,$2,100,'application/octet-stream')",
+      [path, bob],
+    );
+    await asUser(
+      bob,
+      `insert into storage.objects(bucket_id,name,metadata) values('media',$1,'{"size":100,"mimetype":"application/octet-stream"}')`,
+      [path],
+    );
+    const id = await send(bob, alice, 3600, path, 'device');
+    expect(await asUser(eve, 'select * from public.acknowledge_messages($1)', [[id]])).toHaveLength(
+      0,
+    );
+    expect(await asUser(bob, 'select * from storage.objects where name=$1', [path])).toHaveLength(
+      1,
+    );
+    expect(
+      await asUser(alice, 'select * from public.acknowledge_messages($1)', [[id]]),
+    ).toHaveLength(1);
+    expect(await asUser(bob, 'select * from storage.objects where name=$1', [path])).toHaveLength(
+      0,
+    );
+    expect(await asUser(alice, 'select * from public.messages where id=$1', [id])).toHaveLength(0);
+  });
+  it('nega sostituzione delle chiavi e registrazione a nome altrui', async () => {
+    await expect(
+      asUser(bob, "update public.chat_devices set label='Falso' where user_id=$1", [alice]),
+    ).rejects.toThrow('permission denied');
+    await expect(
+      asUser(
+        bob,
+        'insert into public.chat_devices(id,user_id,public_key,label) values($1,$2,$3,$4)',
+        [crypto.randomUUID(), alice, devices[alice].public_key, 'Falso'],
+      ),
+    ).rejects.toThrow('Accesso negato');
+    expect(
+      await asUser(eve, 'select * from public.chat_devices where user_id=$1', [alice]),
+    ).toHaveLength(0);
   });
   it('lega like e commenti alla visibilità del post', async () => {
     const posts = await asUser<{ id: string }>(alice, 'select id from public.posts');

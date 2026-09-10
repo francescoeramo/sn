@@ -4,6 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 import { Clock3, Paperclip, Send, X } from 'lucide-react';
 import type { Action, Message, Profile } from '@/lib/core/types';
 import { EPHEMERAL_OPTIONS, isActive, relativeTime } from '@/lib/core/rules';
+import { seal } from '@/lib/crypto/chat';
+import { prepareSession, readConversation, type DecryptedMessage } from '@/lib/client/chat-session';
+import { rememberDevices, keepMessages } from '@/lib/client/chat-store';
 import { asDataURL, prepareChatMedia } from '@/lib/client/media';
 import { Avatar, Empty } from './primitives';
 
@@ -22,6 +25,10 @@ export function ChatConversation({
   allowed: boolean;
   onSend: (action: Action) => Promise<boolean>;
 }) {
+  const [session, setSession] = useState<Awaited<ReturnType<typeof prepareSession>> | null>(null);
+  const [decoded, setDecoded] = useState<DecryptedMessage[]>([]);
+  const [keyError, setKeyError] = useState('');
+  const [retention, setRetention] = useState<'synced' | 'device'>('synced');
   const [body, setBody] = useState('');
   const [ttl, setTtl] = useState(86400);
   const [file, setFile] = useState<File | null>(null);
@@ -42,7 +49,34 @@ export function ChatConversation({
     },
     [preview],
   );
-  const visible = messages
+  useEffect(() => {
+    let cancelled = false;
+    prepareSession(me.id, person.id, demo)
+      .then((value) => {
+        if (!cancelled) setSession(value);
+      })
+      .catch((error) => {
+        if (!cancelled) setKeyError(error.message);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [me.id, person.id, demo]);
+  useEffect(() => {
+    if (!session) return;
+    let cancelled = false;
+    readConversation(session.device, person.id, messages, demo)
+      .then((value) => {
+        if (!cancelled) setDecoded(value);
+      })
+      .catch((error) => {
+        if (!cancelled) setKeyError(error.message);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [session, person.id, messages, demo]);
+  const visible = decoded
     .filter((m) => isActive(m, now))
     .sort((a, b) => a.created_at.localeCompare(b.created_at));
   const lastId = visible.at(-1)?.id;
@@ -72,7 +106,7 @@ export function ChatConversation({
         )}
         {visible.map((m) => {
           const src = m.media_path
-            ? demo
+            ? demo || !!m.encrypted
               ? m.media_path
               : `/api/media?path=${encodeURIComponent(m.media_path)}`
             : '';
@@ -94,7 +128,8 @@ export function ChatConversation({
                 ) : (
                   <Image src={src} alt="Immagine nella chat" width={480} height={360} unoptimized />
                 ))}
-              {m.body && <p>{m.body}</p>}
+              {m.warning ? <p role="status">{m.warning}</p> : m.body && <p>{m.body}</p>}
+              {!m.encrypted && <small className="muted">Storico non cifrato</small>}
               <div className="chat-meta">
                 <time dateTime={m.created_at}>{relativeTime(m.created_at)}</time>
                 {m.expires_at && (
@@ -110,41 +145,116 @@ export function ChatConversation({
           );
         })}
       </div>
+      {keyError && <p role="alert">{keyError}</p>}
+      {session && (
+        <details className="chat-security">
+          <summary>Browser e codici di sicurezza</summary>
+          <p className="fine">
+            Confrontate questi codici di persona o attraverso un altro canale. Ogni nuovo browser
+            riceve i messaggi successivi alla sua autorizzazione.
+          </p>
+          {session.devices.map((d, i) => (
+            <p key={d.id} className="fine">
+              <strong>
+                {d.user_id === me.id ? 'Tu' : person.display_name} · {d.id.slice(0, 8)}
+              </strong>
+              <code>{session.prints[i]}</code>
+            </p>
+          ))}
+          {!session.trusted && (
+            <button
+              type="button"
+              className="secondary"
+              onClick={async () => {
+                await rememberDevices(me.id, person.id, session.prints, demo, true);
+                setSession({ ...session, trusted: true });
+              }}
+            >
+              Ho confrontato i codici: autorizza questi browser
+            </button>
+          )}
+        </details>
+      )}
+      {session && !session.trusted && (
+        <p role="alert">
+          I browser autorizzati sono cambiati. Controlla i codici prima di inviare.
+        </p>
+      )}
       {allowed ? (
         <form
           className="chat-compose"
           onSubmit={async (e) => {
             e.preventDefault();
-            if (sending.current || (!body.trim() && !file)) return;
+            if (sending.current || !session?.trusted || (!body.trim() && !file)) return;
             sending.current = true;
             setBusy(true);
             setStatus('');
             try {
-              let path: string | null = null,
-                mime: string | null = null;
-              if (file) {
-                const prepared = await prepareChatMedia(file, setStatus);
-                mime = prepared.type;
-                if (demo) path = await asDataURL(prepared);
+              // Refresh devices immediately before sealing to detect additions and revocations.
+              const current = await prepareSession(me.id, person.id, demo);
+              if (!current.trusted) {
+                setSession(current);
+                throw new Error('Controlla i nuovi codici di sicurezza prima di inviare.');
+              }
+              const prepared = file ? await prepareChatMedia(file, setStatus) : null;
+              if (prepared && prepared.size > 3 * 1024 * 1024 - 16)
+                throw new Error(
+                  'L’allegato deve lasciare 16 byte per la cifratura: scegli un file leggermente più piccolo.',
+                );
+              const context = {
+                id: crypto.randomUUID(),
+                sender_id: me.id,
+                recipient_id: person.id,
+                expires_at: new Date(Date.now() + ttl * 1000).toISOString(),
+                retention,
+              };
+              setStatus('Cifro il messaggio…');
+              const encrypted = await seal(
+                current.device,
+                current.devices,
+                context,
+                body,
+                prepared,
+              );
+              let path: string | null = null;
+              if (encrypted.attachment) {
+                if (demo) path = await asDataURL(encrypted.attachment);
                 else {
-                  setStatus('Carico l’allegato…');
                   const form = new FormData();
-                  form.append('file', prepared);
-                  form.append('scope', 'chat');
+                  form.append('file', encrypted.attachment);
+                  form.append('scope', 'encrypted-chat');
                   const response = await fetch('/api/upload', { method: 'POST', body: form });
-                  const result = await response.json();
-                  if (!response.ok) throw new Error(result.error);
-                  path = result.path;
+                  const value = await response.json();
+                  if (!response.ok) throw new Error(value.error);
+                  path = value.path;
                 }
               }
               const ok = await onSend({
                 type: 'message',
+                id: context.id,
                 user_id: person.id,
-                body,
+                body: '',
+                encrypted: encrypted.sealed,
                 media_path: path,
-                media_type: mime,
                 ttl,
               });
+              if (ok && !demo && retention === 'device')
+                await keepMessages(me.id, [
+                  {
+                    id: context.id,
+                    sender_id: me.id,
+                    recipient_id: person.id,
+                    body: '',
+                    encrypted: encrypted.sealed,
+                    media_path: path,
+                    media_type: encrypted.attachment?.type ?? null,
+                    local_media: encrypted.attachment
+                      ? await asDataURL(encrypted.attachment)
+                      : null,
+                    created_at: new Date().toISOString(),
+                    expires_at: context.expires_at,
+                  },
+                ]);
               if (ok) {
                 setBody('');
                 removeFile();
@@ -158,6 +268,24 @@ export function ChatConversation({
             }
           }}
         >
+          <label className="chat-retention">
+            Conservazione
+            <select
+              aria-label="Conservazione messaggi"
+              value={retention}
+              disabled={busy}
+              onChange={(e) => setRetention(e.target.value as 'synced' | 'device')}
+            >
+              <option value="synced">Sincronizzati sui browser autorizzati</option>
+              <option value="device">Solo sul dispositivo dopo la consegna</option>
+            </select>
+          </label>
+          {!session && !keyError && <p role="status">Preparo le chiavi di questo browser…</p>}
+          {session && !session.devices.some((d) => d.user_id === person.id) && (
+            <p role="status">
+              {person.display_name} deve aprire Messaggi per attivare il suo browser.
+            </p>
+          )}
           <div className="chat-options">
             <label>
               <Clock3 size={15} /> Elimina dopo{' '}
@@ -229,7 +357,12 @@ export function ChatConversation({
             />
             <button
               className="primary"
-              disabled={busy || (!body.trim() && !file)}
+              disabled={
+                busy ||
+                !session?.trusted ||
+                !session.devices.some((d) => d.user_id === person.id) ||
+                (!body.trim() && !file)
+              }
               aria-label="Invia messaggio"
             >
               <Send size={18} />

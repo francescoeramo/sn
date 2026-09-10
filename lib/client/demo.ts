@@ -1,3 +1,4 @@
+import { clearChatStore } from './chat-store';
 import type { Action, Snapshot, Profile } from '@/lib/core/types';
 import { isActive, LIMITS, postInput, messageInput, localMediaInfo } from '@/lib/core/rules';
 const uid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
@@ -172,6 +173,7 @@ export async function saveDemo(state: Snapshot) {
   }
 }
 export async function clearDemo() {
+  await clearChatStore(true);
   const db = await openDB();
   try {
     await new Promise<void>((resolve, reject) => {
@@ -277,13 +279,28 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
       )
         throw new Error('Potete scrivervi quando vi seguite a vicenda.');
       const media = action.media_path ?? null;
-      const info = media ? localMediaInfo(media, true) : null;
-      const value = messageInput.parse({ ...action, media_path: media ? 'demo-media' : null });
-      const body = value.body;
+      const info = media
+        ? action.encrypted
+          ? {
+              mime: 'application/octet-stream',
+              bytes: localMediaInfo(media.replace('application/octet-stream', 'audio/webm'), true)
+                .bytes,
+            }
+          : localMediaInfo(media, true)
+        : null;
+      const value = messageInput.parse({
+        ...action,
+        body: action.encrypted ? 'encrypted' : action.body,
+        media_path: media ? 'demo-media' : null,
+      });
+      const body = action.encrypted ? '' : value.body;
       const mediaType = info?.mime ?? null;
-      const expires_at = new Date(Date.parse(now) + value.ttl * 1000).toISOString();
+      const expires_at =
+        action.encrypted?.context.expires_at ??
+        new Date(Date.parse(now) + value.ttl * 1000).toISOString();
       s.messages.push({
-        id,
+        id: action.id ?? id,
+        encrypted: action.encrypted ?? null,
         sender_id: me,
         recipient_id: action.user_id,
         body,
@@ -352,7 +369,12 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
     );
   s.usage.bytes += s.messages
     .filter((m) => m.sender_id === me && m.media_path?.startsWith('data:'))
-    .reduce((n, m) => n + localMediaInfo(m.media_path!, true).bytes, 0);
+    .reduce(
+      (n, m) =>
+        n +
+        localMediaInfo(m.media_path!.replace('application/octet-stream', 'audio/webm'), true).bytes,
+      0,
+    );
   s.usage.total_bytes = s.usage.bytes;
   if (s.usage.bytes > LIMITS.user) throw new Error('Spazio disponibile esaurito.');
   return s;

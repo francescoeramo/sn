@@ -1,6 +1,6 @@
 import 'server-only';
 import { z } from 'zod';
-import { LIMITS, postInput, userId, messageInput } from '@/lib/core/rules';
+import { LIMITS, postInput, userId, encryptedMessageInput } from '@/lib/core/rules';
 import { identity, checked, adminDatabase, ApiError } from './supabase';
 
 export async function snapshot() {
@@ -119,12 +119,14 @@ export async function mutate(input: unknown) {
       break;
     }
     case 'message': {
-      const v = messageInput.parse(obj);
+      const v = encryptedMessageInput.parse(obj);
       checked(
         await db.from('messages').insert({
           sender_id: user.id,
           recipient_id: v.user_id,
-          body: v.body,
+          id: v.id,
+          body: '',
+          encrypted: v.encrypted,
           media_path: v.media_path ?? null,
           ttl_seconds: v.ttl,
         }),
@@ -212,6 +214,7 @@ export async function exportData() {
     ['blocks', 'blocker_id'],
     ['follows', ''],
     ['messages', ''],
+    ['chat_devices', 'user_id'],
   ]) {
     const rows: unknown[] = [];
     for (let offset = 0; ; offset += 500) {

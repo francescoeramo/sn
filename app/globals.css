@@ -2356,3 +2356,21 @@ label small {
   min-height: 150px;
   max-height: 40dvh;
 }
+
+.chat-security {
+  margin: 12px 0;
+  font-size: 13px;
+}
+.chat-security code {
+  display: block;
+  overflow-wrap: anywhere;
+  margin: 6px 0;
+}
+.chat-retention {
+  font-size: 13px;
+}
+.chat-retention select {
+  width: 100%;
+  min-height: 44px;
+  font-size: 14px;
+}

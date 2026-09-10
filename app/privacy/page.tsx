@@ -27,13 +27,15 @@ export default function Privacy() {
       <p>
         Nella beta i contenuti sono accessibili agli account invitati. Con un account privato solo i
         follower approvati vedono i tuoi post; nome e bio restano visibili nella community. Il
-        moderatore può consultare i post per gestire le segnalazioni. I messaggi sono leggibili dai
-        partecipanti e dagli amministratori tecnici del servizio; non usano crittografia end-to-end.
+        moderatore può consultare i post per gestire le segnalazioni. I nuovi messaggi e allegati
+        sono cifrati nel browser prima dell’invio. Il server conserva dati cifrati e le chiavi
+        pubbliche dei browser autorizzati. Le chiavi private restano nel browser. Lo storico
+        precedente alla cifratura resta segnalato come non cifrato.
       </p>
       <p>
         Il blocco impedisce nuovi follow e messaggi tra i due account. I messaggi già scambiati
-        restano nella cronologia fino alla cancellazione dell’account. La federazione con altri
-        social non è attiva.
+        restano nella cronologia fino alla scadenza scelta. La federazione con altri social non è
+        attiva.
       </p>
       <h2>Conservazione ed eliminazione</h2>
       <p>
@@ -46,6 +48,19 @@ export default function Privacy() {
         i dati testuali e i riferimenti ai media; i file si scaricano separatamente. La
         cancellazione rimuove anche messaggi inviati e ricevuti. Copie già scaricate da altre
         persone non possono essere cancellate a distanza.
+      </p>
+      <p>
+        I nuovi messaggi scadono dopo 24 ore, salvo una durata diversa scelta prima dell’invio. Con
+        “Solo sul dispositivo”, il server elimina il messaggio quando il destinatario conferma il
+        salvataggio locale. La pulizia degli allegati viene ritentata se il servizio Storage non
+        risponde. Un browser chiuso riprende la pulizia locale alla riapertura della chat.
+      </p>
+      <p>
+        Cancellare i dati del browser elimina anche le chiavi locali: i vecchi messaggi potrebbero
+        non essere più leggibili. Ogni nuovo browser legge i messaggi inviati dopo la sua
+        autorizzazione. I codici di sicurezza permettono di controllare i dispositivi; il primo
+        scambio richiede fiducia nelle chiavi ricevute finché non le confrontate attraverso un altro
+        canale.
       </p>
       <h2>Fornitori e richieste di rete</h2>
       <p>

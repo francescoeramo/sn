@@ -31,6 +31,9 @@ import type { Action, Snapshot, Post } from '@/lib/core/types';
 import { LIMITS, isActive, hashtags, relativeTime } from '@/lib/core/rules';
 import { loadDemo, saveDemo, applyDemo, clearDemo, seed } from '@/lib/client/demo';
 import { Avatar, Empty, Modal } from './primitives';
+import { deviceFor, localMessages, clearUserChat } from '@/lib/client/chat-store';
+import { chatRequest } from '@/lib/client/chat-session';
+import { publicDevice } from '@/lib/crypto/chat';
 import { ChatConversation } from './chat-conversation';
 import { StoryPlayer } from './story-player';
 import { AuthScreen } from './auth-screen';
@@ -102,6 +105,10 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
   const refresh = useCallback(async () => {
     try {
       const next = demo ? await loadDemo() : await request('bootstrap');
+      if (!demo) {
+        const local = await localMessages(next.me.id);
+        next.messages = [...new Map([...local, ...next.messages].map((m) => [m.id, m])).values()];
+      }
       if (demo) await saveDemo(next);
       setState(next);
     } catch (error) {
@@ -144,6 +151,12 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
     }, 30000);
     return () => clearInterval(timer);
   }, [view, demo, refresh]);
+  useEffect(() => {
+    if (demo || view !== 'messages' || !state?.me.id) return;
+    deviceFor(state.me.id)
+      .then((device) => chatRequest('device', publicDevice(device)))
+      .catch((error) => setNotice(error.message));
+  }, [demo, view, state?.me.id]);
   useEffect(() => {
     if (demo || view !== 'search') return;
     let cancelled = false;
@@ -648,8 +661,8 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
             {view === 'messages' && (
               <section className="messages-panel">
                 <p className="privacy-note">
-                  <LockKeyhole size={15} /> I messaggi sono accessibili ai partecipanti e agli
-                  amministratori del servizio. Non sono cifrati end-to-end.
+                  <LockKeyhole size={15} /> I nuovi messaggi e allegati sono cifrati end-to-end. Le
+                  chiavi restano nei browser autorizzati.
                 </p>
                 <div className="conversation-tabs">
                   {profiles
@@ -857,13 +870,22 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                   <h2>I tuoi dati, le tue scelte</h2>
                   <p className="muted">
                     L’esportazione JSON include profilo, post, commenti e messaggi. I file
-                    multimediali si scaricano separatamente dai post.
+                    multimediali si scaricano separatamente dai post. I messaggi cifrati restano
+                    cifrati nel JSON; le chiavi private rimangono in questo browser.
                   </p>
                   <button
                     className="secondary"
                     onClick={async () => {
                       try {
-                        download(demo ? state : await request('export'), 'sn-dati.json');
+                        download(
+                          demo
+                            ? state
+                            : {
+                                ...(await request('export')),
+                                local_messages: await localMessages(me.id),
+                              },
+                          'sn-dati.json',
+                        );
                         setNotice('Esportazione pronta.');
                       } catch (e) {
                         setNotice(e instanceof Error ? e.message : 'Esportazione non riuscita.');
@@ -1127,6 +1149,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                     password: f.get('password'),
                     confirmation: f.get('confirmation'),
                   });
+                  await clearUserChat(me.id);
                   setState(null);
                   setDeleteOpen(false);
                 }

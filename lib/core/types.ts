@@ -1,3 +1,4 @@
+import type { Sealed } from '@/lib/crypto/chat';
 export type Profile = {
   id: string;
   username: string;
@@ -27,6 +28,8 @@ export type Comment = {
 };
 export type Follow = { follower_id: string; following_id: string; accepted: boolean };
 export type Message = {
+  encrypted?: Sealed | null;
+  local_media?: string | null;
   id: string;
   sender_id: string;
   recipient_id: string;
@@ -82,6 +85,8 @@ export type Action =
   | { type: 'accept'; user_id: string; accept: boolean }
   | {
       type: 'message';
+      id?: string;
+      encrypted?: Sealed;
       user_id: string;
       body: string;
       media_path?: string | null;

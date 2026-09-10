@@ -265,6 +265,97 @@ test('chat: impedisce l’invio a chi non ricambia il follow', async ({ page }) 
     page.getByText('Potete scrivervi quando vi seguite a vicenda.', { exact: false }),
   ).toBeVisible();
 });
+test('chat cifrata: testo opaco in IndexedDB, chiave non esportabile e lettura dopo reload', async ({
+  page,
+}) => {
+  await page.goto('/demo');
+  await page
+    .getByRole('button', { name: 'Messaggi', exact: true })
+    .filter({ visible: true })
+    .click();
+  await page.getByRole('button', { name: 'Giulia', exact: true }).click();
+  await page
+    .getByRole('textbox', { name: 'Scrivi un messaggio' })
+    .fill('Segreto del browser 92831');
+  await page.getByRole('button', { name: 'Invia messaggio', exact: true }).click();
+  await expect(page.getByRole('log')).toContainText('Segreto del browser 92831');
+  const stored = await page.evaluate(async () => {
+    const read = (database: string, store: string, key: string) =>
+      new Promise<{ me: { id: string }; messages: { body: string }[]; privateKey: CryptoKey }>(
+        (resolve) => {
+          const req = indexedDB.open(database);
+          req.onsuccess = () => {
+            const db = req.result;
+            const get = db.transaction(store).objectStore(store).get(key);
+            get.onsuccess = () => {
+              resolve(get.result);
+              db.close();
+            };
+          };
+        },
+      );
+    const state = await read('sn-demo', 'state', 'snapshot');
+    const device = await read('sn-chat', 'keys', 'demo:' + state.me.id);
+    return {
+      body: state.messages.at(-1)!.body,
+      ciphertext: JSON.stringify(state.messages.at(-1)),
+      extractable: device.privateKey.extractable,
+    };
+  });
+  expect(stored.body).toBe('');
+  expect(stored.ciphertext).not.toContain('Segreto del browser');
+  expect(stored.extractable).toBe(false);
+  await page.reload();
+  await page
+    .getByRole('button', { name: 'Messaggi', exact: true })
+    .filter({ visible: true })
+    .click();
+  await page.getByRole('button', { name: 'Giulia', exact: true }).click();
+  await expect(page.getByRole('log')).toContainText('Segreto del browser 92831');
+});
+test('chat cifrata: cambio chiave blocca nuovi invii finché i codici non sono approvati', async ({
+  page,
+}) => {
+  await page.goto('/demo');
+  await page
+    .getByRole('button', { name: 'Messaggi', exact: true })
+    .filter({ visible: true })
+    .click();
+  await page.getByRole('button', { name: 'Giulia', exact: true }).click();
+  await page.getByRole('textbox', { name: 'Scrivi un messaggio' }).fill('Prova');
+  await expect(page.getByRole('button', { name: 'Invia messaggio', exact: true })).toBeEnabled();
+  await page.evaluate(
+    async () =>
+      new Promise<void>((resolve) => {
+        const req = indexedDB.open('sn-chat', 1);
+        req.onsuccess = () => {
+          const db = req.result;
+          const tx = db.transaction('keys', 'readwrite');
+          tx.objectStore('keys').delete('demo:00000000-0000-4000-8000-000000000002');
+          tx.oncomplete = () => {
+            db.close();
+            resolve();
+          };
+        };
+      }),
+  );
+  await page.reload();
+  await page
+    .getByRole('button', { name: 'Messaggi', exact: true })
+    .filter({ visible: true })
+    .click();
+  await page.getByRole('button', { name: 'Giulia', exact: true }).click();
+  await expect(
+    page.getByText('I browser autorizzati sono cambiati.', { exact: false }),
+  ).toBeVisible();
+  await page.getByRole('textbox', { name: 'Scrivi un messaggio' }).fill('Dopo verifica');
+  await expect(page.getByRole('button', { name: 'Invia messaggio', exact: true })).toBeDisabled();
+  await page.getByText('Browser e codici di sicurezza', { exact: true }).click();
+  await page
+    .getByRole('button', { name: 'Ho confrontato i codici: autorizza questi browser' })
+    .click();
+  await expect(page.getByRole('button', { name: 'Invia messaggio', exact: true })).toBeEnabled();
+});
 test('API: nessun accesso anonimo, CSRF respinto e federazione chiusa', async ({ request }) => {
   const bootstrap = await request.get('/api/bootstrap');
   expect([401, 503]).toContain(bootstrap.status());
