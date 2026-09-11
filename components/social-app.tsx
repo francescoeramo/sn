@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 import type { Action, Snapshot, Post } from '@/lib/core/types';
 import { LIMITS, isActive, hashtags, relativeTime } from '@/lib/core/rules';
-import { loadDemo, saveDemo, applyDemo, clearDemo, seed } from '@/lib/client/demo';
+import { loadDemo, mutateDemo, clearDemo, seed } from '@/lib/client/demo';
 import { Avatar, Empty, Modal } from './primitives';
 import { deviceFor, localMessages, clearUserChat } from '@/lib/client/chat-store';
 import { chatRequest } from '@/lib/client/chat-session';
@@ -112,7 +112,6 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
         const local = await localMessages(next.me.id);
         next.messages = [...new Map([...local, ...next.messages].map((m) => [m.id, m])).values()];
       }
-      if (demo) await saveDemo(next);
       setState(next);
     } catch (error) {
       if ((error as { status?: number }).status === 401) setState(null);
@@ -192,8 +191,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
     locked.current = true;
     setBusy(true);
     try {
-      const next = demo ? applyDemo(state, action) : await request('action', action);
-      if (demo) await saveDemo(next);
+      const next = demo ? await mutateDemo(action) : await request('action', action);
       setState(next);
       setNotice(
         action.type === 'bookmark'

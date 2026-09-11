@@ -5,7 +5,8 @@ export type ChatContext = {
   id: string;
   sender_id: string;
   recipient_id: string;
-  expires_at: string;
+  expires_at: string | null;
+  revision?: number;
   retention: 'synced' | 'device';
 };
 export type Sealed = {
@@ -41,6 +42,7 @@ const aad = (context: ChatContext) =>
       context.recipient_id,
       context.expires_at,
       context.retention,
+      ...(context.revision === undefined ? [] : [context.revision]),
     ]),
   );
 export async function newDevice(user_id: string): Promise<LocalDevice> {
@@ -193,7 +195,8 @@ export async function unseal(
     ![context.sender_id, context.recipient_id].includes(device.user_id)
   )
     throw new Error('Messaggio non valido.');
-  if (Date.parse(context.expires_at) <= Date.now()) throw new Error('Messaggio scaduto.');
+  if (context.expires_at && Date.parse(context.expires_at) <= Date.now())
+    throw new Error('Messaggio scaduto.');
   const entry = packet.keys[device.id];
   if (!entry) throw new Error('Questo messaggio precede l’autorizzazione del browser.');
   const wrapping = await wrappingKey(
@@ -224,7 +227,8 @@ export async function openAttachment(
   media: NonNullable<ClearMessage['media']>,
   bytes: ArrayBuffer,
 ): Promise<Blob> {
-  if (Date.parse(context.expires_at) <= Date.now()) throw new Error('Allegato scaduto.');
+  if (context.expires_at && Date.parse(context.expires_at) <= Date.now())
+    throw new Error('Allegato scaduto.');
   if (!/^(image\/(jpeg|png|webp)|video\/(mp4|webm)|audio\/(webm|ogg|mp4))$/.test(media.mime))
     throw new Error('Formato allegato non consentito.');
   return new Blob(

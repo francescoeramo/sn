@@ -74,7 +74,35 @@ export type CommunityNote = {
 export type Bookmark = { user_id: string; post_id: string; created_at: string };
 export type SavedCursor = { created_at: string; post_id: string };
 export type SavedPage = { posts: Post[]; nextCursor: SavedCursor | null };
+export type ChatSettings = {
+  member_a: string;
+  member_b: string;
+  temporary: boolean;
+  duration: number;
+  changed_by: string;
+};
+export type MessageState = {
+  id: string;
+  sender_id: string;
+  recipient_id: string;
+  created_at: string;
+  expires_at: string | null;
+  revision: number;
+  delivered_at: string | null;
+  read_at: string | null;
+  edited_at: string | null;
+  deleted_at: string | null;
+};
+export type ChatSync = {
+  messages: Message[];
+  states: MessageState[];
+  hidden: { message_id: string }[];
+  settings: ChatSettings | null;
+};
 export type Snapshot = {
+  chatSettings?: ChatSettings[];
+  messageStates?: MessageState[];
+  hiddenMessages?: { user_id: string; message_id: string }[];
   bookmarks: Bookmark[];
   saved: SavedPage;
   notes: CommunityNote[];
@@ -99,6 +127,10 @@ export type Snapshot = {
   nextCursor: string | null;
 };
 export type Action =
+  | { type: 'chat-settings'; user_id: string; temporary: boolean; duration: number }
+  | { type: 'chat-receipt'; message_id: string; revision: number; read: boolean }
+  | { type: 'edit-message'; message_id: string; encrypted: Sealed; media_path: string | null }
+  | { type: 'delete-message'; message_id: string; everyone: boolean }
   | { type: 'propose-note'; post_id: string; body: string; sources: string[] }
   | { type: 'review-note'; note_id: string; approve: boolean; reason: string }
   | {

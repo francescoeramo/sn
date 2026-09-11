@@ -21,9 +21,9 @@ Aggiornato l’11 settembre 2026. `PRODUCT.md` contiene i vincoli correnti; i do
 | CSP e headers                                    | Presenti nel codice; verificare la risposta effettiva in produzione. Live Impeccable richiede configurazione CSP di sviluppo separata.                                                             |
 | Backup e ripristino                              | Predisporre export periodico e piano di ripristino verificato. Decidere separatamente l'eventuale backup cifrato delle chiavi dell'utente.                                                         |
 
-## Prossimo blocco: conservazione e stati della chat
+## Implementato localmente: conservazione e stati della chat
 
-Requisiti confermati, ancora da implementare, nella sezione 4 di `SN-prompt-progetto.md`:
+Requisiti implementati in demo, API e migrazione SQL, descritti nella sezione 4 di `SN-prompt-progetto.md`:
 
 1. Messaggi ordinari senza scadenza; pulsante «Chat temporanea» e durata nelle impostazioni della conversazione, valida per i nuovi invii.
 2. Ricevute dinamiche di invio, consegna e lettura con spunte ed etichette accessibili; nessuna lettura simulata nella demo.
@@ -31,7 +31,7 @@ Requisiti confermati, ancora da implementare, nella sezione 4 di `SN-prompt-prog
 4. Eliminazione manuale e compatibilità con conservazione solo dispositivo, preservando le scadenze autenticate dello storico.
 5. Test SQL e browser per durata disattivata/attiva, cambio modalità, limite dei 30 minuti, concorrenza lettura/modifica, retry senza duplicati e aggiornamenti tra dispositivi.
 
-Prima del codice definire l’ambito delle eliminazioni e chi può cambiare le impostazioni condivise. Il protocollo v1 descritto in `CRITTOGRAFIA.md` fotografa lo stato attuale, non queste nuove capacità.
+Eliminazione personale per entrambi, globale solo per il mittente. Entrambi possono cambiare le impostazioni condivise. Ricevute e revisioni sopravvivono alla consegna solo dispositivo. Mancano collaudo cloud e prova di concorrenza su connessioni Postgres reali; i test locali verificano entrambi gli ordini lettura/modifica e ricevute obsolete. Le altre voci della tabella restano aperte.
 
 ## Prima della federazione
 

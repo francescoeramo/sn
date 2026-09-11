@@ -63,7 +63,7 @@ Le chat sono consentite esclusivamente tra utenti con follow reciproco e devono 
   - Gli allegati vengono cifrati simmetricamente lato client con chiave usa-e-getta prima dell'upload nello storage del server.
 - **Messaggi conservati per impostazione predefinita**:
   - Con «Chat temporanea» disattivata, i nuovi messaggi non hanno una scadenza automatica: rimangono finché non vengono eliminati.
-  - Prevedere un comando di eliminazione dei messaggi. Definire esplicitamente la distinzione tra eliminazione della propria copia ed eliminazione per entrambi prima di implementarla.
+  - Due comandi: «Elimina per me» nasconde il messaggio dalla propria conversazione; «Elimina per tutti» è disponibile solo per i propri messaggi.
 - **Chat temporanea**:
   - Un pulsante nella chat attiva o disattiva la modalità «Chat temporanea» per quella conversazione. Lo stato deve essere riconoscibile anche senza affidarsi al solo colore.
   - La durata dell’autoeliminazione si sceglie nelle **impostazioni della chat**, non accanto a ogni messaggio. Le durate previste sono 1 ora, 3 ore, 24 ore, 48 ore, 1 settimana e 30 giorni.
@@ -163,3 +163,7 @@ La compatibilità con Mastodon e Pixelfed rimane un obiettivo architetturale:
    - Fase 2: Schema DB e logica per messaggi effimeri e media in chat.
    - Fase 3: Architettura E2EE con Web Crypto API e gestione chiavi locali.
    - Fase 4: Schema e moderazione per Community Notes (anti-fake news) e Annunci etici con approvazione admin.
+
+### Decisione confermata: eliminazione in chat
+
+Due comandi distinti: «Elimina per me» per nascondere un messaggio dalla propria conversazione, «Elimina per tutti» solo per i propri messaggi. Le copie locali ricevono la cancellazione al successivo collegamento; file già esportati non possono essere revocati.

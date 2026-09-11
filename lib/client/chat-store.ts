@@ -144,3 +144,15 @@ export async function clearUserChat(user: string) {
 export async function trustedFingerprints(user: string, other: string, demo: boolean) {
   return (await read<string[]>('trust', `${demo ? 'demo' : 'live'}:${user}:${other}`)) ?? [];
 }
+
+export async function forgetMessages(user: string, ids: string[]) {
+  if (!ids.length) return;
+  return navigator.locks.request('sn-messages:' + user, async () => {
+    const remove = new Set(ids);
+    await write(
+      'messages',
+      user,
+      (await activeMessages(user)).filter((m) => !remove.has(m.id)),
+    );
+  });
+}

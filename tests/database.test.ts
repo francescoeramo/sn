@@ -15,11 +15,13 @@ async function send(
   path: string | null = null,
   retention: 'synced' | 'device' = 'synced',
 ) {
+  if ([0, 3600, 10800, 86400, 172800, 604800, 2592000].includes(ttl))
+    await asUser(from, 'select public.set_chat_settings($1,$2,$3)', [to, ttl !== 0, ttl || 86400]);
   const context = {
     id: crypto.randomUUID(),
     sender_id: from,
     recipient_id: to,
-    expires_at: new Date(Date.now() + Math.max(ttl, 3600) * 1000).toISOString(),
+    expires_at: ttl ? new Date(Date.now() + Math.max(ttl, 3600) * 1000).toISOString() : null,
     retention,
   };
   const { sealed } = await seal(devices[from], [devices[from], devices[to]], context, 'Messaggio');
@@ -241,11 +243,15 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
       ),
     ).rejects.toThrow('cifratura end-to-end');
     const id = await send(bob, alice, 3600, null, 'device');
-    await asUser(eve, 'delete from public.messages where id=$1', [id]);
+    await expect(asUser(eve, 'delete from public.messages where id=$1', [id])).rejects.toThrow(
+      'permission denied',
+    );
     expect(await asUser(alice, 'select * from public.messages where id=$1', [id])).toHaveLength(1);
-    await asUser(bob, 'delete from public.messages where id=$1', [id]);
+    await expect(asUser(bob, 'delete from public.messages where id=$1', [id])).rejects.toThrow(
+      'permission denied',
+    );
     expect(await asUser(alice, 'select * from public.messages where id=$1', [id])).toHaveLength(1);
-    await asUser(alice, 'delete from public.messages where id=$1', [id]);
+    await asUser(alice, 'select public.acknowledge_chat_revision($1,0)', [id]);
     expect(await asUser(alice, 'select * from public.messages where id=$1', [id])).toHaveLength(0);
   });
   it('la conferma di consegna revoca subito il blob solo del destinatario', async () => {
@@ -261,15 +267,13 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
       [path],
     );
     const id = await send(bob, alice, 3600, path, 'device');
-    expect(await asUser(eve, 'select * from public.acknowledge_messages($1)', [[id]])).toHaveLength(
-      0,
-    );
+    await expect(
+      asUser(eve, 'select public.acknowledge_chat_revision($1,0)', [id]),
+    ).rejects.toThrow('Accesso negato');
     expect(await asUser(bob, 'select * from storage.objects where name=$1', [path])).toHaveLength(
       1,
     );
-    expect(
-      await asUser(alice, 'select * from public.acknowledge_messages($1)', [[id]]),
-    ).toHaveLength(1);
+    await asUser(alice, 'select public.acknowledge_chat_revision($1,0)', [id]);
     expect(await asUser(bob, 'select * from storage.objects where name=$1', [path])).toHaveLength(
       0,
     );
@@ -576,6 +580,130 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
       asUser(alice, 'insert into public.bookmarks(user_id,post_id) values($1,$2)', [alice, ids[1]]),
     ).rejects.toThrow('row-level security');
     await db.query('delete from public.posts where id=any($1::uuid[])', [ids]);
+  });
+
+  it('mantiene i messaggi ordinari e applica la modalità solo ai nuovi invii', async () => {
+    const id = await send(bob, alice, 0);
+    await asUser(alice, 'select public.set_chat_settings($1,true,3600)', [bob]);
+    const rows = await asUser<{ expires_at: string | null }>(
+      alice,
+      'select expires_at from public.messages where id=$1',
+      [id],
+    );
+    expect(rows[0].expires_at).toBeNull();
+    expect(await asUser(eve, 'select * from public.chat_settings')).toHaveLength(0);
+    await expect(
+      asUser(eve, 'select public.set_chat_settings($1,true,3600)', [bob]),
+    ).rejects.toThrow('Accesso negato');
+  });
+  it('modifica atomica: revisione, ricevute obsolete, lettura e limite di 30 minuti', async () => {
+    const id = await send(bob, alice, 0);
+    const context = {
+      id,
+      sender_id: bob,
+      recipient_id: alice,
+      expires_at: null,
+      retention: 'synced' as const,
+      revision: 1,
+    };
+    const packet = await seal(devices[bob], [devices[bob], devices[alice]], context, 'Corretto');
+    await asUser(bob, 'select public.edit_chat_message($1,$2,null)', [id, packet.sealed]);
+    await asUser(alice, 'select public.chat_receipt($1,0,true)', [id]);
+    const state = async () =>
+      (
+        await asUser<{ revision: number; read_at: string | null }>(
+          bob,
+          'select revision,read_at from public.message_states where id=$1',
+          [id],
+        )
+      )[0];
+    expect(await state()).toMatchObject({ revision: 1, read_at: null });
+    await expect(asUser(bob, 'select public.chat_receipt($1,1,true)', [id])).rejects.toThrow(
+      'Accesso negato',
+    );
+    await asUser(alice, 'select public.chat_receipt($1,1,true)', [id]);
+    expect((await state()).read_at).not.toBeNull();
+    const next = await seal(
+      devices[bob],
+      [devices[bob], devices[alice]],
+      { ...context, revision: 2 },
+      'Troppo tardi',
+    );
+    await expect(
+      asUser(bob, 'select public.edit_chat_message($1,$2,null)', [id, next.sealed]),
+    ).rejects.toThrow();
+    const old = await send(bob, alice, 0);
+    await db.query(
+      "update public.message_states set created_at=now()-interval '31 minutes' where id=$1",
+      [old],
+    );
+    const expired = await seal(
+      devices[bob],
+      [devices[bob], devices[alice]],
+      { ...context, id: old },
+      'Tardi',
+    );
+    await expect(
+      asUser(bob, 'select public.edit_chat_message($1,$2,null)', [old, expired.sealed]),
+    ).rejects.toThrow();
+  });
+  it('separa eliminazione personale e globale, senza permettere a terzi di agire', async () => {
+    const id = await send(bob, alice, 0);
+    await asUser(alice, 'select public.delete_chat_message($1,false)', [id]);
+    expect(
+      await asUser(alice, 'select * from public.hidden_messages where message_id=$1', [id]),
+    ).toHaveLength(1);
+    expect(
+      await asUser(bob, 'select * from public.hidden_messages where message_id=$1', [id]),
+    ).toHaveLength(0);
+    expect(await asUser(bob, 'select * from public.messages where id=$1', [id])).toHaveLength(1);
+    await expect(asUser(alice, 'select public.delete_chat_message($1,true)', [id])).rejects.toThrow(
+      'Accesso negato',
+    );
+    await expect(asUser(eve, 'select public.delete_chat_message($1,false)', [id])).rejects.toThrow(
+      'Accesso negato',
+    );
+    await asUser(bob, 'select public.delete_chat_message($1,true)', [id]);
+    expect(await asUser(alice, 'select * from public.messages where id=$1', [id])).toHaveLength(0);
+    const rows = await asUser<{ deleted_at: string | null }>(
+      alice,
+      'select deleted_at from public.message_states where id=$1',
+      [id],
+    );
+    expect(rows[0].deleted_at).not.toBeNull();
+  });
+  it('conserva la revisione dopo consegna solo dispositivo e impedisce la resurrezione con retry', async () => {
+    const id = await send(bob, alice, 0, null, 'device');
+    const [{ encrypted }] = await asUser<{ encrypted: Record<string, unknown> }>(
+      bob,
+      'select encrypted from public.messages where id=$1',
+      [id],
+    );
+    await asUser(alice, 'select public.acknowledge_chat_revision($1,0)', [id]);
+    await asUser(
+      bob,
+      "insert into public.messages(id,sender_id,recipient_id,body,ttl_seconds,encrypted) values($1,$2,$3,'',0,$4) on conflict do nothing",
+      [id, bob, alice, encrypted],
+    );
+    expect(await asUser(alice, 'select * from public.messages where id=$1', [id])).toHaveLength(0);
+    const packet = await seal(
+      devices[bob],
+      [devices[bob], devices[alice]],
+      {
+        id,
+        sender_id: bob,
+        recipient_id: alice,
+        expires_at: null,
+        retention: 'device',
+        revision: 1,
+      },
+      'Nuova revisione',
+    );
+    await asUser(bob, 'select public.edit_chat_message($1,$2,null)', [id, packet.sealed]);
+    await asUser(alice, 'select public.acknowledge_chat_revision($1,0)', [id]);
+    expect(await asUser(alice, 'select * from public.messages where id=$1', [id])).toHaveLength(1);
+    await asUser(alice, 'select public.acknowledge_chat_revision($1,1)', [id]);
+    expect(await asUser(alice, 'select * from public.messages where id=$1', [id])).toHaveLength(0);
   });
   it('un blocco revoca visibilità e follow in entrambe le direzioni', async () => {
     await asUser(alice, 'insert into public.blocks(blocker_id,blocked_id) values($1,$2)', [

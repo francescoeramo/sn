@@ -8,6 +8,10 @@ import {
   noteInput,
   noteReviewInput,
   bookmarkInput,
+  chatSettingsInput,
+  receiptInput,
+  editMessageInput,
+  deleteMessageInput,
 } from '@/lib/core/rules';
 import { identity, checked, adminDatabase, ApiError } from './supabase';
 import type { Bookmark, Post, SavedCursor, SavedPage } from '@/lib/core/types';
@@ -133,6 +137,46 @@ export async function mutate(input: unknown) {
   const { db, user } = await identity();
   const obj = z.object({ type: z.string() }).passthrough().parse(input);
   switch (obj.type) {
+    case 'chat-settings': {
+      const v = chatSettingsInput.parse(obj);
+      checked(
+        await db.rpc('set_chat_settings', {
+          other: v.user_id,
+          temporary: v.temporary,
+          duration: v.duration,
+        }),
+      );
+      break;
+    }
+    case 'chat-receipt': {
+      const v = receiptInput.parse(obj);
+      checked(
+        await db.rpc('chat_receipt', {
+          message_id: v.message_id,
+          expected_revision: v.revision,
+          was_read: v.read,
+        }),
+      );
+      break;
+    }
+    case 'edit-message': {
+      const v = editMessageInput.parse(obj);
+      checked(
+        await db.rpc('edit_chat_message', {
+          message_id: v.message_id,
+          packet: v.encrypted,
+          media: v.media_path,
+        }),
+      );
+      break;
+    }
+    case 'delete-message': {
+      const v = deleteMessageInput.parse(obj);
+      checked(
+        await db.rpc('delete_chat_message', { message_id: v.message_id, for_everyone: v.everyone }),
+      );
+      break;
+    }
     case 'propose-note': {
       const value = noteInput.parse(obj);
       checked(await db.from('community_notes').insert({ ...value, author_id: user.id }));
@@ -213,15 +257,18 @@ export async function mutate(input: unknown) {
     case 'message': {
       const v = encryptedMessageInput.parse(obj);
       checked(
-        await db.from('messages').insert({
-          sender_id: user.id,
-          recipient_id: v.user_id,
-          id: v.id,
-          body: '',
-          encrypted: v.encrypted,
-          media_path: v.media_path ?? null,
-          ttl_seconds: v.ttl,
-        }),
+        await db.from('messages').upsert(
+          {
+            sender_id: user.id,
+            recipient_id: v.user_id,
+            id: v.id,
+            body: '',
+            encrypted: v.encrypted,
+            media_path: v.media_path ?? null,
+            ttl_seconds: v.ttl,
+          },
+          { onConflict: 'id', ignoreDuplicates: true },
+        ),
       );
       break;
     }

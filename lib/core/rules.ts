@@ -38,6 +38,7 @@ export const messageInput = z
     media_type: z.string().max(50).nullable().optional(),
     ttl: z
       .union([
+        z.literal(0),
         z.literal(3600),
         z.literal(10800),
         z.literal(86400),
@@ -45,7 +46,7 @@ export const messageInput = z
         z.literal(604800),
         z.literal(2592000),
       ])
-      .default(86400),
+      .default(0),
   })
   .refine((v) => v.body.length > 0 || v.media_path, 'Scrivi un messaggio o allega un file.');
 export const credentials = z.object({
@@ -138,7 +139,8 @@ export const sealedInput = z.object({
     id: userId,
     sender_id: userId,
     recipient_id: userId,
-    expires_at: z.iso.datetime(),
+    expires_at: z.iso.datetime().nullable(),
+    revision: z.number().int().nonnegative().optional(),
     retention: z.enum(['synced', 'device']),
   }),
   sender: publicDeviceInput,
@@ -155,6 +157,7 @@ export const encryptedMessageInput = z.object({
   media_path: z.string().max(200).nullable().optional(),
   encrypted: sealedInput,
   ttl: z.union([
+    z.literal(0),
     z.literal(3600),
     z.literal(10800),
     z.literal(86400),
@@ -192,3 +195,27 @@ export const noteReviewInput = z.object({
   approve: z.boolean(),
   reason: z.string().trim().min(10).max(500),
 });
+
+export const chatSettingsInput = z.object({
+  user_id: userId,
+  temporary: z.boolean(),
+  duration: z.union([
+    z.literal(3600),
+    z.literal(10800),
+    z.literal(86400),
+    z.literal(172800),
+    z.literal(604800),
+    z.literal(2592000),
+  ]),
+});
+export const receiptInput = z.object({
+  message_id: userId,
+  revision: z.number().int().nonnegative(),
+  read: z.boolean(),
+});
+export const editMessageInput = z.object({
+  message_id: userId,
+  encrypted: sealedInput,
+  media_path: z.string().max(200).nullable(),
+});
+export const deleteMessageInput = z.object({ message_id: userId, everyone: z.boolean() });

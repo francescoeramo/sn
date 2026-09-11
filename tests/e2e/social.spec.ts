@@ -192,7 +192,13 @@ test('chat: allegato senza testo, scadenza e pulizia locale dopo riapertura', as
     .filter({ visible: true })
     .click();
   await page.getByRole('button', { name: 'Giulia', exact: true }).click();
+  await page.getByRole('button', { name: 'Impostazioni della chat', exact: true }).click();
   await page.getByLabel('Scadenza dei messaggi').selectOption('3600');
+  await page.getByRole('button', { name: 'Impostazioni della chat', exact: true }).click();
+  await page.getByRole('button', { name: 'Chat temporanea disattivata', exact: true }).click();
+  await expect(
+    page.getByRole('button', { name: 'Chat temporanea attiva', exact: true }),
+  ).toHaveAttribute('aria-pressed', 'true');
   const png = await page.evaluate(() => {
     const canvas = document.createElement('canvas');
     canvas.width = 20;
@@ -205,7 +211,9 @@ test('chat: allegato senza testo, scadenza e pulizia locale dopo riapertura', as
     .setInputFiles({ name: 'foto.png', mimeType: 'image/png', buffer: Buffer.from(png, 'base64') });
   await expect(page.getByAltText('Anteprima allegato')).toBeVisible();
   await page.getByRole('button', { name: 'Invia messaggio', exact: true }).click();
-  await expect(page.getByRole('log').getByRole('img')).toBeVisible();
+  await expect(
+    page.getByRole('log').getByRole('img', { name: 'Immagine nella chat' }),
+  ).toBeVisible();
   await expect(page.getByRole('log')).toContainText('Scade tra');
   await page.evaluate(async () => {
     await new Promise<void>((resolve, reject) => {
@@ -234,7 +242,9 @@ test('chat: allegato senza testo, scadenza e pulizia locale dopo riapertura', as
     .filter({ visible: true })
     .click();
   await page.getByRole('button', { name: 'Giulia', exact: true }).click();
-  await expect(page.getByRole('log').getByRole('img')).toHaveCount(0);
+  await expect(page.getByRole('log').getByRole('img', { name: 'Immagine nella chat' })).toHaveCount(
+    0,
+  );
   const attachments = await page.evaluate(
     async () =>
       new Promise<number>((resolve) => {
@@ -514,4 +524,34 @@ test('avviso delle storie: nessun media o autoplay prima della scelta', async ({
     page.getByRole('dialog').getByRole('heading', { name: 'Giulia Rossi' }),
   ).toBeVisible();
   await expect(page.getByText('Spoiler nella storia')).toHaveCount(0);
+});
+
+test('chat: messaggi permanenti, modifica e due comandi di eliminazione', async ({ page }) => {
+  await page.goto('/demo');
+  await page
+    .getByRole('button', { name: 'Messaggi', exact: true })
+    .filter({ visible: true })
+    .click();
+  await page.getByRole('button', { name: 'Giulia', exact: true }).click();
+  await page.getByRole('textbox', { name: 'Scrivi un messaggio' }).fill('Da correggere');
+  await page.getByRole('button', { name: 'Invia messaggio', exact: true }).click();
+  const own = page.locator('.chat-bubble.own').last();
+  await expect(own).toContainText('Da correggere');
+  await expect(own).not.toContainText('Scade tra');
+  await expect(own.getByRole('img', { name: 'Inviato', exact: true })).toBeVisible();
+  await own.locator('summary').click();
+  await own.getByRole('button', { name: 'Modifica messaggio', exact: true }).click();
+  await page.getByRole('textbox', { name: 'Scrivi un messaggio' }).fill('Corretto');
+  await page.getByRole('button', { name: 'Salva modifica', exact: true }).click();
+  await expect(own).toContainText('Corretto');
+  await expect(own).toContainText('Modificato');
+  await own.getByRole('button', { name: 'Elimina per tutti', exact: true }).click();
+  await expect(page.getByRole('log')).not.toContainText('Corretto');
+  const incoming = page.locator('.chat-bubble').first();
+  await incoming.locator('summary').click();
+  await expect(
+    incoming.getByRole('button', { name: 'Elimina per tutti', exact: true }),
+  ).toHaveCount(0);
+  await incoming.getByRole('button', { name: 'Elimina per me', exact: true }).click();
+  await expect(page.locator('.chat-bubble')).toHaveCount(0);
 });

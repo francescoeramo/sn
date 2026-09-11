@@ -51,6 +51,14 @@ describe('Cifratura E2EE con Web Crypto', () => {
       'scaduto',
     );
   });
+  it('supporta messaggi permanenti e autentica il numero di revisione', async () => {
+    const a = await newDevice('alice'),
+      b = await newDevice('bob');
+    const ctx = { ...context(), expires_at: null, revision: 1 };
+    const { sealed } = await seal(a, [a, b], ctx, 'Permanente');
+    expect((await unseal(b, ctx, sealed)).body).toBe('Permanente');
+    await expect(unseal(b, { ...ctx, revision: 2 }, sealed)).rejects.toThrow();
+  });
   it('cifra gli allegati con chiavi separate e ne verifica integrità e contesto', async () => {
     const a = await newDevice('alice'),
       b = await newDevice('bob'),

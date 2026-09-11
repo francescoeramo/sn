@@ -50,10 +50,12 @@ export default function Privacy() {
         persone non possono essere cancellate a distanza.
       </p>
       <p>
-        I nuovi messaggi scadono dopo 24 ore, salvo una durata diversa scelta prima dell’invio. Con
-        “Solo sul dispositivo”, il server elimina il messaggio quando il destinatario conferma il
-        salvataggio locale. La pulizia degli allegati viene ritentata se il servizio Storage non
-        risponde. Un browser chiuso riprende la pulizia locale alla riapertura della chat.
+        I messaggi ordinari restano finché non vengono eliminati. Solo con «Chat temporanea» attiva
+        i nuovi messaggi scadono dopo la durata scelta nelle impostazioni della chat. Con “Solo sul
+        dispositivo”, il server elimina il contenuto cifrato quando il destinatario conferma il
+        salvataggio locale; conserva gli stati necessari a ricevute, modifiche ed eliminazioni. La
+        pulizia degli allegati viene ritentata se il servizio Storage non risponde. Un browser
+        chiuso riprende la pulizia locale alla riapertura della chat.
       </p>
       <p>
         Cancellare i dati del browser elimina anche le chiavi locali: i vecchi messaggi potrebbero

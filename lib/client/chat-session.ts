@@ -1,5 +1,6 @@
 import {
   deviceFor,
+  forgetMessages,
   rememberDevices,
   keepMessages,
   localMessages,
@@ -14,7 +15,7 @@ import {
   type Device,
   type LocalDevice,
 } from '@/lib/crypto/chat';
-import type { Message } from '@/lib/core/types';
+import type { Message, MessageState } from '@/lib/core/types';
 import { isActive } from '@/lib/core/rules';
 import { asDataURL } from './media';
 export async function chatRequest(path: string, body?: unknown) {
@@ -55,14 +56,42 @@ export async function readConversation(
   other: string,
   rows: Message[],
   demo: boolean,
+  states: MessageState[] = [],
+  hidden: { message_id: string }[] = [],
 ): Promise<DecryptedMessage[]> {
   const trusted = await trustedFingerprints(device.user_id, other, demo);
   const local = demo ? [] : await localMessages(device.user_id);
-  const cached = new Map(local.map((m) => [m.id, m.local_media]));
+  const cached = new Map(
+    local.map((m) => [m.id + ':' + (m.encrypted?.context.revision ?? 0), m.local_media]),
+  );
+  const lifecycle = new Map(states.map((s) => [s.id, s]));
+  const hiddenIds = new Set(hidden.map((h) => h.message_id));
+  if (!demo)
+    await forgetMessages(
+      device.user_id,
+      local
+        .filter(
+          (m) =>
+            hiddenIds.has(m.id) ||
+            lifecycle.get(m.id)?.deleted_at ||
+            (lifecycle.has(m.id) &&
+              lifecycle.get(m.id)!.revision > (m.encrypted?.context.revision ?? 0)),
+        )
+        .map((m) => m.id),
+    );
   const all = [
     ...new Map(
       [...local, ...rows]
-        .filter((m) => (m.sender_id === other || m.recipient_id === other) && isActive(m))
+        .filter((m) => {
+          const state = lifecycle.get(m.id);
+          return (
+            (m.sender_id === other || m.recipient_id === other) &&
+            isActive(m) &&
+            !state?.deleted_at &&
+            !hiddenIds.has(m.id) &&
+            (!state || state.revision === (m.encrypted?.context.revision ?? 0))
+          );
+        })
         .map((m) => [m.id, m]),
     ).values(),
   ];
@@ -87,13 +116,14 @@ export async function readConversation(
         );
       const clear = await unseal(device, context, row.encrypted);
       let media: string | null = null,
-        localMedia = row.local_media ?? cached.get(row.id);
+        localMedia =
+          row.local_media ?? cached.get(row.id + ':' + (row.encrypted?.context.revision ?? 0));
       if (clear.media && !row.media_path && !localMedia)
         throw new Error('Allegato cifrato mancante.');
-      if (clear.media && row.media_path) {
+      if (clear.media && (row.media_path || localMedia)) {
         const source =
           localMedia ??
-          (demo ? row.media_path : '/api/media?path=' + encodeURIComponent(row.media_path));
+          (demo ? row.media_path! : '/api/media?path=' + encodeURIComponent(row.media_path!));
         let bytes: ArrayBuffer;
         if (source.startsWith('data:application/octet-stream;base64,'))
           bytes = unbase64(source.slice(source.indexOf(',') + 1)).buffer;
@@ -129,9 +159,11 @@ export async function readConversation(
   }
   if (saved.length) {
     await keepMessages(device.user_id, saved);
-    const ids = saved.filter((m) => m.recipient_id === device.user_id).map((m) => m.id);
-    for (let offset = 0; offset < ids.length; offset += 100)
-      await chatRequest('delivered', { ids: ids.slice(offset, offset + 100) });
+    const receipts = saved
+      .filter((m) => m.recipient_id === device.user_id)
+      .map((m) => ({ id: m.id, revision: m.encrypted?.context.revision ?? 0 }));
+    for (let offset = 0; offset < receipts.length; offset += 100)
+      await chatRequest('delivered', { receipts: receipts.slice(offset, offset + 100) });
   }
   return result;
 }

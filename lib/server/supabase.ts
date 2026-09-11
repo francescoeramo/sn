@@ -53,6 +53,12 @@ export function checked<
 >(result: R): NonNullable<R['data']> {
   if (result.error) {
     const message = result.error.message;
+    if (
+      /già letto|30 minuti|Revisione cambiata|Impostazioni chat cambiate|Messaggio scaduto/.test(
+        message,
+      )
+    )
+      throw new ApiError(message, 409);
     if (/Limite orario|Spazio esaurito|Upload sospesi/.test(message))
       throw new ApiError(message, 429);
     throw new ApiError('Operazione non riuscita. Verifica i dati e i permessi.', 400);

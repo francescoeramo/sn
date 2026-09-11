@@ -7,6 +7,10 @@ import {
   messageInput,
   noteInput,
   bookmarkInput,
+  chatSettingsInput,
+  receiptInput,
+  deleteMessageInput,
+  sealedInput,
   noteReviewInput,
   localMediaInfo,
 } from '@/lib/core/rules';
@@ -150,6 +154,7 @@ export async function loadDemo(): Promise<Snapshot> {
       let loaded: Snapshot;
       req.onsuccess = () => {
         const state: Snapshot = req.result ?? seed();
+        initializeChat(state);
         state.notes ??= [];
         state.bookmarks ??= [];
         state.saved ??= { posts: [], nextCursor: null };
@@ -203,6 +208,7 @@ export async function clearDemo() {
 }
 export function applyDemo(source: Snapshot, action: Action): Snapshot {
   const s = structuredClone(source);
+  initializeChat(s);
   s.notes ??= [];
   s.bookmarks ??= [];
   s.saved ??= { posts: [], nextCursor: null };
@@ -210,6 +216,82 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
   const now = new Date().toISOString();
   const id = crypto.randomUUID();
   switch (action.type) {
+    case 'chat-settings': {
+      const v = chatSettingsInput.parse(action);
+      if (
+        !s.follows.some(
+          (f) => f.follower_id === me && f.following_id === v.user_id && f.accepted,
+        ) ||
+        !s.follows.some((f) => f.following_id === me && f.follower_id === v.user_id && f.accepted)
+      )
+        throw new Error('Potete scrivervi quando vi seguite a vicenda.');
+      const [a, b] = [me, v.user_id].sort();
+      s.chatSettings = [
+        ...s.chatSettings!.filter((c) => c.member_a !== a || c.member_b !== b),
+        { member_a: a, member_b: b, temporary: v.temporary, duration: v.duration, changed_by: me },
+      ];
+      break;
+    }
+    case 'chat-receipt': {
+      const v = receiptInput.parse(action),
+        m = s.messageStates!.find((m) => m.id === v.message_id);
+      if (!m || m.recipient_id !== me) throw new Error('Accesso negato.');
+      if (m.revision === v.revision && !m.deleted_at && isActive(m)) {
+        m.delivered_at ??= now;
+        if (v.read) m.read_at ??= now;
+      }
+      break;
+    }
+    case 'delete-message': {
+      const v = deleteMessageInput.parse(action),
+        m = s.messageStates!.find((m) => m.id === v.message_id);
+      if (!m || ![m.sender_id, m.recipient_id].includes(me)) throw new Error('Accesso negato.');
+      if (v.everyone) {
+        if (m.sender_id !== me) throw new Error('Accesso negato.');
+        m.deleted_at ??= now;
+        s.messages = s.messages.filter((r) => r.id !== m.id);
+      } else if (!s.hiddenMessages!.some((h) => h.user_id === me && h.message_id === m.id))
+        s.hiddenMessages!.push({ user_id: me, message_id: m.id });
+      break;
+    }
+    case 'edit-message': {
+      const m = s.messageStates!.find((m) => m.id === action.message_id);
+      if (!m || m.sender_id !== me || m.deleted_at || !isActive(m))
+        throw new Error('Messaggio non disponibile.');
+      if (m.read_at || Date.now() >= Date.parse(m.created_at) + 1800000)
+        throw new Error('Il messaggio è già letto o sono trascorsi 30 minuti.');
+      if (
+        !s.follows.some(
+          (f) => f.follower_id === me && f.following_id === m.recipient_id && f.accepted,
+        ) ||
+        !s.follows.some(
+          (f) => f.following_id === me && f.follower_id === m.recipient_id && f.accepted,
+        )
+      )
+        throw new Error('Accesso negato.');
+      const packet = sealedInput.parse(action.encrypted);
+      if (
+        packet.context.revision !== m.revision + 1 ||
+        packet.context.id !== m.id ||
+        packet.context.sender_id !== me ||
+        packet.context.recipient_id !== m.recipient_id ||
+        packet.context.expires_at !== m.expires_at
+      )
+        throw new Error('Revisione non valida.');
+      const row = s.messages.find((r) => r.id === m.id);
+      if (!row) throw new Error('Messaggio non disponibile.');
+      if (row.encrypted && row.encrypted.context.retention !== packet.context.retention)
+        throw new Error('Conservazione non valida.');
+      row.encrypted = packet;
+      row.body = '';
+      row.media_path = action.media_path;
+      row.media_type = action.media_path ? 'application/octet-stream' : null;
+      m.revision++;
+      m.edited_at = now;
+      m.delivered_at = null;
+      m.read_at = null;
+      break;
+    }
     case 'propose-note': {
       const value = noteInput.parse(action);
       if (!s.posts.some((p) => p.id === value.post_id && isActive(p)))
@@ -384,9 +466,24 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
       });
       const body = action.encrypted ? '' : value.body;
       const mediaType = info?.mime ?? null;
-      const expires_at =
-        action.encrypted?.context.expires_at ??
-        new Date(Date.parse(now) + value.ttl * 1000).toISOString();
+      const expires_at = action.encrypted
+        ? action.encrypted.context.expires_at
+        : value.ttl
+          ? new Date(Date.parse(now) + value.ttl * 1000).toISOString()
+          : null;
+      if (action.id && s.messageStates!.some((m) => m.id === action.id)) {
+        const existing = s.messages.find((m) => m.id === action.id);
+        if (existing && JSON.stringify(existing.encrypted) === JSON.stringify(action.encrypted))
+          break;
+        throw new Error('Messaggio già inviato.');
+      }
+      if (action.encrypted) {
+        const [a, b] = [me, action.user_id].sort();
+        const cfg = s.chatSettings!.find((c) => c.member_a === a && c.member_b === b);
+        const expected = cfg?.temporary ? cfg.duration : 0;
+        if (value.ttl !== expected || (expected === 0) !== (expires_at === null))
+          throw new Error('Impostazioni chat cambiate: riprova.');
+      }
       s.messages.push({
         id: action.id ?? id,
         encrypted: action.encrypted ?? null,
@@ -467,6 +564,34 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
     );
   s.usage.total_bytes = s.usage.bytes;
   if (s.usage.bytes > LIMITS.user) throw new Error('Spazio disponibile esaurito.');
+  initializeChat(s);
   s.bookmarks = s.bookmarks.filter((b) => s.posts.some((p) => p.id === b.post_id));
   return s;
+}
+
+export function initializeChat(s: Snapshot) {
+  s.chatSettings ??= [];
+  s.messageStates ??= [];
+  s.hiddenMessages ??= [];
+  for (const m of s.messages)
+    if (!s.messageStates.some((v) => v.id === m.id))
+      s.messageStates.push({
+        id: m.id,
+        sender_id: m.sender_id,
+        recipient_id: m.recipient_id,
+        created_at: m.created_at,
+        expires_at: m.expires_at,
+        revision: m.encrypted?.context.revision ?? 0,
+        delivered_at: null,
+        read_at: null,
+        edited_at: null,
+        deleted_at: null,
+      });
+}
+export async function mutateDemo(action: Action) {
+  return navigator.locks.request('sn-demo-mutation', async () => {
+    const next = applyDemo(await loadDemo(), action);
+    await saveDemo(next);
+    return next;
+  });
 }

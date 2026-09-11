@@ -1,3 +1,4 @@
+import { syncChat } from '@/lib/server/chat';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { timingSafeEqual } from 'node:crypto';
@@ -118,6 +119,8 @@ export async function GET(request: NextRequest, { params }: Context) {
         },
       });
     }
+    if (route === 'chat/sync')
+      return json(await syncChat(userId.parse(request.nextUrl.searchParams.get('user'))));
     if (route === 'chat/devices') {
       const { db, user } = await identity();
       const other = userId.parse(request.nextUrl.searchParams.get('user'));
@@ -214,15 +217,20 @@ export async function POST(request: NextRequest, { params }: Context) {
     }
     if (route === 'chat/delivered') {
       const { db } = await identity();
-      const value = z.object({ ids: z.array(userId).max(100) }).parse(await body(request));
-      const paths = checked(
-        await db.rpc('acknowledge_messages', { message_ids: value.ids }),
-      ) as string[];
-      if (paths.length) {
-        const admin = adminDatabase();
-        checked(await admin.storage.from('media').remove(paths));
-        checked(await admin.from('media_assets').delete().in('path', paths));
-      }
+      const value = z
+        .object({
+          receipts: z
+            .array(z.object({ id: userId, revision: z.number().int().nonnegative() }))
+            .max(100),
+        })
+        .parse(await body(request));
+      for (const r of value.receipts)
+        checked(
+          await db.rpc('acknowledge_chat_revision', {
+            message_id: r.id,
+            expected_revision: r.revision,
+          }),
+        );
       return json({ ok: true });
     }
     if (route === 'action') return json(await mutate(await body(request)));

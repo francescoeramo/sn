@@ -44,10 +44,10 @@ describe('Regole condivise', () => {
       }),
     ).toThrow('3 MB');
   });
-  it('accetta solo le sei scadenze previste e usa 24 ore come valore iniziale', () => {
+  it('accetta le sei durate temporanee e conserva i messaggi ordinari', () => {
     const input = { user_id: seed().profiles[1].id, body: 'Ciao' };
-    expect(messageInput.parse(input).ttl).toBe(86400);
-    for (const ttl of [0, 42, -1, null, 2592001])
+    expect(messageInput.parse(input).ttl).toBe(0);
+    for (const ttl of [42, -1, null, 2592001])
       expect(messageInput.safeParse({ ...input, ttl }).success).toBe(false);
   });
   it('i messaggi demo supportano audio e scadenza senza fidarsi del MIME dichiarato', () => {

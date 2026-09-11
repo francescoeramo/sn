@@ -33,3 +33,13 @@ Le Note della comunità sono testate nel database contro letture di estranei, pr
 - Browser: 34/36 superati al primo giro desktop/mobile. I due test delle storie avevano un'aspettativa errata sulla chiusura dopo «Salta»: corretto il test per il passaggio all'autore successivo, entrambi superati al secondo giro. Nuovi test di salvataggi e avvisi dei post riconfermati (4/4).
 - Controllo visivo desktop/mobile effettuato. Il detector segnala due convenzioni preesistenti (font Arial e bordo laterale nelle note); nessun nuovo finding introdotto da queste funzioni.
 - Nessuna migrazione cloud o verifica Auth/Storage remota eseguita: applicare tutte le migrazioni sul progetto SN dedicato e completare il collaudo prima degli inviti reali. Le policy seguono la documentazione [RLS di Supabase](https://supabase.com/docs/guides/database/postgres/row-level-security).
+
+## 11 settembre 2026 — ciclo di vita della chat
+
+- Lint senza avvisi, TypeScript e build produzione: superati.
+- 56 test unitari, crittografici e SQL PGlite superati. Nuove prove: scadenza nulla, impostazioni condivise, revisione autenticata, limite 30 minuti, lettura che impedisce la modifica, ricevute obsolete, eliminazione personale/globale e retry dopo consegna solo dispositivo.
+- 38 test Playwright desktop/mobile superati: include chat ordinaria, modifica, due cancellazioni, modalità temporanea, allegati e regressioni dei flussi precedenti.
+- Audit dipendenze di produzione: zero vulnerabilità.
+- Controllo visivo desktop 1440 px e mobile 412 px: nessun overflow orizzontale. Conversazione più leggibile, impostazioni separate dal composer e stati con etichette accessibili. Screenshot locali in `artifacts/chat-lifecycle-desktop.png` e `artifacts/chat-lifecycle-mobile.png`.
+- Detector Impeccable: due rilievi preesistenti (Arial e bordo laterale delle note); nessun nuovo rilievo sulla chat.
+- Non eseguiti: migrazione cloud, Auth/Storage remoti, concorrenza su connessioni Postgres separate. Applicare la migrazione `20260911085314_chat_lifecycle.sql` sul progetto SN dedicato prima di usare queste API con utenti reali. I test SQL seriali verificano ordine degli eventi e revisioni obsolete, non sostituiscono il collaudo distribuito.
