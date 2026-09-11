@@ -59,6 +59,17 @@ const navigation = [
   { id: 'notifications', label: 'Notifiche', icon: Bell },
   { id: 'profile', label: 'Il tuo profilo', icon: UserRound },
 ] as const;
+const auditLabels = {
+  report_dismissed: 'Segnalazione archiviata',
+  post_removed: 'Post rimosso',
+  note_approved: 'Nota approvata',
+  note_rejected: 'Nota respinta',
+} as const;
+const auditTargetLabels = {
+  report: 'segnalazione',
+  post: 'post',
+  community_note: 'nota',
+} as const;
 function download(value: unknown, name: string) {
   const url = URL.createObjectURL(
     new Blob([JSON.stringify(value, null, 2)], { type: 'application/json' }),
@@ -1106,6 +1117,35 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                     Le segnalazioni dei tuoi amici arriveranno qui.
                   </Empty>
                 )}
+                <section className="moderation-history" aria-labelledby="moderation-history-title">
+                  <h2 id="moderation-history-title">Registro delle decisioni</h2>
+                  <p className="muted">
+                    Conserva il moderatore, l’azione, il contenuto interessato e la data.
+                  </p>
+                  {(state.moderationAudit ?? []).length ? (
+                    <ol className="audit-list">
+                      {(state.moderationAudit ?? []).map((entry) => {
+                        const moderator = state.profiles.find((p) => p.id === entry.moderator_id);
+                        return (
+                          <li key={entry.id}>
+                            <span>
+                              <strong>{auditLabels[entry.action]}</strong>
+                              <small>
+                                {auditTargetLabels[entry.target_type]} · {entry.target_id.slice(0, 8)}
+                              </small>
+                            </span>
+                            <span>
+                              {moderator?.display_name ?? 'Account rimosso'} ·{' '}
+                              {relativeTime(entry.created_at)}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ol>
+                  ) : (
+                    <p className="fine muted">Nessuna decisione registrata.</p>
+                  )}
+                </section>
               </section>
             )}
           </main>

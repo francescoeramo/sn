@@ -130,6 +130,7 @@ export function seed(): Snapshot {
       },
     ],
     reports: [],
+    moderationAudit: [],
     blocks: [],
     usage: { bytes: 0, total_bytes: 0, members: 5, max_members: 20, uploads_enabled: true },
     isAdmin: true,
@@ -156,6 +157,7 @@ export async function loadDemo(): Promise<Snapshot> {
         const state: Snapshot = req.result ?? seed();
         initializeChat(state);
         state.notes ??= [];
+        state.moderationAudit ??= [];
         state.bookmarks ??= [];
         state.saved ??= { posts: [], nextCursor: null };
         state.messages = state.messages.filter((m) => isActive(m));
@@ -210,6 +212,7 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
   const s = structuredClone(source);
   initializeChat(s);
   s.notes ??= [];
+  s.moderationAudit ??= [];
   s.bookmarks ??= [];
   s.saved ??= { posts: [], nextCursor: null };
   const me = s.me.id;
@@ -331,6 +334,14 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
         kind: value.approve ? 'note_approved' : 'note_rejected',
         post_id: note.post_id,
         read: false,
+        created_at: now,
+      });
+      s.moderationAudit.unshift({
+        id: crypto.randomUUID(),
+        moderator_id: me,
+        action: value.approve ? 'note_approved' : 'note_rejected',
+        target_type: 'community_note',
+        target_id: note.id,
         created_at: now,
       });
       break;
@@ -530,6 +541,14 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
       if (report) {
         report.status = action.remove ? 'removed' : 'dismissed';
         if (action.remove) s.posts = s.posts.filter((p) => p.id !== report.post_id);
+        s.moderationAudit.unshift({
+          id: crypto.randomUUID(),
+          moderator_id: me,
+          action: action.remove ? 'post_removed' : 'report_dismissed',
+          target_type: action.remove ? 'post' : 'report',
+          target_id: action.remove && report.post_id ? report.post_id : report.id,
+          created_at: now,
+        });
       }
       break;
     }

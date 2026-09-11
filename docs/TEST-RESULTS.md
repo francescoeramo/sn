@@ -50,3 +50,10 @@ Le Note della comunità sono testate nel database contro letture di estranei, pr
 - 17 test mirati sulle regole superati, inclusa la corrispondenza delle due password.
 - Pagina del link assente o scaduto verificata in Playwright su desktop e mobile: 2 test superati.
 - La suite completa resta affidata alla CI del commit. Il flusso email, la notifica di cambio password e la revoca tra due browser richiedono il progetto Supabase dedicato con SMTP configurato.
+
+## 11 settembre 2026 — registro di moderazione
+
+- Lint e TypeScript superati; build produzione completata.
+- 53 test mirati TypeScript e SQL superati. Le prove verificano scrittura atomica del registro per note e rimozioni, invisibilità ai membri e impossibilità di aggiornare direttamente lo stato delle segnalazioni.
+- Il percorso di revisione delle note, incluso il nuovo registro, è passato in Playwright su desktop e mobile.
+- Migrazione locale verificata con PGlite; applicazione e collaudo sul progetto cloud ancora necessari.

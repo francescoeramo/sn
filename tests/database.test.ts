@@ -448,6 +448,41 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
       await asUser(bob, "select * from public.notifications where kind='note_approved'"),
     ).toHaveLength(1);
   });
+  it('registra decisioni di moderazione e impedisce aggiornamenti fuori dalla RPC', async () => {
+    await asUser(alice, "insert into public.posts(author_id,body) values($1,'Post per audit')", [
+      alice,
+    ]);
+    const [{ id: post }] = await asUser<{ id: string }>(
+      alice,
+      "select id from public.posts where author_id=$1 and body='Post per audit'",
+      [alice],
+    );
+    await asUser(bob, 'insert into public.reports(reporter_id,post_id,reason) values($1,$2,$3)', [
+      bob,
+      post,
+      'Contenuto da controllare.',
+    ]);
+    const [{ id: report }] = await asUser<{ id: string }>(
+      bob,
+      "select id from public.reports where status='open' order by created_at desc limit 1",
+    );
+    await expect(
+      asUser(bob, "update public.reports set status='dismissed' where id=$1", [report]),
+    ).rejects.toThrow('permission denied');
+    await expect(asUser(bob, 'select public.moderate_report($1,true)', [report])).rejects.toThrow(
+      'Accesso negato',
+    );
+    await db.query('insert into private.admins(user_id) values($1)', [eve]);
+    await asUser(eve, 'select public.moderate_report($1,true)', [report]);
+    const audit = await asUser<{ action: string; target_id: string }>(
+      eve,
+      'select action,target_id from public.moderation_audit order by created_at',
+    );
+    expect(audit.map((row) => row.action)).toEqual(['note_approved', 'post_removed']);
+    expect(audit.at(-1)?.target_id).toBe(post);
+    expect(await asUser(bob, 'select * from public.moderation_audit')).toHaveLength(0);
+    await db.query('delete from private.admins where user_id=$1', [eve]);
+  });
   it('i salvati sono privati anche per moderatori e non autorizzano post privati', async () => {
     const [{ id }] = await asUser<{ id: string }>(
       alice,

@@ -135,6 +135,22 @@ describe('Regole condivise', () => {
       }),
     ).toThrow('già esaminata');
   });
+  it('la demo registra le decisioni del moderatore', () => {
+    const state = seed();
+    const report = applyDemo(state, {
+      type: 'report',
+      post_id: state.posts[0].id,
+      reason: 'Contenuto da verificare.',
+    });
+    const reviewed = applyDemo(report, {
+      type: 'moderate',
+      report_id: report.reports[0].id,
+      remove: false,
+    });
+    expect(reviewed.moderationAudit).toMatchObject([
+      { action: 'report_dismissed', target_type: 'report', target_id: report.reports[0].id },
+    ]);
+  });
   it('estrae hashtag italiani senza duplicati', () =>
     expect(hashtags('Ciao #caffè #Musica #musica')).toEqual(['caffè', 'musica']));
   it('rifiuta SVG e HTML negli upload', () => {

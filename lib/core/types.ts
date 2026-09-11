@@ -58,6 +58,14 @@ export type Report = {
   status: string;
   created_at: string;
 };
+export type ModerationAudit = {
+  id: string;
+  moderator_id: string | null;
+  action: 'report_dismissed' | 'post_removed' | 'note_approved' | 'note_rejected';
+  target_type: 'report' | 'post' | 'community_note';
+  target_id: string;
+  created_at: string;
+};
 export type CommunityNote = {
   post?: { body: string } | null;
   id: string;
@@ -115,6 +123,7 @@ export type Snapshot = {
   messages: Message[];
   notifications: Notice[];
   reports: Report[];
+  moderationAudit?: ModerationAudit[];
   blocks: { blocker_id: string; blocked_id: string }[];
   usage: {
     bytes: number;

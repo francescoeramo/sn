@@ -1820,6 +1820,44 @@ label small {
 .account-card form > .primary {
   width: 100%;
 }
+.moderation-history {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+.audit-list {
+  list-style: none;
+  padding: 0;
+  margin-top: 16px;
+}
+.audit-list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: #756c7e;
+}
+.audit-list li > span:first-child {
+  display: grid;
+  gap: 3px;
+}
+.audit-list strong {
+  color: var(--ink);
+  font-size: 14px;
+}
+.audit-list small {
+  font-size: 11px;
+}
+@media (max-width: 560px) {
+  .audit-list li {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+}
 .loading-screen {
   min-height: 100vh;
   display: flex;

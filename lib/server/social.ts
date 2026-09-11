@@ -84,6 +84,7 @@ export async function snapshot() {
       .limit(100),
     db.from('notifications').select('*').order('created_at', { ascending: false }).limit(50),
     db.from('reports').select('*').order('created_at', { ascending: false }).limit(50),
+    db.from('moderation_audit').select('*').order('created_at', { ascending: false }).limit(100),
     db.from('blocks').select('*'),
     db.rpc('my_usage'),
     db
@@ -101,6 +102,7 @@ export async function snapshot() {
     messages,
     notifications,
     reports,
+    moderationAudit,
     blocks,
     usage,
     notes,
@@ -119,6 +121,7 @@ export async function snapshot() {
     messages,
     notifications,
     reports,
+    moderationAudit,
     blocks,
     usage: {
       bytes: usage.bytes,
@@ -305,17 +308,7 @@ export async function mutate(input: unknown) {
     }
     case 'moderate': {
       const v = z.object({ report_id: userId, remove: z.boolean() }).parse(obj);
-      const usage = checked(await db.rpc('my_usage'));
-      if (!usage.isAdmin) throw new ApiError('Accesso negato.', 403);
-      const report = checked(await db.from('reports').select('*').eq('id', v.report_id).single());
-      if (v.remove && report.post_id)
-        checked(await db.from('posts').delete().eq('id', report.post_id));
-      checked(
-        await db
-          .from('reports')
-          .update({ status: v.remove ? 'removed' : 'dismissed' })
-          .eq('id', v.report_id),
-      );
+      checked(await db.rpc('moderate_report', { report_id: v.report_id, remove_post: v.remove }));
       break;
     }
     case 'block': {

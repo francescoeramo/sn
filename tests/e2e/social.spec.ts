@@ -390,6 +390,9 @@ test('note della comunità: proposta, revisione motivata e post originale conser
   await review.getByLabel('Motivo della decisione').fill('La fonte è pertinente e verificabile.');
   await review.getByRole('button', { name: 'Salva decisione' }).click();
   await expect(review).toContainText('Nessuna nota in attesa.');
+  await expect(page.getByRole('region', { name: 'Registro delle decisioni' })).toContainText(
+    'Nota approvata',
+  );
   await page
     .getByRole('button', { name: 'La tua piazza', exact: true })
     .filter({ visible: true })
