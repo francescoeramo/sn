@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
+import '@fontsource-variable/ibm-plex-sans/wght.css';
 import './globals.css';
 export const metadata: Metadata = {
   title: 'SN · Ci troviamo qui',
