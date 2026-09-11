@@ -35,6 +35,7 @@ Nel compositore puoi inserire un avviso facoltativo (massimo 160 caratteri). Tes
 Per le API reali applicare anche `supabase/migrations/20260910173013_bookmarks_and_content_warnings.sql` dopo le migrazioni precedenti. La migrazione è verificata localmente; non è stata applicata a un progetto cloud in questa sessione. La demo aggiorna automaticamente i dati locali esistenti.
 
 La direzione confermata è in [PRODUCT.md](PRODUCT.md); priorità, stato e dipendenze in [ROADMAP.md](docs/ROADMAP.md).
+La procedura di export cifrato e prova di ripristino è in [BACKUP.md](docs/BACKUP.md).
 
 ## Collegamento a Supabase
 

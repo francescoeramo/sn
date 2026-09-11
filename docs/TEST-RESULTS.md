@@ -63,3 +63,9 @@ Le Note della comunità sono testate nel database contro letture di estranei, pr
 - Lint, TypeScript e build produzione superati.
 - 36 test SQL mirati superati. La prova verifica presenza dell’indice GIN, risultato per un follower autorizzato e nessun risultato per un estraneo.
 - La query usa `websearch` con dizionario italiano e restituisce una lista vuota per ricerche vuote. Migrazione cloud ancora da applicare.
+
+## 11 settembre 2026 — backup e ripristino
+
+- Lint, TypeScript e build produzione superati.
+- Due test mirati verificano la guida del comando e il rifiuto di destinazioni relative o interne al repository.
+- Non è stato eseguito un dump remoto: servono la connessione del progetto SN e una chiave GPG dedicata. La prima prova di ripristino e la copia separata degli oggetti Storage restano attività operative.

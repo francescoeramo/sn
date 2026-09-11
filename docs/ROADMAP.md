@@ -20,7 +20,7 @@ Aggiornato l’11 settembre 2026. `PRODUCT.md` contiene i vincoli correnti; i do
 | Onboarding e stati vuoti                         | Introdurre benvenuto post-registrazione, istruzioni privacy e percorsi iniziali; migliorare stati vuoti in modo coerente.                                                                     |
 | Temi e caricamento                               | Verificare modalità scura, token e skeleton; mantenere illustrazioni proprie e feedback discreti.                                                                                             |
 | CSP e headers                                    | Presenti nel codice; verificare la risposta effettiva in produzione. Live Impeccable richiede configurazione CSP di sviluppo separata.                                                        |
-| Backup e ripristino                              | Predisporre export periodico e piano di ripristino verificato. Decidere separatamente l'eventuale backup cifrato delle chiavi dell'utente.                                                    |
+| Backup e ripristino                              | Script di dump cifrato e procedura di ripristino disponibili. Da programmare su una macchina fidata, aggiungere la copia degli oggetti Storage ed eseguire la prima prova trimestrale.        |
 
 ## Implementato localmente: conservazione e stati della chat
 
