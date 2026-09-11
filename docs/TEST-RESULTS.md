@@ -43,3 +43,10 @@ Le Note della comunità sono testate nel database contro letture di estranei, pr
 - Controllo visivo desktop 1440 px e mobile 412 px: nessun overflow orizzontale. Conversazione più leggibile, impostazioni separate dal composer e stati con etichette accessibili. Screenshot locali in `artifacts/chat-lifecycle-desktop.png` e `artifacts/chat-lifecycle-mobile.png`.
 - Detector Impeccable: due rilievi preesistenti (Arial e bordo laterale delle note); nessun nuovo rilievo sulla chat.
 - Non eseguiti: migrazione cloud, Auth/Storage remoti, concorrenza su connessioni Postgres separate. Applicare la migrazione `20260911085314_chat_lifecycle.sql` sul progetto SN dedicato prima di usare queste API con utenti reali. I test SQL seriali verificano ordine degli eventi e revisioni obsolete, non sostituiscono il collaudo distribuito.
+
+## 11 settembre 2026 — recupero account
+
+- Lint, TypeScript e build produzione superati.
+- 17 test mirati sulle regole superati, inclusa la corrispondenza delle due password.
+- Pagina del link assente o scaduto verificata in Playwright su desktop e mobile: 2 test superati.
+- La suite completa resta affidata alla CI del commit. Il flusso email, la notifica di cambio password e la revoca tra due browser richiedono il progetto Supabase dedicato con SMTP configurato.

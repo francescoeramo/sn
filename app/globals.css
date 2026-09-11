@@ -1789,6 +1789,37 @@ label small {
   color: #aea5b6;
   font-size: 9px;
 }
+.account-screen {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.account-card {
+  width: min(100%, 460px);
+}
+.account-card > svg {
+  display: block;
+  margin-bottom: 18px;
+  color: var(--violet);
+}
+.account-card > h1 {
+  margin: 10px 0;
+  font-size: 28px;
+  line-height: 1.2;
+  letter-spacing: -1px;
+  font-weight: 500;
+}
+.account-card > p {
+  margin: 15px 0 24px;
+  color: #756c7e;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.account-card > .primary,
+.account-card form > .primary {
+  width: 100%;
+}
 .loading-screen {
   min-height: 100vh;
   display: flex;

@@ -11,6 +11,8 @@ import {
   userId,
   publicDeviceInput,
   savedCursorInput,
+  passwordResetRequest,
+  passwordUpdate,
 } from '@/lib/core/rules';
 import { database, identity, checked, adminDatabase, ApiError } from '@/lib/server/supabase';
 import { snapshot, mutate, exportData, deleteAccount, savedPage } from '@/lib/server/social';
@@ -159,6 +161,32 @@ export async function POST(request: NextRequest, { params }: Context) {
   try {
     sameOrigin(request);
     const route = (await params).path.join('/');
+    if (route === 'auth/recover') {
+      const data = passwordResetRequest.parse(await body(request));
+      const db = await database();
+      const started = Date.now();
+      await db.auth.resetPasswordForEmail(data.email, {
+        redirectTo: new URL('/auth/callback?next=/account/password', process.env.APP_ORIGIN!).href,
+      });
+      await new Promise((resolve) =>
+        setTimeout(resolve, Math.max(0, 650 - (Date.now() - started))),
+      );
+      return json({ ok: true });
+    }
+    if (route === 'auth/password') {
+      const data = passwordUpdate.parse(await body(request));
+      const db = await database();
+      const user = await db.auth.getUser();
+      if (user.error || !user.data.user) throw new ApiError('Il link non è più valido.', 401);
+      checked(await db.auth.updateUser({ password: data.password }));
+      const closed = await db.auth.signOut({ scope: 'global' });
+      if (closed.error)
+        throw new ApiError(
+          'Password cambiata. Non è stato possibile chiudere tutte le sessioni: contatta il gestore della beta.',
+          503,
+        );
+      return json({ ok: true });
+    }
     if (route === 'auth/login' || route === 'auth/signup') {
       const data = credentials.parse(await body(request));
       const db = await database();

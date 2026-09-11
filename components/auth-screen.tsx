@@ -9,9 +9,11 @@ export function AuthScreen({
   configured: boolean;
   onLogin: () => Promise<void>;
 }) {
-  const [signup, setSignup] = useState(false);
+  const [mode, setMode] = useState<'login' | 'signup' | 'recover'>('login');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const signup = mode === 'signup';
+  const recover = mode === 'recover';
   return (
     <main className="auth-screen">
       <div className="auth-story">
@@ -58,11 +60,15 @@ export function AuthScreen({
         ) : (
           <>
             <span className="eyebrow">BETA PRIVATA</span>
-            <h2>{signup ? 'C’è posto per te.' : 'Bentornato.'}</h2>
+            <h2>
+              {signup ? 'C’è posto per te.' : recover ? 'Recupera l’accesso.' : 'Bentornato.'}
+            </h2>
             <p>
               {signup
                 ? 'Usa il codice che hai ricevuto da chi ti ha invitato.'
-                : 'Accedi e ritrova i tuoi amici.'}
+                : recover
+                  ? 'Inserisci la tua email. Se è associata a un account, riceverai un link.'
+                  : 'Accedi e ritrova i tuoi amici.'}
             </p>
             <form
               onSubmit={async (e) => {
@@ -71,14 +77,19 @@ export function AuthScreen({
                 setMessage('');
                 const form = new FormData(e.currentTarget);
                 try {
-                  const response = await fetch(`/api/auth/${signup ? 'signup' : 'login'}`, {
+                  const route = recover ? 'recover' : signup ? 'signup' : 'login';
+                  const response = await fetch(`/api/auth/${route}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(Object.fromEntries(form)),
                   });
                   const result = await response.json();
                   if (!response.ok) throw new Error(result.error);
-                  if (result.confirmationRequired)
+                  if (recover)
+                    setMessage(
+                      'Se l’indirizzo appartiene a un account, riceverai un link valido per 15 minuti.',
+                    );
+                  else if (result.confirmationRequired)
                     setMessage('Controlla la tua email e conferma l’indirizzo prima di accedere.');
                   else await onLogin();
                 } catch (error) {
@@ -118,18 +129,20 @@ export function AuthScreen({
                   </label>
                 </>
               )}
-              <label>
-                Password
-                <input
-                  name="password"
-                  type="password"
-                  required
-                  minLength={12}
-                  maxLength={128}
-                  autoComplete={signup ? 'new-password' : 'current-password'}
-                />
-                {signup && <small>Almeno 12 caratteri.</small>}
-              </label>
+              {!recover && (
+                <label>
+                  Password
+                  <input
+                    name="password"
+                    type="password"
+                    required
+                    minLength={12}
+                    maxLength={128}
+                    autoComplete={signup ? 'new-password' : 'current-password'}
+                  />
+                  {signup && <small>Almeno 12 caratteri.</small>}
+                </label>
+              )}
               {signup && (
                 <label className="check-label">
                   <input type="checkbox" required /> Ho letto l’
@@ -145,18 +158,35 @@ export function AuthScreen({
                 </p>
               )}
               <button className="primary" disabled={busy}>
-                {busy ? 'Un momento…' : signup ? 'Crea account' : 'Accedi'}
+                {busy
+                  ? 'Un momento…'
+                  : signup
+                    ? 'Crea account'
+                    : recover
+                      ? 'Invia il link'
+                      : 'Accedi'}
                 <ArrowRight size={18} />
               </button>
             </form>
+            {!signup && !recover && (
+              <button
+                className="text-button"
+                onClick={() => {
+                  setMode('recover');
+                  setMessage('');
+                }}
+              >
+                Hai dimenticato la password?
+              </button>
+            )}
             <button
               className="text-button"
               onClick={() => {
-                setSignup(!signup);
+                setMode(mode === 'login' ? 'signup' : 'login');
                 setMessage('');
               }}
             >
-              {signup ? 'Hai già un account? Accedi' : 'Hai un invito? Registrati'}
+              {signup || recover ? 'Torna all’accesso' : 'Hai un invito? Registrati'}
             </button>
             <Link href="/demo" className="subtle-link">
               Preferisci dare un’occhiata? Prova la demo

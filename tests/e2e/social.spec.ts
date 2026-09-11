@@ -555,3 +555,12 @@ test('chat: messaggi permanenti, modifica e due comandi di eliminazione', async 
   await incoming.getByRole('button', { name: 'Elimina per me', exact: true }).click();
   await expect(page.locator('.chat-bubble')).toHaveCount(0);
 });
+
+test('recupero account: un link assente o scaduto non apre il cambio password', async ({
+  page,
+}) => {
+  await page.goto('/account/password');
+  await expect(page.getByRole('heading', { name: 'Il link non è più valido.' })).toBeVisible();
+  await expect(page.getByLabel('Nuova password')).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Torna all’accesso' })).toHaveAttribute('href', '/');
+});

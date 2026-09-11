@@ -110,3 +110,4 @@ La direzione di prodotto e le integrazioni sono state confermate dal proprietari
 Definire chi può cambiare la modalità condivisa della conversazione e la durata, e l’ambito dell’eliminazione manuale (propria copia o entrambi). I requisiti completi e i casi limite sono nella sezione 4 di `SN-prompt-progetto.md`; non descriverli come funzionalità operative prima del collaudo.
 
 - Nella chat «Elimina per me» nasconde il messaggio sui propri browser sincronizzati; «Elimina per tutti» è disponibile solo per i propri messaggi. Entrambi i partecipanti possono modificare modalità e durata condivise.
+- Il recupero account non rivela se un indirizzo è registrato. Il link scade dopo 15 minuti; il cambio password revoca tutti i refresh token e richiede un nuovo accesso. Gli access token già emessi durano al massimo 5 minuti. La notifica di cambio password e la consegna del link dipendono dalla configurazione Auth/SMTP del progetto dedicato.

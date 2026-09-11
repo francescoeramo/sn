@@ -7,6 +7,8 @@ import {
   messageInput,
   noteInput,
   localMediaInfo,
+  passwordResetRequest,
+  passwordUpdate,
 } from '../lib/core/rules';
 import { applyDemo, seed } from '../lib/client/demo';
 describe('Regole condivise', () => {
@@ -49,6 +51,22 @@ describe('Regole condivise', () => {
     expect(messageInput.parse(input).ttl).toBe(0);
     for (const ttl of [42, -1, null, 2592001])
       expect(messageInput.safeParse({ ...input, ttl }).success).toBe(false);
+  });
+  it('valida recupero e conferma della nuova password', () => {
+    expect(passwordResetRequest.safeParse({ email: 'persona@example.test' }).success).toBe(true);
+    expect(passwordResetRequest.safeParse({ email: 'non-valida' }).success).toBe(false);
+    expect(
+      passwordUpdate.safeParse({
+        password: 'una-password-lunga',
+        confirmation: 'una-password-lunga',
+      }).success,
+    ).toBe(true);
+    expect(
+      passwordUpdate.safeParse({
+        password: 'una-password-lunga',
+        confirmation: 'password-diversa',
+      }).success,
+    ).toBe(false);
   });
   it('i messaggi demo supportano audio e scadenza senza fidarsi del MIME dichiarato', () => {
     const s = seed();

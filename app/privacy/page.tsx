@@ -64,6 +64,11 @@ export default function Privacy() {
         scambio richiede fiducia nelle chiavi ricevute finché non le confrontate attraverso un altro
         canale.
       </p>
+      <p>
+        Il recupero account usa un link email a breve scadenza. Dopo il cambio della password SN
+        chiude le sessioni e richiede un nuovo accesso sui dispositivi. Un token già emesso può
+        restare valido fino alla sua scadenza tecnica.
+      </p>
       <h2>Fornitori e richieste di rete</h2>
       <p>
         La versione locale non contiene tracker pubblicitari o strumenti di analytics. Usa font

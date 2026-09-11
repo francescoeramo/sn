@@ -58,6 +58,16 @@ export const credentials = z.object({
     .optional(),
   invite: z.string().min(32).max(128).optional(),
 });
+export const passwordResetRequest = z.object({ email: z.email().max(254) });
+export const passwordUpdate = z
+  .object({
+    password: z.string().min(12).max(128),
+    confirmation: z.string().min(12).max(128),
+  })
+  .refine((value) => value.password === value.confirmation, {
+    message: 'Le password non coincidono.',
+    path: ['confirmation'],
+  });
 export function hashtags(text: string) {
   return [
     ...new Set(
