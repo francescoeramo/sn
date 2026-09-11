@@ -84,13 +84,13 @@ export async function GET(request: NextRequest, { params }: Context) {
         .trim()
         .max(100)
         .parse(request.nextUrl.searchParams.get('q') ?? '');
-      const escaped = term.replace(/[\\%_]/g, (c) => '\\' + c);
+      if (!term) return json([]);
       return json(
         checked(
           await db
             .from('posts')
             .select('*, notes:community_notes(*)')
-            .ilike('body', `%${escaped}%`)
+            .textSearch('body', term, { config: 'italian', type: 'websearch' })
             .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
             .order('created_at', { ascending: false })
             .limit(40),

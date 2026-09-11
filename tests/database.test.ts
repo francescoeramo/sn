@@ -382,6 +382,16 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
     );
     expect(await asUser(bob, "select * from public.posts where kind='story'")).toHaveLength(0);
   });
+  it('indicizza la ricerca italiana senza superare la visibilità dei post', async () => {
+    const indexes = await db.query<{ indexname: string }>(
+      "select indexname from pg_indexes where schemaname='public' and tablename='posts' and indexname='posts_body_full_text'",
+    );
+    expect(indexes.rows).toHaveLength(1);
+    const query =
+      "select id from public.posts where to_tsvector('italian',body) @@ websearch_to_tsquery('italian',$1)";
+    expect(await asUser(bob, query, ['follower'])).toHaveLength(1);
+    expect(await asUser(eve, query, ['follower'])).toHaveLength(0);
+  });
   it('le note rispettano la privacy del post e solo un moderatore può pubblicarle', async () => {
     const [{ id: post }] = await asUser<{ id: string }>(
       alice,

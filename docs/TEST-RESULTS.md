@@ -57,3 +57,9 @@ Le Note della comunità sono testate nel database contro letture di estranei, pr
 - 53 test mirati TypeScript e SQL superati. Le prove verificano scrittura atomica del registro per note e rimozioni, invisibilità ai membri e impossibilità di aggiornare direttamente lo stato delle segnalazioni.
 - Il percorso di revisione delle note, incluso il nuovo registro, è passato in Playwright su desktop e mobile.
 - Migrazione locale verificata con PGlite; applicazione e collaudo sul progetto cloud ancora necessari.
+
+## 11 settembre 2026 — ricerca full-text
+
+- Lint, TypeScript e build produzione superati.
+- 36 test SQL mirati superati. La prova verifica presenza dell’indice GIN, risultato per un follower autorizzato e nessun risultato per un estraneo.
+- La query usa `websearch` con dizionario italiano e restituisce una lista vuota per ricerche vuote. Migrazione cloud ancora da applicare.
