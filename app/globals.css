@@ -2449,11 +2449,11 @@ label small {
   font-size: 13px;
 }
 .context-note {
-  border-left: 3px solid var(--violet);
+  border: 1px solid var(--line);
   background: #f3f0f8;
   padding: 16px;
   margin: 12px 0;
-  border-radius: 0 12px 12px 0;
+  border-radius: 12px;
 }
 .context-note p,
 .my-note p,
