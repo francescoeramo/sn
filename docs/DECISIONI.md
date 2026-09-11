@@ -35,3 +35,9 @@ Le fonti sono link aperti deliberatamente dall’utente: SN non le visita, non g
 Il proprietario conferma assenza di pubblicità e di monetizzazione via ads: questo sostituisce la precedente predisposizione per sponsorizzazioni. Il riferimento corrente è `PRODUCT.md`; la roadmap distingue gli obiettivi dal lavoro già realizzato.
 
 Salvataggi privati per post/reel e avvisi di contenuto sono aggiunti alla demo e alle API, con una migrazione separata. Salvare non estende l'accesso al post e non genera notifiche. La raccolta appartiene al singolo utente, anche se moderatore. Gli avvisi nascondono testo, media e commenti fino alla scelta del lettore; quelli delle storie sospendono caricamento e autoplay prima della scelta. La federazione resta disattivata.
+
+## Aggiornamento dell’11 settembre 2026 — requisiti chat
+
+Il proprietario richiede messaggi conservati per impostazione predefinita e autoeliminazione soltanto in «Chat temporanea». Il pulsante è nella conversazione; la durata si sceglie nelle impostazioni della chat. Sono richiesti modifica entro 30 minuti solo prima della lettura e stati dinamici non inviato, inviato, consegnato non letto, letto, con spunte simili a WhatsApp.
+
+Questa decisione sostituisce la scadenza predefinita di 24 ore descritta sopra. Prompt, PRODUCT.md e roadmap sono aggiornati; implementazione e migrazione restano da eseguire. Nessuna modifica retroattiva allo storico cifrato è prevista.

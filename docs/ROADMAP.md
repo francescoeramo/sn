@@ -1,6 +1,6 @@
 # SN — lavoro confermato
 
-Aggiornato il 10 settembre 2026. `PRODUCT.md` contiene i vincoli correnti; i documenti precedenti possono descrivere fasi superate. Nessuna monetizzazione pubblicitaria. Il completamento locale non equivale al collaudo o al deploy cloud.
+Aggiornato l’11 settembre 2026. `PRODUCT.md` contiene i vincoli correnti; i documenti precedenti possono descrivere fasi superate. Nessuna monetizzazione pubblicitaria. Il completamento locale non equivale al collaudo o al deploy cloud.
 
 | Area                                             | Stato e passo successivo                                                                                                                                                                           |
 | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -20,6 +20,18 @@ Aggiornato il 10 settembre 2026. `PRODUCT.md` contiene i vincoli correnti; i doc
 | Temi e caricamento                               | Verificare modalità scura, token e skeleton; mantenere illustrazioni proprie e feedback discreti.                                                                                                  |
 | CSP e headers                                    | Presenti nel codice; verificare la risposta effettiva in produzione. Live Impeccable richiede configurazione CSP di sviluppo separata.                                                             |
 | Backup e ripristino                              | Predisporre export periodico e piano di ripristino verificato. Decidere separatamente l'eventuale backup cifrato delle chiavi dell'utente.                                                         |
+
+## Prossimo blocco: conservazione e stati della chat
+
+Requisiti confermati, ancora da implementare, nella sezione 4 di `SN-prompt-progetto.md`:
+
+1. Messaggi ordinari senza scadenza; pulsante «Chat temporanea» e durata nelle impostazioni della conversazione, valida per i nuovi invii.
+2. Ricevute dinamiche di invio, consegna e lettura con spunte ed etichette accessibili; nessuna lettura simulata nella demo.
+3. Modifica entro 30 minuti solo prima della lettura, verificata atomicamente sul server, con revisione cifrata e indicazione «Modificato».
+4. Eliminazione manuale e compatibilità con conservazione solo dispositivo, preservando le scadenze autenticate dello storico.
+5. Test SQL e browser per durata disattivata/attiva, cambio modalità, limite dei 30 minuti, concorrenza lettura/modifica, retry senza duplicati e aggiornamenti tra dispositivi.
+
+Prima del codice definire l’ambito delle eliminazioni e chi può cambiare le impostazioni condivise. Il protocollo v1 descritto in `CRITTOGRAFIA.md` fotografa lo stato attuale, non queste nuove capacità.
 
 ## Prima della federazione
 

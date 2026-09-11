@@ -51,7 +51,7 @@ SN è pensato per chi vuole ritrovare il piacere di condividere e conversare sen
 - Player dedicato per video brevi verticali (massimo 20 secondi).
 - Compressione e ottimizzazione lato client prima dell'upload per preservare le quote del server.
 
-### 4. Messaggistica Diretta (Chat) Sicura, Multimediale ed Effimera
+### 4. Messaggistica diretta: conservazione, Chat temporanea e stati
 Le chat sono consentite esclusivamente tra utenti con follow reciproco e devono garantire:
 
 - **Vera Crittografia End-to-End (E2EE)**:
@@ -61,12 +61,33 @@ Le chat sono consentite esclusivamente tra utenti con follow reciproco e devono 
 - **Media nelle Chat**:
   - Supporto per invio di foto, brevi note audio e video nei messaggi diretti.
   - Gli allegati vengono cifrati simmetricamente lato client con chiave usa-e-getta prima dell'upload nello storage del server.
-- **Chat e Messaggi che si Autodistruggono (Effimeri)**:
-  - Scadenza selezionabile dall'utente: **1 ora, 3 ore, 24 ore, 48 ore, 1 settimana, 1 mese**.
-  - Cancellazione garantita: sia lato client (eliminazione da IndexedDB locale) sia lato server (job di pulizia sul database per revocare ciphertext e storage collegati).
-- **Opzioni di Conservazione Flessibile**:
-  - *Solo sul dispositivo*: i messaggi cifrati vengono cancellati dal server subito dopo la ricezione/consegna e conservati solo nel database locale dell'utente.
-  - *Sincronizzati sul server*: i messaggi restano memorizzati sul server in formato cifrato end-to-end per consentire l'accesso da più dispositivi autorizzati dello stesso utente.
+- **Messaggi conservati per impostazione predefinita**:
+  - Con «Chat temporanea» disattivata, i nuovi messaggi non hanno una scadenza automatica: rimangono finché non vengono eliminati.
+  - Prevedere un comando di eliminazione dei messaggi. Definire esplicitamente la distinzione tra eliminazione della propria copia ed eliminazione per entrambi prima di implementarla.
+- **Chat temporanea**:
+  - Un pulsante nella chat attiva o disattiva la modalità «Chat temporanea» per quella conversazione. Lo stato deve essere riconoscibile anche senza affidarsi al solo colore.
+  - La durata dell’autoeliminazione si sceglie nelle **impostazioni della chat**, non accanto a ogni messaggio. Le durate previste sono 1 ora, 3 ore, 24 ore, 48 ore, 1 settimana e 30 giorni.
+  - La durata scelta si applica soltanto ai nuovi messaggi inviati quando la modalità è attiva. Il termine decorre dall’invio. Cambiare durata o disattivare la modalità non riscrive le scadenze dei messaggi già inviati.
+  - Alla scadenza, revocare l’accesso ai messaggi e agli allegati e rimuoverli con la manutenzione server e la pulizia locale. Non promettere cancellazione delle copie esportate né pulizia di un browser chiuso.
+- **Modifica dei messaggi**:
+  - Il mittente può modificare il proprio messaggio soltanto se sono trascorsi meno di 30 minuti dall’invio originale e il destinatario non lo ha ancora letto. Le due condizioni devono valere insieme.
+  - Un messaggio consegnato ma non letto resta modificabile entro questo intervallo. Alla lettura o al raggiungimento dei 30 minuti, la modifica viene negata anche tramite API dirette.
+  - Mostrare «Modificato» dopo una modifica riuscita. La modifica non riavvia i 30 minuti e non prolunga l’eventuale scadenza.
+  - Verificare lettura e modifica con un’operazione atomica sul server: una modifica non può sovrascrivere una versione già segnata come letta. Se viene respinta, conservare il testo digitato e spiegare il motivo.
+- **Stati dinamici dei messaggi**:
+  - **Non inviato**: indicatore di attesa; in caso di errore, icona di errore e comando «Riprova», mantenendo testo e allegato.
+  - **Inviato**: una spunta neutra, dopo la conferma di ricezione da parte del server.
+  - **Consegnato, non letto**: due spunte neutre, dopo la conferma di ricezione da parte di un dispositivo del destinatario.
+  - **Letto**: due spunte evidenziate, quando il messaggio viene mostrato nella conversazione attiva e visibile del destinatario.
+  - Usare un meccanismo visivo simile a WhatsApp, con etichette accessibili per ogni stato. L’apertura generica dell’app o il download in background non bastano per dichiarare un messaggio letto. Aggiornare lo stato senza ricaricare la pagina e senza duplicare i messaggi quando si ritenta un invio.
+
+#### Compatibilità con cifratura e conservazione
+
+Le modifiche e le ricevute devono funzionare con E2EE: il server non riceve il testo in chiaro. Ogni revisione deve essere cifrata senza riutilizzare nonce; ricevute e controlli di concorrenza devono riferirsi alla versione corretta del messaggio. Il server deve controllare autore, destinatario, tempo trascorso e stato di lettura.
+
+«Chat temporanea» stabilisce **quando** scade un messaggio. Le opzioni «Sincronizzati sul server» e «Solo sul dispositivo» stabiliscono **dove** viene conservato. Sono scelte distinte. La rimozione del ciphertext dal server dopo la consegna in modalità solo dispositivo non deve eliminare automaticamente la copia locale di un messaggio ordinario. Prima di estendere questa modalità, progettare come recapitare modifiche, ricevute ed eliminazioni dopo la rimozione del ciphertext.
+
+Questi requisiti, aggiornati l’11 settembre 2026, sostituiscono la precedente autoeliminazione predefinita dopo 24 ore. Il codice esistente deve essere adeguato con una migrazione compatibile: non cambiare retroattivamente scadenze o contenuti autenticati dello storico cifrato.
 
 ---
 
