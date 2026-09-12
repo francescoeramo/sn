@@ -68,7 +68,7 @@ Le seguenti richieste guidano la pianificazione futura. Non costituiscono un'att
 
 - Onboarding dopo la registrazione implementato: presenta natura della beta, feed cronologico e finito, moderazione manuale, assenza di pubblicità e accesso diretto alle impostazioni privacy. Viene mostrato una sola volta per account; resta il collaudo cloud del primo accesso.
 - Stati vuoti di feed, messaggi, storie e ricerca: testo utile e illustrazione o icona coerente, con indicazioni pertinenti al contesto anziché il solo «Nessun contenuto».
-- Modalità scura e temi: verificare quanto esiste e costruire gli sviluppi su variabili CSS/token condivisi.
+- Modalità scura implementata con token condivisi, scelta chiara/scura/sistema e preferenza persistente applicata prima del rendering. Il font resta self-hosted e il tema non richiede servizi esterni.
 - Caricamento di feed, storie e profili: preferire skeleton coerenti alla struttura del contenuto agli spinner generici.
 - Micro-interazioni curate: avanzamento delle storie, feedback del like e transizioni dei reel, senza trasformarli in incentivi compulsivi.
 - Spiegare prima del primo invio cifrato cosa succede perdendo browser o dispositivo e quali possibilità di recupero esistono realmente.

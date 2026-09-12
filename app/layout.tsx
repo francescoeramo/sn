@@ -8,9 +8,17 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  await headers();
+  const nonce = (await headers()).get('x-nonce') ?? undefined;
   return (
     <html lang="it" suppressHydrationWarning>
+      <head>
+        <script
+          nonce={nonce}
+          dangerouslySetInnerHTML={{
+            __html: `try{const t=localStorage.getItem('sn-theme')||'system';const d=t==='dark'||(t==='system'&&matchMedia('(prefers-color-scheme:dark)').matches);document.documentElement.dataset.theme=d?'dark':'light';document.documentElement.style.colorScheme=d?'dark':'light'}catch{}`,
+          }}
+        />
+      </head>
       <body suppressHydrationWarning>{children}</body>
     </html>
   );

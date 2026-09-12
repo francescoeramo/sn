@@ -43,6 +43,7 @@ import { NotesReview } from './community-notes';
 import { PostCard } from './post-card';
 import { SecuritySettings } from './security-settings';
 import { WelcomeOnboarding } from './welcome-onboarding';
+import { ThemeSettings } from './theme-settings';
 
 type View =
   | 'home'
@@ -1006,6 +1007,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                   </p>
                 </section>
                 <SecuritySettings demo={demo} />
+                <ThemeSettings />
                 <section className="panel">
                   <h2>I tuoi dati, le tue scelte</h2>
                   <p className="muted">

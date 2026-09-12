@@ -593,3 +593,26 @@ test('sondaggi: creazione, voto unico e risultati persistenti', async ({ page })
   await expect(created).toBeVisible();
   await expect(created.getByRole('button', { name: 'Cinema', exact: true })).toBeEnabled();
 });
+
+test('tema: scelta scura persistente senza lampo iniziale', async ({ page }) => {
+  await page.goto('/demo');
+  await page
+    .getByRole('button', { name: 'Impostazioni', exact: true })
+    .filter({ visible: true })
+    .click();
+  await page.getByRole('button', { name: 'Scuro', exact: true }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  expect(
+    await page.locator('body').evaluate((node) => getComputedStyle(node).backgroundColor),
+  ).toBe('rgb(24, 23, 28)');
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page
+    .getByRole('button', { name: 'Impostazioni', exact: true })
+    .filter({ visible: true })
+    .click();
+  await expect(page.getByRole('button', { name: 'Scuro', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+});
