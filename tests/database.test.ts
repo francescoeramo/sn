@@ -160,6 +160,16 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
     );
     expect(r.rows).toEqual([]);
   });
+  it('consente di completare solo il proprio onboarding', async () => {
+    await asUser(alice, 'update public.profiles set onboarded_at=now() where id=$1', [alice]);
+    await asUser(bob, 'update public.profiles set onboarded_at=now() where id=$1', [alice]);
+    const profiles = await db.query<{ id: string; onboarded_at: string | null }>(
+      'select id,onboarded_at from public.profiles where id in($1,$2) order by id',
+      [alice, bob],
+    );
+    expect(profiles.rows[0].onboarded_at).not.toBeNull();
+    expect(profiles.rows[1].onboarded_at).toBeNull();
+  });
   it('nega registrazioni senza invito', async () => {
     await expect(
       signup('00000000-0000-4000-8000-000000000009', 'no@example.test', 'outsider', 'bad'),

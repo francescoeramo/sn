@@ -42,6 +42,7 @@ import { Composer } from './composer';
 import { NotesReview } from './community-notes';
 import { PostCard } from './post-card';
 import { SecuritySettings } from './security-settings';
+import { WelcomeOnboarding } from './welcome-onboarding';
 
 type View =
   | 'home'
@@ -1272,6 +1273,13 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
             <X size={17} />
           </button>
         </div>
+      )}
+      {!demo && !me.onboarded_at && (
+        <WelcomeOnboarding
+          firstName={me.display_name.split(' ')[0]}
+          onAction={act}
+          onSettings={() => navigate('settings')}
+        />
       )}
       {composer && (
         <Composer

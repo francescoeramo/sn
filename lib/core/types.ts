@@ -7,6 +7,7 @@ export type Profile = {
   is_private: boolean;
   color: string;
   created_at: string;
+  onboarded_at?: string | null;
 };
 export type Post = {
   content_warning?: string;
@@ -141,6 +142,7 @@ export type Snapshot = {
   nextCursor: string | null;
 };
 export type Action =
+  | { type: 'complete-onboarding' }
   | { type: 'chat-settings'; user_id: string; temporary: boolean; duration: number }
   | { type: 'chat-receipt'; message_id: string; revision: number; read: boolean }
   | { type: 'edit-message'; message_id: string; encrypted: Sealed; media_path: string | null }

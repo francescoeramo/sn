@@ -32,6 +32,7 @@ export function seed(): Snapshot {
     color,
     is_private: false,
     created_at: ago(1500),
+    onboarded_at: ago(1499),
   }));
   return {
     bookmarks: [],
@@ -235,6 +236,10 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
   const now = new Date().toISOString();
   const id = crypto.randomUUID();
   switch (action.type) {
+    case 'complete-onboarding':
+      s.me.onboarded_at = now;
+      s.profiles = s.profiles.map((profile) => (profile.id === me ? s.me : profile));
+      break;
     case 'chat-settings': {
       const v = chatSettingsInput.parse(action);
       if (

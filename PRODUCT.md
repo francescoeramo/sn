@@ -66,7 +66,7 @@ Le seguenti richieste guidano la pianificazione futura. Non costituiscono un'att
 
 ## Experience Requirements
 
-- Onboarding dopo la registrazione: spiegare natura della beta, moderazione manuale, assenza di pubblicità e accesso alle impostazioni privacy prima di lasciare il nuovo invitato davanti a un feed vuoto.
+- Onboarding dopo la registrazione implementato: presenta natura della beta, feed cronologico e finito, moderazione manuale, assenza di pubblicità e accesso diretto alle impostazioni privacy. Viene mostrato una sola volta per account; resta il collaudo cloud del primo accesso.
 - Stati vuoti di feed, messaggi, storie e ricerca: testo utile e illustrazione o icona coerente, con indicazioni pertinenti al contesto anziché il solo «Nessun contenuto».
 - Modalità scura e temi: verificare quanto esiste e costruire gli sviluppi su variabili CSS/token condivisi.
 - Caricamento di feed, storie e profili: preferire skeleton coerenti alla struttura del contenuto agli spinner generici.

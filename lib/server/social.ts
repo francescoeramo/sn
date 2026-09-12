@@ -147,6 +147,14 @@ export async function mutate(input: unknown) {
   const { db, user } = await identity();
   const obj = z.object({ type: z.string() }).passthrough().parse(input);
   switch (obj.type) {
+    case 'complete-onboarding':
+      checked(
+        await db
+          .from('profiles')
+          .update({ onboarded_at: new Date().toISOString() })
+          .eq('id', user.id),
+      );
+      break;
     case 'chat-settings': {
       const v = chatSettingsInput.parse(obj);
       checked(

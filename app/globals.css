@@ -1748,6 +1748,41 @@ label small {
 .modal.wide {
   width: min(760px, calc(100vw - 28px));
 }
+.onboarding-intro {
+  color: var(--muted);
+  max-width: 44ch;
+}
+.onboarding-points {
+  border-top: 1px solid var(--line);
+  margin: 22px 0;
+}
+.onboarding-points > div {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--line);
+}
+.onboarding-points svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--violet);
+}
+.onboarding-points p {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 0;
+}
+.onboarding-points span {
+  color: var(--muted);
+}
+.onboarding-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
 .composer-person {
   display: flex;
   align-items: center;
