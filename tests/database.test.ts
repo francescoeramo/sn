@@ -59,8 +59,10 @@ beforeAll(async () => {
   db = new PGlite();
   await db.exec(`create role anon; create role authenticated; create role service_role bypassrls;
     create schema auth; create table auth.users(id uuid primary key,email text,raw_user_meta_data jsonb);
+    create table auth.sessions(id uuid primary key,user_id uuid references auth.users,created_at timestamptz default now(),updated_at timestamptz default now());
     create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
-    grant usage on schema auth to authenticated,anon,service_role;grant execute on function auth.uid() to authenticated,anon,service_role;
+    create function auth.jwt() returns jsonb language sql stable as $$ select coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb $$;
+    grant usage on schema auth to authenticated,anon,service_role;grant execute on function auth.uid() to authenticated,anon,service_role;grant execute on function auth.jwt() to authenticated,anon,service_role;
     create schema storage;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
     create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text,name text unique,metadata jsonb,owner_id text);
     alter table storage.objects enable row level security;grant usage on schema storage to authenticated;grant select,insert,delete,update on storage.objects to authenticated;`);
@@ -92,6 +94,38 @@ afterAll(async () => {
   await db.close();
 });
 describe('Autorizzazioni Postgres reali (PGlite)', () => {
+  it('mostra solo le proprie sessioni e protegge quella corrente', async () => {
+    const current = '10000000-0000-4000-8000-000000000001';
+    const other = '10000000-0000-4000-8000-000000000002';
+    const foreign = '10000000-0000-4000-8000-000000000003';
+    await db.query('insert into auth.sessions(id,user_id) values($1,$2),($3,$2),($4,$5)', [
+      current,
+      alice,
+      other,
+      foreign,
+      bob,
+    ]);
+    await db.exec(
+      `set role authenticated;select set_config('request.jwt.claim.sub','${alice}',false);select set_config('request.jwt.claims','{"session_id":"${current}"}',false);`,
+    );
+    try {
+      const listed = await db.query<{ id: string; is_current: boolean }>(
+        'select id,is_current from public.my_sessions()',
+      );
+      expect(listed.rows).toEqual([
+        { id: current, is_current: true },
+        { id: other, is_current: false },
+      ]);
+      await expect(db.query('select public.revoke_my_session($1)', [current])).rejects.toThrow(
+        'sessione corrente',
+      );
+      await db.query('select public.revoke_my_session($1)', [other]);
+    } finally {
+      await db.exec('reset role;');
+    }
+    const remaining = await db.query<{ id: string }>('select id from auth.sessions order by id');
+    expect(remaining.rows.map((row) => row.id)).toEqual([current, foreign]);
+  });
   it('attiva RLS su ogni tabella applicativa e privata', async () => {
     const r = await db.query<{ relname: string }>(
       "select relname from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname in ('public','private') and c.relkind='r' and not c.relrowsecurity",

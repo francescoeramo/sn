@@ -73,6 +73,10 @@ export async function GET(request: NextRequest, { params }: Context) {
   try {
     const route = (await params).path.join('/');
     if (route === 'auth/mfa') return json(await mfaState());
+    if (route === 'auth/sessions') {
+      const { db } = await identity();
+      return json(checked(await db.rpc('my_sessions')));
+    }
     if (route === 'bootstrap') return json(await snapshot());
     if (route === 'saved') {
       const before = request.nextUrl.searchParams.get('before');
@@ -246,6 +250,22 @@ export async function POST(request: NextRequest, { params }: Context) {
       }
       checked(await db.auth.mfa.unenroll({ factorId: value.factorId }));
       return json(await mfaState());
+    }
+    if (route === 'auth/sessions') {
+      const value = z
+        .discriminatedUnion('action', [
+          z.object({ action: z.literal('revoke'), sessionId: z.uuid() }),
+          z.object({ action: z.literal('revoke-others') }),
+        ])
+        .parse(await body(request));
+      const { db } = await identity();
+      if (value.action === 'revoke')
+        checked(await db.rpc('revoke_my_session', { target_id: value.sessionId }));
+      else {
+        const closed = await db.auth.signOut({ scope: 'others' });
+        if (closed.error) throw new ApiError('Non è stato possibile chiudere le altre sessioni.');
+      }
+      return json(checked(await db.rpc('my_sessions')));
     }
     if (route === 'auth/login' || route === 'auth/signup') {
       const data = credentials.parse(await body(request));

@@ -1276,6 +1276,54 @@ small {
   gap: 12px;
   flex-wrap: wrap;
 }
+.account-sessions {
+  border-top: 1px solid var(--line);
+  margin-top: 24px;
+  padding-top: 22px;
+}
+.session-heading,
+.session-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.session-heading {
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+.session-heading h3,
+.session-heading p,
+.session-row p {
+  margin: 0;
+}
+.session-heading h3 {
+  font-size: 15px;
+}
+.session-list {
+  border-top: 1px solid var(--line);
+}
+.session-row {
+  min-height: 70px;
+  border-bottom: 1px solid var(--line);
+}
+.session-row > svg {
+  color: var(--muted);
+  flex: 0 0 auto;
+}
+.session-row p {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+.session-row span {
+  color: var(--muted);
+  font-size: 11px;
+}
+.session-note {
+  margin: 12px 0 0;
+}
 label {
   display: flex;
   flex-direction: column;
