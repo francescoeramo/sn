@@ -671,6 +671,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                     post={post}
                     state={state}
                     demo={demo}
+                    now={clock}
                     onAction={act}
                     onProfile={(id) => navigate('profile', id)}
                     onTag={search}

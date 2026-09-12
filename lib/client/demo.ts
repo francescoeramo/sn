@@ -37,6 +37,11 @@ export function seed(): Snapshot {
     bookmarks: [],
     saved: { posts: [], nextCursor: null },
     notes: [],
+    pollResults: [
+      { poll_id: uid(102), option_id: uid(201), votes: 2, selected: false },
+      { poll_id: uid(102), option_id: uid(202), votes: 1, selected: false },
+      { poll_id: uid(102), option_id: uid(203), votes: 1, selected: false },
+    ],
     me: profiles[0],
     profiles,
     posts: [
@@ -55,6 +60,15 @@ export function seed(): Snapshot {
         id: uid(102),
         author_id: uid(3),
         body: 'Domanda seria: qual è il piatto che vi riesce bene anche quando il frigo è praticamente vuoto? Io voto pasta, limone e un po’ di coraggio. 🍋\n\n#cucina',
+        poll: {
+          post_id: uid(102),
+          closes_at: new Date(Date.now() + 86400000).toISOString(),
+          options: [
+            { id: uid(201), poll_id: uid(102), position: 0, body: 'Pasta improvvisata' },
+            { id: uid(202), poll_id: uid(102), position: 1, body: 'Frittata svuota-frigo' },
+            { id: uid(203), poll_id: uid(102), position: 2, body: 'Panino creativo' },
+          ],
+        },
         kind: 'post',
         media_path: null,
         media_type: null,
@@ -157,6 +171,7 @@ export async function loadDemo(): Promise<Snapshot> {
         const state: Snapshot = req.result ?? seed();
         initializeChat(state);
         state.notes ??= [];
+        state.pollResults ??= [];
         state.moderationAudit ??= [];
         state.bookmarks ??= [];
         state.saved ??= { posts: [], nextCursor: null };
@@ -212,6 +227,7 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
   const s = structuredClone(source);
   initializeChat(s);
   s.notes ??= [];
+  s.pollResults ??= [];
   s.moderationAudit ??= [];
   s.bookmarks ??= [];
   s.saved ??= { posts: [], nextCursor: null };
@@ -364,8 +380,9 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
         if (bytes > LIMITS.file) throw new Error('Il file supera 3 MB.');
       }
       // The shared schema validates post fields; data URLs are local to this adapter, never API paths.
-      const p = {
-        ...postInput.parse({ ...action, media_path: media ? 'demo-media' : null }),
+      const parsed = postInput.parse({ ...action, media_path: media ? 'demo-media' : null });
+      const { poll, ...p } = {
+        ...parsed,
         media_path: media,
       };
       if (p.kind === 'reel' && !p.media_path?.startsWith('data:video/'))
@@ -374,12 +391,47 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
         id,
         author_id: me,
         ...p,
+        poll: poll
+          ? {
+              post_id: id,
+              closes_at: poll.duration
+                ? new Date(Date.now() + poll.duration * 1000).toISOString()
+                : null,
+              options: poll.options.map((body, position) => ({
+                id: crypto.randomUUID(),
+                poll_id: id,
+                position,
+                body,
+              })),
+            }
+          : null,
         media_type: p.media_path?.startsWith('data:')
           ? p.media_path.slice(5, p.media_path.indexOf(';'))
           : null,
         created_at: now,
         expires_at: p.kind === 'story' ? new Date(Date.now() + 86400000).toISOString() : null,
       });
+      break;
+    }
+    case 'vote-poll': {
+      const post = s.posts.find((item) => item.id === action.poll_id);
+      if (!post?.poll?.options.some((option) => option.id === action.option_id))
+        throw new Error('Opzione non disponibile.');
+      if (post.poll.closes_at && Date.parse(post.poll.closes_at) <= Date.now())
+        throw new Error('Il sondaggio è chiuso.');
+      if (s.pollResults?.some((result) => result.poll_id === post.id && result.selected))
+        throw new Error('Hai già votato.');
+      const result = s.pollResults?.find((item) => item.option_id === action.option_id);
+      if (result) {
+        result.votes += 1;
+        result.selected = true;
+      } else
+        s.pollResults?.push({
+          poll_id: post.id,
+          option_id: action.option_id,
+          votes: 1,
+          selected: true,
+        });
       break;
     }
     case 'bookmark': {

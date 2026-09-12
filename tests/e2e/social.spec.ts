@@ -567,3 +567,29 @@ test('recupero account: un link assente o scaduto non apre il cambio password', 
   await expect(page.getByLabel('Nuova password')).toHaveCount(0);
   await expect(page.getByRole('link', { name: 'Torna all’accesso' })).toHaveAttribute('href', '/');
 });
+
+test('sondaggi: creazione, voto unico e risultati persistenti', async ({ page }) => {
+  await page.goto('/demo');
+  const existing = page.locator('article').filter({ hasText: 'Domanda seria' });
+  await existing.getByRole('button', { name: 'Pasta improvvisata', exact: true }).click();
+  await expect(existing.getByText('Voto registrato')).toBeVisible();
+  await expect(existing.getByRole('button', { name: /Pasta improvvisata/ })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await page.reload();
+  await expect(
+    page.locator('article').filter({ hasText: 'Domanda seria' }).getByText('Voto registrato'),
+  ).toBeVisible();
+
+  await page.getByRole('button', { name: 'Che cosa vuoi raccontare?' }).click();
+  await page.getByRole('button', { name: 'Sondaggio', exact: true }).click();
+  await page.getByLabel('Testo del post').fill('Cinema o passeggiata?');
+  await page.getByPlaceholder('Opzione 1').fill('Cinema');
+  await page.getByPlaceholder('Opzione 2').fill('Passeggiata');
+  await page.getByLabel('Chiusura').selectOption('86400');
+  await page.getByRole('button', { name: 'Pubblica', exact: true }).click();
+  const created = page.locator('article').filter({ hasText: 'Cinema o passeggiata?' });
+  await expect(created).toBeVisible();
+  await expect(created.getByRole('button', { name: 'Cinema', exact: true })).toBeEnabled();
+});

@@ -61,7 +61,7 @@ export function checked<
   if (result.error) {
     const message = result.error.message;
     if (
-      /già letto|30 minuti|Revisione cambiata|Impostazioni chat cambiate|Messaggio scaduto/.test(
+      /già letto|30 minuti|Revisione cambiata|Impostazioni chat cambiate|Messaggio scaduto|Sondaggio chiuso|già votato/.test(
         message,
       )
     )

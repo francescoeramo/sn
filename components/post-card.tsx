@@ -18,6 +18,7 @@ export function PostCard({
   post,
   state,
   demo,
+  now,
   onAction,
   onProfile,
   onTag,
@@ -25,6 +26,7 @@ export function PostCard({
   post: Post;
   state: Snapshot;
   demo: boolean;
+  now: number;
   onAction: (a: Action) => Promise<boolean>;
   onProfile: (id: string) => void;
   onTag: (tag: string) => void;
@@ -43,6 +45,11 @@ export function PostCard({
   const comments = state.comments
     .filter((c) => c.post_id === post.id)
     .sort((a, b) => a.created_at.localeCompare(b.created_at));
+  const pollResults = (state.pollResults ?? []).filter((result) => result.poll_id === post.id);
+  const selectedOption = pollResults.find((result) => result.selected)?.option_id;
+  const pollClosed = Boolean(post.poll?.closes_at && Date.parse(post.poll.closes_at) <= now);
+  const showPollResults = Boolean(selectedOption || pollClosed);
+  const totalPollVotes = pollResults.reduce((total, result) => total + Number(result.votes), 0);
   const act = async (a: Action) => {
     setPending(true);
     try {
@@ -129,6 +136,49 @@ export function PostCard({
                   ),
                 )}
               </p>
+            )}
+            {post.poll && (
+              <section className="post-poll" aria-label="Sondaggio">
+                {post.poll.options
+                  .toSorted((a, b) => a.position - b.position)
+                  .map((option) => {
+                    const result = pollResults.find((item) => item.option_id === option.id);
+                    const percentage = totalPollVotes
+                      ? Math.round((Number(result?.votes ?? 0) / totalPollVotes) * 100)
+                      : 0;
+                    return (
+                      <div className="poll-choice" key={option.id}>
+                        <button
+                          className={selectedOption === option.id ? 'selected' : ''}
+                          disabled={pending || Boolean(selectedOption) || pollClosed}
+                          aria-pressed={selectedOption === option.id}
+                          onClick={() =>
+                            act({ type: 'vote-poll', poll_id: post.id, option_id: option.id })
+                          }
+                        >
+                          <span>{option.body}</span>
+                          {showPollResults && <small>{percentage}%</small>}
+                        </button>
+                        {showPollResults && (
+                          <progress
+                            max={Math.max(totalPollVotes, 1)}
+                            value={Number(result?.votes ?? 0)}
+                            aria-label={`${option.body}: ${percentage}%`}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                <p className="poll-meta">
+                  {selectedOption
+                    ? 'Voto registrato'
+                    : pollClosed
+                      ? 'Sondaggio chiuso'
+                      : post.poll.closes_at
+                        ? `Si chiude ${new Date(post.poll.closes_at).toLocaleString('it-IT', { dateStyle: 'medium', timeStyle: 'short' })}`
+                        : 'Nessuna scadenza'}
+                </p>
+              </section>
             )}
             <Media post={post} demo={demo} />
             <PostNotes loadedNotes={post.notes} postId={post.id} state={state} onAction={act} />

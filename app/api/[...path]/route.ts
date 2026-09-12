@@ -95,7 +95,7 @@ export async function GET(request: NextRequest, { params }: Context) {
       const posts = checked(
         await db
           .from('posts')
-          .select('*, notes:community_notes(*)')
+          .select('*, notes:community_notes(*), poll:polls(*,options:poll_options(*))')
           .lt('created_at', before)
           .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
           .order('created_at', { ascending: false })
@@ -115,7 +115,7 @@ export async function GET(request: NextRequest, { params }: Context) {
         checked(
           await db
             .from('posts')
-            .select('*, notes:community_notes(*)')
+            .select('*, notes:community_notes(*), poll:polls(*,options:poll_options(*))')
             .textSearch('body', term, { config: 'italian', type: 'websearch' })
             .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
             .order('created_at', { ascending: false })

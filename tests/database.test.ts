@@ -126,6 +126,34 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
     const remaining = await db.query<{ id: string }>('select id from auth.sessions order by id');
     expect(remaining.rows.map((row) => row.id)).toEqual([current, foreign]);
   });
+  it('crea sondaggi atomici, accetta un solo voto e non espone chi ha votato', async () => {
+    const created = await asUser<{ create_poll: string }>(
+      alice,
+      "select public.create_poll('Dove andiamo?','',array['Mare','Montagna'],86400)",
+    );
+    const pollId = created[0].create_poll;
+    const options = await asUser<{ id: string; body: string }>(
+      alice,
+      'select id,body from public.poll_options where poll_id=$1 order by position',
+      [pollId],
+    );
+    expect(options.map((option) => option.body)).toEqual(['Mare', 'Montagna']);
+    await asUser(alice, 'select public.vote_poll($1,$2)', [pollId, options[0].id]);
+    await expect(
+      asUser(alice, 'select public.vote_poll($1,$2)', [pollId, options[1].id]),
+    ).rejects.toThrow('già votato');
+    const results = await asUser<{ votes: bigint; selected: boolean }>(
+      alice,
+      'select votes,selected from public.poll_results(array[$1]::uuid[]) where option_id=$2',
+      [pollId, options[0].id],
+    );
+    expect(Number(results[0].votes)).toBe(1);
+    expect(results[0].selected).toBe(true);
+    await expect(asUser(alice, 'select * from public.poll_votes')).rejects.toThrow(
+      /permission denied/,
+    );
+    await db.query('delete from public.posts where id=$1', [pollId]);
+  });
   it('attiva RLS su ogni tabella applicativa e privata', async () => {
     const r = await db.query<{ relname: string }>(
       "select relname from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname in ('public','private') and c.relkind='r' and not c.relrowsecurity",

@@ -53,6 +53,22 @@ describe('Regole condivise', () => {
     for (const ttl of [42, -1, null, 2592001])
       expect(messageInput.safeParse({ ...input, ttl }).success).toBe(false);
   });
+  it('valida sondaggi con opzioni distinte e scadenze limitate', () => {
+    const base = {
+      body: 'Dove andiamo?',
+      kind: 'post' as const,
+      media_path: null,
+      alt: '',
+      poll: { options: ['Mare', 'Montagna'], duration: 86400 as const },
+    };
+    expect(postInput.safeParse(base).success).toBe(true);
+    expect(
+      postInput.safeParse({ ...base, poll: { options: ['Mare', 'mare'], duration: null } }).success,
+    ).toBe(false);
+    expect(
+      postInput.safeParse({ ...base, poll: { options: ['Una sola'], duration: null } }).success,
+    ).toBe(false);
+  });
   it('valida recupero e conferma della nuova password', () => {
     expect(passwordResetRequest.safeParse({ email: 'persona@example.test' }).success).toBe(true);
     expect(passwordResetRequest.safeParse({ email: 'non-valida' }).success).toBe(false);

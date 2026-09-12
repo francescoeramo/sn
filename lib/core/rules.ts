@@ -14,9 +14,28 @@ export const postInput = z
     kind: z.enum(['post', 'story', 'reel']),
     media_path: z.string().max(200).nullable(),
     alt: z.string().trim().max(300),
+    poll: z
+      .object({
+        options: z.array(z.string().trim().min(1).max(100)).min(2).max(4),
+        duration: z
+          .union([z.literal(3600), z.literal(86400), z.literal(259200), z.literal(604800)])
+          .nullable(),
+      })
+      .optional(),
   })
   .refine((v) => v.body.length > 0 || v.media_path, 'Scrivi qualcosa o allega un file.')
-  .refine((v) => v.kind === 'post' || v.media_path, 'Storie e reel richiedono un file.');
+  .refine((v) => v.kind === 'post' || v.media_path, 'Storie e reel richiedono un file.')
+  .refine(
+    (v) => !v.poll || (v.kind === 'post' && !v.media_path && v.body.length > 0),
+    'Il sondaggio richiede una domanda senza allegati.',
+  )
+  .refine(
+    (v) =>
+      !v.poll ||
+      new Set(v.poll.options.map((option) => option.toLocaleLowerCase('it'))).size ===
+        v.poll.options.length,
+    'Le opzioni del sondaggio devono essere diverse.',
+  );
 export const bookmarkInput = z.object({ post_id: userId, saved: z.boolean() });
 export const savedCursorInput = z.object({
   created_at: z.iso.datetime({ offset: true }),

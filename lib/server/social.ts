@@ -34,7 +34,9 @@ async function bookmarksFor(db: Database): Promise<Bookmark[]> {
 async function savedPageFor(db: Database, before?: SavedCursor): Promise<SavedPage> {
   let query = db
     .from('bookmarks')
-    .select('created_at,post_id,post:posts!inner(*,notes:community_notes(*))')
+    .select(
+      'created_at,post_id,post:posts!inner(*,notes:community_notes(*),poll:polls(*,options:poll_options(*)))',
+    )
     .order('created_at', { ascending: false })
     .order('post_id', { ascending: false })
     .limit(40);
@@ -69,7 +71,7 @@ export async function snapshot() {
       .limit(20),
     db
       .from('posts')
-      .select('*, notes:community_notes(*)')
+      .select('*, notes:community_notes(*), poll:polls(*,options:poll_options(*))')
       .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
       .order('created_at', { ascending: false })
       .limit(40),
@@ -107,11 +109,16 @@ export async function snapshot() {
     usage,
     notes,
   ] = results.map((r) => checked(r));
-  const [bookmarks, saved] = await Promise.all([bookmarksFor(db), savedPageFor(db)]);
+  const [bookmarks, saved, pollResults] = await Promise.all([
+    bookmarksFor(db),
+    savedPageFor(db),
+    db.rpc('poll_results', { target_polls: posts.map((post: Post) => post.id) }).then(checked),
+  ]);
   return {
     bookmarks,
     saved,
     notes,
+    pollResults,
     me: profile,
     profiles,
     posts,
@@ -198,7 +205,36 @@ export async function mutate(input: unknown) {
     }
     case 'post': {
       const v = postInput.parse(obj);
-      checked(await db.from('posts').insert({ ...v, author_id: user.id }));
+      if (v.poll)
+        checked(
+          await db.rpc('create_poll', {
+            question: v.body,
+            warning: v.content_warning,
+            options: v.poll.options,
+            duration_seconds: v.poll.duration,
+          }),
+        );
+      else {
+        checked(
+          await db.from('posts').insert({
+            author_id: user.id,
+            body: v.body,
+            content_warning: v.content_warning,
+            kind: v.kind,
+            media_path: v.media_path,
+            alt: v.alt,
+          }),
+        );
+      }
+      break;
+    }
+    case 'vote-poll': {
+      checked(
+        await db.rpc('vote_poll', {
+          target_poll: userId.parse(obj.poll_id),
+          target_option: userId.parse(obj.option_id),
+        }),
+      );
       break;
     }
     case 'bookmark': {

@@ -11,6 +11,7 @@ export type Profile = {
 export type Post = {
   content_warning?: string;
   notes?: CommunityNote[];
+  poll?: Poll | null;
   id: string;
   author_id: string;
   body: string;
@@ -21,6 +22,9 @@ export type Post = {
   created_at: string;
   expires_at: string | null;
 };
+export type PollOption = { id: string; poll_id: string; position: number; body: string };
+export type Poll = { post_id: string; closes_at: string | null; options: PollOption[] };
+export type PollResult = { poll_id: string; option_id: string; votes: number; selected: boolean };
 export type Comment = {
   id: string;
   post_id: string;
@@ -114,6 +118,7 @@ export type Snapshot = {
   bookmarks: Bookmark[];
   saved: SavedPage;
   notes: CommunityNote[];
+  pollResults?: PollResult[];
   me: Profile;
   profiles: Profile[];
   posts: Post[];
@@ -149,7 +154,9 @@ export type Action =
       media_path: string | null;
       alt: string;
       content_warning?: string;
+      poll?: { options: string[]; duration: number | null };
     }
+  | { type: 'vote-poll'; poll_id: string; option_id: string }
   | { type: 'bookmark'; post_id: string; saved: boolean }
   | { type: 'like'; post_id: string }
   | { type: 'comment'; post_id: string; body: string }
