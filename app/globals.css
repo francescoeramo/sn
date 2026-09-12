@@ -1202,6 +1202,80 @@ small {
 .panel progress::-webkit-progress-value {
   background: var(--violet);
 }
+.security-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.security-heading > svg {
+  color: var(--violet);
+  margin-top: 2px;
+  flex: 0 0 auto;
+}
+.security-heading h2,
+.security-heading p {
+  margin: 0;
+}
+.security-heading h2 {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.4px;
+}
+.security-heading p {
+  margin-top: 5px;
+}
+.security-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding-top: 4px;
+}
+.security-status p {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 0;
+}
+.security-status span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.mfa-enrollment > p {
+  margin: 0 0 14px;
+}
+.mfa-qr {
+  display: block;
+  width: 184px;
+  height: 184px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.mfa-enrollment details {
+  margin: 14px 0;
+}
+.mfa-enrollment summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+.mfa-secret {
+  display: block;
+  max-width: 100%;
+  padding: 10px 12px;
+  overflow-wrap: anywhere;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  user-select: all;
+}
+.inline-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
 label {
   display: flex;
   flex-direction: column;

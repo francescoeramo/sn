@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowUpRight, ArrowRight, LockKeyhole } from 'lucide-react';
 export function AuthScreen({
   configured,
@@ -9,11 +9,25 @@ export function AuthScreen({
   configured: boolean;
   onLogin: () => Promise<void>;
 }) {
-  const [mode, setMode] = useState<'login' | 'signup' | 'recover'>('login');
+  const [mode, setMode] = useState<'login' | 'signup' | 'recover' | 'mfa'>('login');
+  const [factorId, setFactorId] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const signup = mode === 'signup';
   const recover = mode === 'recover';
+  const mfa = mode === 'mfa';
+  useEffect(() => {
+    if (!configured) return;
+    fetch('/api/auth/mfa', { cache: 'no-store' })
+      .then(async (response) => (response.ok ? response.json() : null))
+      .then((value) => {
+        if (value?.mfaRequired && value.factors?.[0]?.id) {
+          setFactorId(value.factors[0].id);
+          setMode('mfa');
+        }
+      })
+      .catch(() => undefined);
+  }, [configured]);
   return (
     <main className="auth-screen">
       <div className="auth-story">
@@ -61,14 +75,22 @@ export function AuthScreen({
           <>
             <span className="eyebrow">BETA PRIVATA</span>
             <h2>
-              {signup ? 'C’è posto per te.' : recover ? 'Recupera l’accesso.' : 'Bentornato.'}
+              {signup
+                ? 'C’è posto per te.'
+                : recover
+                  ? 'Recupera l’accesso.'
+                  : mfa
+                    ? 'Un ultimo controllo.'
+                    : 'Bentornato.'}
             </h2>
             <p>
               {signup
                 ? 'Usa il codice che hai ricevuto da chi ti ha invitato.'
                 : recover
                   ? 'Inserisci la tua email. Se è associata a un account, riceverai un link.'
-                  : 'Accedi e ritrova i tuoi amici.'}
+                  : mfa
+                    ? 'Inserisci il codice a sei cifre mostrato dalla tua app authenticator.'
+                    : 'Accedi e ritrova i tuoi amici.'}
             </p>
             <form
               onSubmit={async (e) => {
@@ -77,21 +99,29 @@ export function AuthScreen({
                 setMessage('');
                 const form = new FormData(e.currentTarget);
                 try {
-                  const route = recover ? 'recover' : signup ? 'signup' : 'login';
+                  const route = mfa ? 'mfa' : recover ? 'recover' : signup ? 'signup' : 'login';
                   const response = await fetch(`/api/auth/${route}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(Object.fromEntries(form)),
+                    body: JSON.stringify(
+                      mfa
+                        ? { action: 'verify', factorId, code: form.get('code') }
+                        : Object.fromEntries(form),
+                    ),
                   });
                   const result = await response.json();
                   if (!response.ok) throw new Error(result.error);
-                  if (recover)
+                  if (mfa) await onLogin();
+                  else if (recover)
                     setMessage(
                       'Se l’indirizzo appartiene a un account, riceverai un link valido per 15 minuti.',
                     );
                   else if (result.confirmationRequired)
                     setMessage('Controlla la tua email e conferma l’indirizzo prima di accedere.');
-                  else await onLogin();
+                  else if (result.mfaRequired) {
+                    setFactorId(result.factorId);
+                    setMode('mfa');
+                  } else await onLogin();
                 } catch (error) {
                   setMessage(error instanceof Error ? error.message : 'Accesso non riuscito.');
                 } finally {
@@ -99,10 +129,12 @@ export function AuthScreen({
                 }
               }}
             >
-              <label>
-                Email
-                <input name="email" type="email" autoComplete="email" required maxLength={254} />
-              </label>
+              {!mfa && (
+                <label>
+                  Email
+                  <input name="email" type="email" autoComplete="email" required maxLength={254} />
+                </label>
+              )}
               {signup && (
                 <>
                   <label>
@@ -129,7 +161,7 @@ export function AuthScreen({
                   </label>
                 </>
               )}
-              {!recover && (
+              {!recover && !mfa && (
                 <label>
                   Password
                   <input
@@ -141,6 +173,21 @@ export function AuthScreen({
                     autoComplete={signup ? 'new-password' : 'current-password'}
                   />
                   {signup && <small>Almeno 12 caratteri.</small>}
+                </label>
+              )}
+              {mfa && (
+                <label>
+                  Codice di verifica
+                  <input
+                    name="code"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    pattern="[0-9]{6}"
+                    minLength={6}
+                    maxLength={6}
+                    required
+                    autoFocus
+                  />
                 </label>
               )}
               {signup && (
@@ -164,11 +211,13 @@ export function AuthScreen({
                     ? 'Crea account'
                     : recover
                       ? 'Invia il link'
-                      : 'Accedi'}
+                      : mfa
+                        ? 'Verifica'
+                        : 'Accedi'}
                 <ArrowRight size={18} />
               </button>
             </form>
-            {!signup && !recover && (
+            {!signup && !recover && !mfa && (
               <button
                 className="text-button"
                 onClick={() => {
@@ -179,15 +228,29 @@ export function AuthScreen({
                 Hai dimenticato la password?
               </button>
             )}
-            <button
-              className="text-button"
-              onClick={() => {
-                setMode(mode === 'login' ? 'signup' : 'login');
-                setMessage('');
-              }}
-            >
-              {signup || recover ? 'Torna all’accesso' : 'Hai un invito? Registrati'}
-            </button>
+            {mfa ? (
+              <button
+                className="text-button"
+                onClick={async () => {
+                  await fetch('/api/auth/logout', { method: 'POST' });
+                  setFactorId('');
+                  setMode('login');
+                  setMessage('');
+                }}
+              >
+                Esci e torna all’accesso
+              </button>
+            ) : (
+              <button
+                className="text-button"
+                onClick={() => {
+                  setMode(mode === 'login' ? 'signup' : 'login');
+                  setMessage('');
+                }}
+              >
+                {signup || recover ? 'Torna all’accesso' : 'Hai un invito? Registrati'}
+              </button>
+            )}
             <Link href="/demo" className="subtle-link">
               Preferisci dare un’occhiata? Prova la demo
             </Link>

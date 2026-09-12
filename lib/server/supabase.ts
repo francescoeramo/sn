@@ -32,14 +32,21 @@ export async function database() {
     },
   });
 }
-export async function identity() {
+export async function authenticated() {
   const db = await database();
   const { data, error } = await db.auth.getUser();
   if (error || !data.user) throw new ApiError('Accedi per continuare.', 401);
-  const profile = await db.from('profiles').select('*').eq('id', data.user.id).single();
+  return { db, user: data.user };
+}
+export async function identity() {
+  const { db, user } = await authenticated();
+  const assurance = checked(await db.auth.mfa.getAuthenticatorAssuranceLevel());
+  if (assurance.nextLevel === 'aal2' && assurance.currentLevel !== 'aal2')
+    throw new ApiError('Inserisci il codice dell’app authenticator.', 403);
+  const profile = await db.from('profiles').select('*').eq('id', user.id).single();
   if (profile.error || !profile.data || profile.data.disabled)
     throw new ApiError('Account non disponibile.', 403);
-  return { db, user: data.user, profile: profile.data };
+  return { db, user, profile: profile.data };
 }
 // Privileged client is isolated: only lifecycle operations with separately verified authorization.
 export function adminDatabase() {

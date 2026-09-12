@@ -41,6 +41,7 @@ import { AuthScreen } from './auth-screen';
 import { Composer } from './composer';
 import { NotesReview } from './community-notes';
 import { PostCard } from './post-card';
+import { SecuritySettings } from './security-settings';
 
 type View =
   | 'home'
@@ -1002,6 +1003,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                     fermano al limite; nessun acquisto automatico.
                   </p>
                 </section>
+                <SecuritySettings demo={demo} />
                 <section className="panel">
                   <h2>I tuoi dati, le tue scelte</h2>
                   <p className="muted">
@@ -1131,7 +1133,8 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                             <span>
                               <strong>{auditLabels[entry.action]}</strong>
                               <small>
-                                {auditTargetLabels[entry.target_type]} · {entry.target_id.slice(0, 8)}
+                                {auditTargetLabels[entry.target_type]} ·{' '}
+                                {entry.target_id.slice(0, 8)}
                               </small>
                             </span>
                             <span>

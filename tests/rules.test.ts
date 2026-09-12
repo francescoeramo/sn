@@ -9,6 +9,7 @@ import {
   localMediaInfo,
   passwordResetRequest,
   passwordUpdate,
+  mfaAction,
 } from '../lib/core/rules';
 import { applyDemo, seed } from '../lib/client/demo';
 describe('Regole condivise', () => {
@@ -67,6 +68,13 @@ describe('Regole condivise', () => {
         confirmation: 'password-diversa',
       }).success,
     ).toBe(false);
+  });
+  it('accetta solo azioni MFA e codici TOTP validi', () => {
+    const factorId = '00000000-0000-4000-8000-000000000001';
+    expect(mfaAction.safeParse({ action: 'enroll' }).success).toBe(true);
+    expect(mfaAction.safeParse({ action: 'verify', factorId, code: '123456' }).success).toBe(true);
+    expect(mfaAction.safeParse({ action: 'verify', factorId, code: '12345a' }).success).toBe(false);
+    expect(mfaAction.safeParse({ action: 'unenroll', factorId: 'non-valido' }).success).toBe(false);
   });
   it('i messaggi demo supportano audio e scadenza senza fidarsi del MIME dichiarato', () => {
     const s = seed();

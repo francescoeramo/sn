@@ -13,8 +13,16 @@ import {
   savedCursorInput,
   passwordResetRequest,
   passwordUpdate,
+  mfaAction,
 } from '@/lib/core/rules';
-import { database, identity, checked, adminDatabase, ApiError } from '@/lib/server/supabase';
+import {
+  database,
+  identity,
+  authenticated,
+  checked,
+  adminDatabase,
+  ApiError,
+} from '@/lib/server/supabase';
 import { snapshot, mutate, exportData, deleteAccount, savedPage } from '@/lib/server/social';
 
 export const runtime = 'nodejs';
@@ -48,9 +56,23 @@ function sameOrigin(request: NextRequest) {
   if (!expected || request.headers.get('origin') !== new URL(expected).origin)
     throw new ApiError('Origine non autorizzata.', 403);
 }
+async function mfaState() {
+  const { db } = await authenticated();
+  const factors = checked(await db.auth.mfa.listFactors());
+  const assurance = checked(await db.auth.mfa.getAuthenticatorAssuranceLevel());
+  return {
+    factors: factors.totp
+      .filter((factor) => factor.status === 'verified')
+      .map(({ id, friendly_name, created_at }) => ({ id, friendly_name, created_at })),
+    currentLevel: assurance.currentLevel,
+    nextLevel: assurance.nextLevel,
+    mfaRequired: assurance.nextLevel === 'aal2' && assurance.currentLevel !== 'aal2',
+  };
+}
 export async function GET(request: NextRequest, { params }: Context) {
   try {
     const route = (await params).path.join('/');
+    if (route === 'auth/mfa') return json(await mfaState());
     if (route === 'bootstrap') return json(await snapshot());
     if (route === 'saved') {
       const before = request.nextUrl.searchParams.get('before');
@@ -187,6 +209,44 @@ export async function POST(request: NextRequest, { params }: Context) {
         );
       return json({ ok: true });
     }
+    if (route === 'auth/mfa') {
+      const value = mfaAction.parse(await body(request));
+      const { db } = await authenticated();
+      if (value.action === 'enroll') {
+        const factors = checked(await db.auth.mfa.listFactors());
+        if (factors.totp.some((factor) => factor.status === 'verified'))
+          throw new ApiError('La verifica in due passaggi è già attiva.', 409);
+        for (const factor of factors.all.filter((item) => item.status === 'unverified'))
+          checked(await db.auth.mfa.unenroll({ factorId: factor.id }));
+        const enrolled = checked(
+          await db.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'SN Authenticator' }),
+        );
+        return json({
+          factorId: enrolled.id,
+          qrCode: enrolled.totp.qr_code,
+          secret: enrolled.totp.secret,
+        });
+      }
+      if (value.action === 'verify') {
+        checked(
+          await db.auth.mfa.challengeAndVerify({
+            factorId: value.factorId,
+            code: value.code,
+          }),
+        );
+        return json(await mfaState());
+      }
+      const factors = checked(await db.auth.mfa.listFactors());
+      const target = factors.all.find((factor) => factor.id === value.factorId);
+      if (!target) throw new ApiError('Metodo di verifica non trovato.', 404);
+      if (target.status === 'verified') {
+        const assurance = checked(await db.auth.mfa.getAuthenticatorAssuranceLevel());
+        if (assurance.currentLevel !== 'aal2')
+          throw new ApiError('Verifica prima il codice dell’app authenticator.', 403);
+      }
+      checked(await db.auth.mfa.unenroll({ factorId: value.factorId }));
+      return json(await mfaState());
+    }
     if (route === 'auth/login' || route === 'auth/signup') {
       const data = credentials.parse(await body(request));
       const db = await database();
@@ -218,6 +278,13 @@ export async function POST(request: NextRequest, { params }: Context) {
       );
       if (result.error)
         throw new ApiError('Accesso non riuscito. Controlla email e password.', 401);
+      const assurance = checked(await db.auth.mfa.getAuthenticatorAssuranceLevel());
+      if (assurance.nextLevel === 'aal2' && assurance.currentLevel !== 'aal2') {
+        const factors = checked(await db.auth.mfa.listFactors());
+        const factor = factors.totp.find((item) => item.status === 'verified');
+        if (!factor) throw new ApiError('Secondo fattore non disponibile.', 503);
+        return json({ mfaRequired: true, factorId: factor.id });
+      }
       return json({ ok: true });
     }
     if (route === 'auth/logout') {

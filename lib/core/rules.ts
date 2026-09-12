@@ -59,6 +59,15 @@ export const credentials = z.object({
   invite: z.string().min(32).max(128).optional(),
 });
 export const passwordResetRequest = z.object({ email: z.email().max(254) });
+export const mfaAction = z.discriminatedUnion('action', [
+  z.object({ action: z.literal('enroll') }),
+  z.object({
+    action: z.literal('verify'),
+    factorId: z.uuid(),
+    code: z.string().regex(/^\d{6}$/),
+  }),
+  z.object({ action: z.literal('unenroll'), factorId: z.uuid() }),
+]);
 export const passwordUpdate = z
   .object({
     password: z.string().min(12).max(128),
