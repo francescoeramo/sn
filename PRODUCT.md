@@ -61,7 +61,7 @@ Le seguenti richieste guidano la pianificazione futura. Non costituiscono un'att
 - **Avvisi di contenuto / spoiler:** campo opzionale che nasconde corpo e media dietro un'azione esplicita. Prevederlo prima dell'attivazione della federazione.
 - **Ricerca dei contenuti:** estendere utenti e hashtag con ricerca full-text nel testo dei post, rispettandone la visibilità, senza servizi esterni a pagamento; indice Postgres come opzione proposta.
 - **Recupero account:** verificare reset password, scadenza breve del link email, invalidazione delle sessioni esistenti dopo il reset e notifica dell'operazione all'utente.
-- **Anti-abuso:** verificare e completare rate limiting di login e registrazione. Valutare captcha leggero o proof-of-work locale solo se gli inviti diventano meno chiusi; scelta non ancora confermata.
+- **Anti-abuso:** rate limiting applicativo implementato per login, registrazione e recupero (rispettivamente 8/15 minuti, 4/ora e 3/ora). Il contatore usa un HMAC dell’email con chiave server: non conserva email o IP ed è inaccessibile ai client. Resta il collaudo cloud. Valutare captcha leggero o proof-of-work locale solo se gli inviti diventano meno chiusi; scelta non ancora confermata.
 - **Registro di moderazione:** tracciare chi ha rimosso, bannato o approvato cosa e quando, per trasparenza interna e contestazioni anche con più moderatori.
 
 ## Experience Requirements

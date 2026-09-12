@@ -170,6 +170,22 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
     expect(profiles.rows[0].onboarded_at).not.toBeNull();
     expect(profiles.rows[1].onboarded_at).toBeNull();
   });
+  it('limita atomicamente i tentativi Auth senza esporre il contatore', async () => {
+    const rateKey = 'a'.repeat(64);
+    await db.exec('set role service_role;');
+    try {
+      const attempts = await db.query<{ allowed: boolean }>(
+        "select public.consume_auth_rate($1,'login',2,900) as allowed from generate_series(1,3)",
+        [rateKey],
+      );
+      expect(attempts.rows.map((row) => row.allowed)).toEqual([true, true, false]);
+    } finally {
+      await db.exec('reset role;');
+    }
+    await expect(
+      asUser(alice, "select public.consume_auth_rate($1,'login',2,900)", [rateKey]),
+    ).rejects.toThrow(/permission denied/);
+  });
   it('nega registrazioni senza invito', async () => {
     await expect(
       signup('00000000-0000-4000-8000-000000000009', 'no@example.test', 'outsider', 'bad'),

@@ -1,7 +1,7 @@
 import { syncChat } from '@/lib/server/chat';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { timingSafeEqual } from 'node:crypto';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import { BodyTooLarge, readLimited } from '@/lib/core/http';
 import {
   credentials,
@@ -55,6 +55,25 @@ function sameOrigin(request: NextRequest) {
   const expected = process.env.APP_ORIGIN;
   if (!expected || request.headers.get('origin') !== new URL(expected).origin)
     throw new ApiError('Origine non autorizzata.', 403);
+}
+async function enforceAuthRate(email: string, bucket: 'login' | 'signup' | 'recover') {
+  const secret = process.env.SUPABASE_SECRET_KEY;
+  if (!secret) throw new ApiError('Protezione accessi non configurata.', 503);
+  const limits = {
+    login: { max: 8, window: 900 },
+    signup: { max: 4, window: 3600 },
+    recover: { max: 3, window: 3600 },
+  } as const;
+  const rateKey = createHmac('sha256', secret).update(email.trim().toLowerCase()).digest('hex');
+  const allowed = checked(
+    await adminDatabase().rpc('consume_auth_rate', {
+      rate_key: rateKey,
+      rate_bucket: bucket,
+      max_hits: limits[bucket].max,
+      window_seconds: limits[bucket].window,
+    }),
+  );
+  if (!allowed) throw new ApiError('Troppi tentativi. Riprova più tardi.', 429);
 }
 async function mfaState() {
   const { db } = await authenticated();
@@ -189,6 +208,7 @@ export async function POST(request: NextRequest, { params }: Context) {
     const route = (await params).path.join('/');
     if (route === 'auth/recover') {
       const data = passwordResetRequest.parse(await body(request));
+      await enforceAuthRate(data.email, 'recover');
       const db = await database();
       const started = Date.now();
       await db.auth.resetPasswordForEmail(data.email, {
@@ -269,6 +289,7 @@ export async function POST(request: NextRequest, { params }: Context) {
     }
     if (route === 'auth/login' || route === 'auth/signup') {
       const data = credentials.parse(await body(request));
+      await enforceAuthRate(data.email, route === 'auth/signup' ? 'signup' : 'login');
       const db = await database();
       if (route === 'auth/signup') {
         if (!data.invite || !data.username)
