@@ -1,7 +1,12 @@
 import 'server-only';
-import type { ChatGroupsState } from '@/lib/core/types';
-import { chatGroupActionInput } from '@/lib/core/rules';
-import { checked, identity } from './supabase';
+import type { ChatGroupMessagesState, ChatGroupsState } from '@/lib/core/types';
+import {
+  chatGroupActionInput,
+  encryptedGroupMessageInput,
+  groupMessageReceiptInput,
+  userId,
+} from '@/lib/core/rules';
+import { ApiError, checked, identity } from './supabase';
 
 export async function chatGroupsState(): Promise<ChatGroupsState> {
   const { db } = await identity();
@@ -61,4 +66,79 @@ export async function mutateChatGroup(input: unknown) {
   if (value.action === 'leave')
     checked(await db.rpc('leave_chat_group', { target_group: value.groupId }));
   return chatGroupsState();
+}
+
+export async function chatGroupDevices(groupIdInput: unknown) {
+  const groupId = userId.parse(groupIdInput);
+  const { db } = await identity();
+  const members = checked(
+    await db.from('chat_group_members').select('user_id').eq('group_id', groupId),
+  ) as { user_id: string }[];
+  if (!members.length) return [];
+  return checked(
+    await db
+      .from('chat_devices')
+      .select('id,user_id,public_key,label')
+      .in(
+        'user_id',
+        members.map((member) => member.user_id),
+      ),
+  );
+}
+
+export async function chatGroupMessages(groupIdInput: unknown): Promise<ChatGroupMessagesState> {
+  const groupId = userId.parse(groupIdInput);
+  const { db } = await identity();
+  const messages = checked(
+    await db
+      .from('chat_group_messages')
+      .select('*')
+      .eq('group_id', groupId)
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
+      .limit(50),
+  ) as ChatGroupMessagesState['messages'];
+  if (!messages.length) return { messages: [], receipts: [] };
+  const receipts = checked(
+    await db
+      .from('chat_group_message_receipts')
+      .select('*')
+      .in(
+        'message_id',
+        messages.map((message) => message.id),
+      )
+      .limit(950),
+  ) as ChatGroupMessagesState['receipts'];
+  return { messages: messages.reverse(), receipts };
+}
+
+export async function sendChatGroupMessage(input: unknown) {
+  const value = encryptedGroupMessageInput.parse(input);
+  const { db, user } = await identity();
+  const context = value.encrypted.context;
+  if (context.sender_id !== user.id) throw new ApiError('Accesso negato.', 403);
+  return checked(
+    await db
+      .from('chat_group_messages')
+      .insert({
+        id: value.id,
+        group_id: value.group_id,
+        sender_id: user.id,
+        encrypted: value.encrypted,
+      })
+      .select('*')
+      .single(),
+  );
+}
+
+export async function acknowledgeChatGroupMessage(input: unknown) {
+  const parsed = groupMessageReceiptInput.parse(input);
+  const { db } = await identity();
+  checked(
+    await db.rpc('acknowledge_group_message', {
+      target_message: parsed.messageId,
+      mark_read: parsed.read,
+    }),
+  );
+  return { ok: true };
 }

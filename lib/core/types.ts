@@ -1,4 +1,4 @@
-import type { Sealed } from '@/lib/crypto/chat';
+import type { GroupSealed, Sealed } from '@/lib/crypto/chat';
 export type Profile = {
   id: string;
   username: string;
@@ -205,4 +205,21 @@ export type ChatGroupsState = {
   groups: ChatGroup[];
   members: ChatGroupMember[];
   invites: ChatGroupInvite[];
+};
+export type ChatGroupMessage = {
+  id: string;
+  group_id: string;
+  sender_id: string;
+  encrypted: GroupSealed;
+  created_at: string;
+};
+export type ChatGroupReceipt = {
+  message_id: string;
+  user_id: string;
+  delivered_at: string | null;
+  read_at: string | null;
+};
+export type ChatGroupMessagesState = {
+  messages: ChatGroupMessage[];
+  receipts: ChatGroupReceipt[];
 };

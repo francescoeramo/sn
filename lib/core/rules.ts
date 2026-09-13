@@ -223,6 +223,7 @@ export const encryptedGroupMessageInput = z
       value.group_id === value.encrypted.context.group_id,
     'Contesto cifrato non valido.',
   );
+export const groupMessageReceiptInput = z.object({ messageId: userId, read: z.boolean() });
 export const encryptedMessageInput = z.object({
   id: userId,
   user_id: userId,
