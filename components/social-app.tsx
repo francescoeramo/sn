@@ -44,6 +44,7 @@ import { PostCard } from './post-card';
 import { SecuritySettings } from './security-settings';
 import { WelcomeOnboarding } from './welcome-onboarding';
 import { ThemeSettings } from './theme-settings';
+import { GroupChatPanel } from './group-chat-panel';
 
 type View =
   | 'home'
@@ -114,6 +115,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
   const [composer, setComposer] = useState<Post['kind'] | null>(null);
   const [story, setStory] = useState<Post | null>(null);
   const [conversation, setConversation] = useState<string | null>(null);
+  const [messageMode, setMessageMode] = useState<'people' | 'groups'>('people');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -789,79 +791,128 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                   <LockKeyhole size={15} /> I nuovi messaggi e allegati sono cifrati end-to-end. Le
                   chiavi restano nei browser autorizzati.
                 </p>
-                <div className="conversation-tabs">
-                  {profiles
-                    .filter(
-                      (p) =>
-                        p.id !== me.id &&
-                        (state.messages.some(
-                          (m) => m.sender_id === p.id || m.recipient_id === p.id,
-                        ) ||
-                          followed.has(p.id)),
-                    )
-                    .map((p) => (
-                      <button
-                        key={p.id}
-                        className={conversation === p.id ? 'selected' : ''}
-                        onClick={async () => {
-                          setConversation(p.id);
-                          if (!demo) {
-                            try {
-                              const messages = await request(`messages?user=${p.id}`);
-                              setState((s) =>
-                                s
-                                  ? {
-                                      ...s,
-                                      messages: [
-                                        ...s.messages.filter(
-                                          (m) =>
-                                            !messages.some((n: { id: string }) => n.id === m.id),
-                                        ),
-                                        ...messages,
-                                      ],
-                                    }
-                                  : s,
-                              );
-                            } catch (e) {
-                              setNotice(
-                                e instanceof Error ? e.message : 'Caricamento non riuscito.',
-                              );
-                            }
-                          }
-                        }}
-                      >
-                        <Avatar person={p} size="small" />
-                        {p.display_name.split(' ')[0]}
-                      </button>
-                    ))}
+                <div className="message-mode" role="tablist" aria-label="Tipo di conversazione">
+                  <button
+                    role="tab"
+                    aria-selected={messageMode === 'people'}
+                    onClick={() => setMessageMode('people')}
+                  >
+                    Persone
+                  </button>
+                  <button
+                    role="tab"
+                    aria-selected={messageMode === 'groups'}
+                    onClick={() => setMessageMode('groups')}
+                  >
+                    Gruppi
+                  </button>
                 </div>
-                {currentConversation ? (
-                  <ChatConversation
-                    key={currentConversation.id}
-                    me={me}
-                    person={currentConversation}
+                {messageMode === 'groups' ? (
+                  <GroupChatPanel
                     demo={demo}
-                    messages={state.messages.filter(
-                      (m) =>
-                        (m.sender_id === conversation && m.recipient_id === me.id) ||
-                        (m.recipient_id === conversation && m.sender_id === me.id),
+                    me={me}
+                    profiles={profiles}
+                    eligible={profiles.filter(
+                      (person) =>
+                        person.id !== me.id &&
+                        state.follows.some(
+                          (follow) =>
+                            follow.follower_id === me.id &&
+                            follow.following_id === person.id &&
+                            follow.accepted,
+                        ) &&
+                        state.follows.some(
+                          (follow) =>
+                            follow.follower_id === person.id &&
+                            follow.following_id === me.id &&
+                            follow.accepted,
+                        ),
                     )}
-                    allowed={
-                      state.follows.some(
-                        (f) =>
-                          f.follower_id === me.id && f.following_id === conversation && f.accepted,
-                      ) &&
-                      state.follows.some(
-                        (f) =>
-                          f.follower_id === conversation && f.following_id === me.id && f.accepted,
-                      )
-                    }
-                    onSend={act}
+                    onNotice={setNotice}
                   />
                 ) : (
-                  <Empty title="Scegli una persona." kind="messages">
-                    Le conversazioni iniziano con due parole.
-                  </Empty>
+                  <>
+                    <div className="conversation-tabs">
+                      {profiles
+                        .filter(
+                          (p) =>
+                            p.id !== me.id &&
+                            (state.messages.some(
+                              (m) => m.sender_id === p.id || m.recipient_id === p.id,
+                            ) ||
+                              followed.has(p.id)),
+                        )
+                        .map((p) => (
+                          <button
+                            key={p.id}
+                            className={conversation === p.id ? 'selected' : ''}
+                            onClick={async () => {
+                              setConversation(p.id);
+                              if (!demo) {
+                                try {
+                                  const messages = await request(`messages?user=${p.id}`);
+                                  setState((s) =>
+                                    s
+                                      ? {
+                                          ...s,
+                                          messages: [
+                                            ...s.messages.filter(
+                                              (m) =>
+                                                !messages.some(
+                                                  (n: { id: string }) => n.id === m.id,
+                                                ),
+                                            ),
+                                            ...messages,
+                                          ],
+                                        }
+                                      : s,
+                                  );
+                                } catch (e) {
+                                  setNotice(
+                                    e instanceof Error ? e.message : 'Caricamento non riuscito.',
+                                  );
+                                }
+                              }
+                            }}
+                          >
+                            <Avatar person={p} size="small" />
+                            {p.display_name.split(' ')[0]}
+                          </button>
+                        ))}
+                    </div>
+                    {currentConversation ? (
+                      <ChatConversation
+                        key={currentConversation.id}
+                        me={me}
+                        person={currentConversation}
+                        demo={demo}
+                        messages={state.messages.filter(
+                          (m) =>
+                            (m.sender_id === conversation && m.recipient_id === me.id) ||
+                            (m.recipient_id === conversation && m.sender_id === me.id),
+                        )}
+                        allowed={
+                          state.follows.some(
+                            (f) =>
+                              f.follower_id === me.id &&
+                              f.following_id === conversation &&
+                              f.accepted,
+                          ) &&
+                          state.follows.some(
+                            (f) =>
+                              f.follower_id === conversation &&
+                              f.following_id === me.id &&
+                              f.accepted,
+                          )
+                        }
+                        onSend={act}
+                      />
+                    ) : (
+                      <Empty title="Scegli una persona." kind="messages">
+                        Le conversazioni iniziano con due parole.
+                      </Empty>
+                    )}
+                  </>
                 )}
               </section>
             )}

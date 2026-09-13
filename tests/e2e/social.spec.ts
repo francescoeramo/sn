@@ -36,6 +36,15 @@ test('demo: pubblicazione, commento, persistenza e ricerca', async ({ page }) =>
   expect(errors).toEqual([]);
   expect(external).toEqual([]);
 });
+test('messaggi: separa persone e gestione gruppi', async ({ page }) => {
+  await page.goto('/demo');
+  await page.getByRole('button', { name: 'Messaggi', exact: true }).click();
+  await page.getByRole('tab', { name: 'Gruppi' }).click();
+  await expect(page.getByRole('tab', { name: 'Gruppi' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByText('I gruppi richiedono un account.')).toBeVisible();
+  await page.getByRole('tab', { name: 'Persone' }).click();
+  await expect(page.getByRole('tab', { name: 'Persone' })).toHaveAttribute('aria-selected', 'true');
+});
 test('storie: dialogo accessibile e chiusura con Escape', async ({ page }) => {
   await page.goto('/demo');
   await page.getByRole('button', { name: 'Giulia', exact: true }).click();
@@ -623,7 +632,9 @@ test('stati vuoti: la ricerca offre un’indicazione contestuale', async ({ page
     .getByRole('button', { name: 'Esplora', exact: true })
     .filter({ visible: true })
     .click();
-  await page.getByPlaceholder('Cerca persone, parole o #hashtag').fill('nessun-risultato-possibile');
+  await page
+    .getByPlaceholder('Cerca persone, parole o #hashtag')
+    .fill('nessun-risultato-possibile');
   await expect(page.getByRole('heading', { name: 'Nessun post trovato.' })).toBeVisible();
   await expect(page.locator('.empty-art.search')).toBeVisible();
   await expect(page.getByText('Prova un’altra parola o cerca il nome di un amico.')).toBeVisible();
