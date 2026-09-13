@@ -16,15 +16,17 @@ PGlite esegue il vero motore Postgres e verifica schema, trigger e RLS con ruoli
 
 La durata massima video è controllata nel browser. Il server verifica dimensione e firma del contenitore, ma non esegue ffprobe/antivirus né certifica la durata dei file inviati via API. Per la beta su invito il limite di byte protegge la quota; prima di aprire a sconosciuti va introdotta una pipeline media con decodifica e convalida in isolamento. La ricodifica browser dipende da MediaRecorder/captureStream; se non disponibile, si accettano solo file già entro 3 MiB.
 
-## Federazione: predisposta, non implementata
+## Federazione: discovery locale in anteprima
 
-Gli UUID `actor_key` e `activity_key` permettono URI stabili indipendenti dal nome utente. Sono presenti tabelle private per coda e blocchi delle istanze. `/.well-known/webfinger` e `/ap/*` rispondono **503**: non espongono profili, non accettano attività e non eseguono fetch remoti. Non basta cambiare una variabile per attivare una federazione incompleta.
+Gli UUID `actor_key` e `activity_key` permettono URI stabili indipendenti dal nome utente. Sono presenti tabelle private per coda e blocchi delle istanze. In sviluppo, `FEDERATION_DISCOVERY_PREVIEW=true` abilita WebFinger e i documenti Actor in sola lettura per i soli profili pubblici e attivi. `/users/:username` è un alias leggibile; l’ID canonico resta `/ap/actors/:actor_key`. La variabile è ignorata in produzione.
+
+Senza questa anteprima, `/.well-known/webfinger` e `/ap/*` rispondono **503**. Inbox, outbox e richieste POST restano sempre disattivate: non vengono accettate attività né eseguiti fetch remoti. La discovery locale serve a validare forma e identità dei documenti, non abilita l’interoperabilità.
 
 La libreria candidata è [Fedify](https://fedify.dev/manual/federation), con [licenza MIT](https://github.com/fedify-dev/fedify/blob/main/LICENSE). Gestisce dispatcher, firme e trasporto ActivityPub; l’adapter Postgres evita un servizio Redis separato. Non è stata aggiunta come dipendenza inutilizzata.
 
 Per abilitarla servono:
 
-1. Dominio stabile, chiavi attore e lifecycle di rotazione, endpoint WebFinger/Actor/Note/inbox/outbox collegati a Fedify.
+1. Dominio stabile, chiavi attore e lifecycle di rotazione, endpoint Note/inbox/outbox collegati a Fedify e passaggio della discovery dalla sola anteprima alla produzione.
 2. Coda persistente con retry, deduplicazione, firma/verifica HTTP e limiti di consegna. Nessuna memoria locale come unica coda su Vercel.
 3. Fetch remoto con protezione SSRF, verifica DNS e redirect, blocco reti private, limiti su payload e timeout; niente accesso al database privilegiato da payload federati.
 4. Opt-in esplicito per contenuti pubblici, gestione Follow/Accept/Undo/Delete e ritiri da account privati. Le storie e i DM restano locali inizialmente.
