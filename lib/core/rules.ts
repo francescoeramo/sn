@@ -189,6 +189,40 @@ export const sealedInput = z.object({
     .record(userId, z.object({ iv: b64(16), ciphertext: b64(64) }))
     .refine((v) => Object.keys(v).length >= 2 && Object.keys(v).length <= 10),
 });
+export const groupSealedInput = z.object({
+  version: z.literal(2),
+  context: z
+    .object({
+      id: userId,
+      sender_id: userId,
+      group_id: userId,
+      recipient_ids: z.array(userId).min(2).max(20),
+      expires_at: z.null(),
+      revision: z.number().int().nonnegative().optional(),
+    })
+    .refine(
+      (value) =>
+        new Set(value.recipient_ids).size === value.recipient_ids.length &&
+        value.recipient_ids.join('\n') === [...value.recipient_ids].sort().join('\n') &&
+        value.recipient_ids.includes(value.sender_id),
+      'Elenco partecipanti non valido.',
+    ),
+  sender: publicDeviceInput,
+  salt: b64(44),
+  iv: b64(16),
+  ciphertext: b64(13000),
+  keys: z
+    .record(userId, z.object({ iv: b64(16), ciphertext: b64(64) }))
+    .refine((value) => Object.keys(value).length >= 2 && Object.keys(value).length <= 100),
+});
+export const encryptedGroupMessageInput = z
+  .object({ id: userId, group_id: userId, encrypted: groupSealedInput })
+  .refine(
+    (value) =>
+      value.id === value.encrypted.context.id &&
+      value.group_id === value.encrypted.context.group_id,
+    'Contesto cifrato non valido.',
+  );
 export const encryptedMessageInput = z.object({
   id: userId,
   user_id: userId,

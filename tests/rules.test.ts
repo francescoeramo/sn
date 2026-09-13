@@ -11,6 +11,7 @@ import {
   passwordUpdate,
   mfaAction,
   chatGroupActionInput,
+  encryptedGroupMessageInput,
 } from '../lib/core/rules';
 import { applyDemo, seed } from '../lib/client/demo';
 describe('Regole condivise', () => {
@@ -21,6 +22,54 @@ describe('Regole condivise', () => {
     expect(
       chatGroupActionInput.safeParse({ action: 'role', groupId: id, userId: id, role: 'owner' })
         .success,
+    ).toBe(false);
+  });
+  it('rifiuta contesti cifrati di gruppo ambigui', () => {
+    const alice = '00000000-0000-4000-8000-000000000001';
+    const bob = '00000000-0000-4000-8000-000000000002';
+    const id = '10000000-0000-4000-8000-000000000001';
+    const group = '20000000-0000-4000-8000-000000000001';
+    const packet = {
+      version: 2,
+      context: {
+        id,
+        sender_id: alice,
+        group_id: group,
+        recipient_ids: [alice, bob],
+        expires_at: null,
+      },
+      sender: {
+        id: '30000000-0000-4000-8000-000000000001',
+        user_id: alice,
+        label: 'Browser',
+        public_key: { kty: 'EC', crv: 'P-256', x: 'a'.repeat(43), y: 'b'.repeat(43) },
+      },
+      salt: 'a'.repeat(43) + '=',
+      iv: 'a'.repeat(15) + '=',
+      ciphertext: 'a'.repeat(20),
+      keys: {
+        '30000000-0000-4000-8000-000000000001': {
+          iv: 'a'.repeat(15) + '=',
+          ciphertext: 'a'.repeat(63) + '=',
+        },
+        '30000000-0000-4000-8000-000000000002': {
+          iv: 'a'.repeat(15) + '=',
+          ciphertext: 'a'.repeat(63) + '=',
+        },
+      },
+    };
+    expect(
+      encryptedGroupMessageInput.safeParse({ id, group_id: group, encrypted: packet }).success,
+    ).toBe(true);
+    expect(
+      encryptedGroupMessageInput.safeParse({
+        id,
+        group_id: group,
+        encrypted: { ...packet, context: { ...packet.context, recipient_ids: [bob, alice] } },
+      }).success,
+    ).toBe(false);
+    expect(
+      encryptedGroupMessageInput.safeParse({ id, group_id: alice, encrypted: packet }).success,
     ).toBe(false);
   });
   it('la demo accetta allegati locali oltre 200 caratteri senza allargare le API', () => {
