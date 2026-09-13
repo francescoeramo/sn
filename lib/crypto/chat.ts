@@ -9,6 +9,14 @@ export type ChatContext = {
   revision?: number;
   retention: 'synced' | 'device';
 };
+export type GroupChatContext = {
+  id: string;
+  sender_id: string;
+  group_id: string;
+  recipient_ids: string[];
+  expires_at: null;
+  revision?: number;
+};
 export type Sealed = {
   context: ChatContext;
   version: 1;
@@ -17,6 +25,10 @@ export type Sealed = {
   iv: string;
   ciphertext: string;
   keys: Record<string, { iv: string; ciphertext: string }>;
+};
+export type GroupSealed = Omit<Sealed, 'context' | 'version'> & {
+  context: GroupChatContext;
+  version: 2;
 };
 export type ClearMessage = {
   body: string;
@@ -33,17 +45,30 @@ export function unbase64(text: string): Uint8Array<ArrayBuffer> {
   return Uint8Array.from(atob(text), (c) => c.charCodeAt(0));
 }
 const random = (length: number) => crypto.getRandomValues(new Uint8Array(length));
-const aad = (context: ChatContext) =>
+type AnyChatContext = ChatContext | GroupChatContext;
+const aad = (context: AnyChatContext) =>
   utf8.encode(
-    JSON.stringify([
-      1,
-      context.id,
-      context.sender_id,
-      context.recipient_id,
-      context.expires_at,
-      context.retention,
-      ...(context.revision === undefined ? [] : [context.revision]),
-    ]),
+    JSON.stringify(
+      'recipient_id' in context
+        ? [
+            1,
+            context.id,
+            context.sender_id,
+            context.recipient_id,
+            context.expires_at,
+            context.retention,
+            ...(context.revision === undefined ? [] : [context.revision]),
+          ]
+        : [
+            2,
+            context.id,
+            context.sender_id,
+            context.group_id,
+            context.recipient_ids,
+            context.expires_at,
+            ...(context.revision === undefined ? [] : [context.revision]),
+          ],
+    ),
   );
 export async function newDevice(user_id: string): Promise<LocalDevice> {
   const keys = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, false, [
@@ -77,7 +102,7 @@ async function wrappingKey(
   privateKey: CryptoKey,
   other: JsonWebKey,
   salt: Uint8Array<ArrayBuffer>,
-  context: ChatContext,
+  context: AnyChatContext,
   target: string,
 ) {
   const publicKey = await crypto.subtle.importKey(
@@ -98,7 +123,9 @@ async function wrappingKey(
       name: 'HKDF',
       hash: 'SHA-256',
       salt,
-      info: utf8.encode(`SN-chat-v1:${context.id}:${target}`),
+      info: utf8.encode(
+        `${'recipient_id' in context ? 'SN-chat-v1' : 'SN-group-chat-v2'}:${context.id}:${target}`,
+      ),
     },
     material,
     { name: 'AES-GCM', length: 256 },
@@ -219,6 +246,104 @@ export async function unseal(
   new Uint8Array(raw).fill(0);
   const value = JSON.parse(new TextDecoder().decode(clear)) as ClearMessage;
   if (typeof value.body !== 'string' || value.body.length > 2000)
+    throw new Error('Messaggio non valido.');
+  return value;
+}
+
+export async function sealGroup(
+  sender: LocalDevice,
+  devices: Device[],
+  context: GroupChatContext,
+  body: string,
+): Promise<GroupSealed> {
+  const recipients = [...new Set(context.recipient_ids)].sort();
+  if (
+    sender.user_id !== context.sender_id ||
+    !recipients.includes(sender.user_id) ||
+    recipients.join('\n') !== context.recipient_ids.join('\n') ||
+    !devices.some((device) => device.id === sender.id) ||
+    devices.some((device) => !recipients.includes(device.user_id)) ||
+    recipients.some((userId) => !devices.some((device) => device.user_id === userId)) ||
+    !body.trim() ||
+    body.length > 2000
+  )
+    throw new Error('Mancano le chiavi dei partecipanti.');
+  const salt = random(32);
+  const rawKey = random(32);
+  const iv = random(12);
+  const ciphertext = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv, additionalData: aad(context) },
+    await aes(rawKey),
+    utf8.encode(JSON.stringify({ body, media: null } satisfies ClearMessage)),
+  );
+  const keys: GroupSealed['keys'] = {};
+  for (const device of devices) {
+    const wrapIV = random(12);
+    const wrapping = await wrappingKey(
+      sender.privateKey,
+      device.public_key,
+      salt,
+      context,
+      device.id,
+    );
+    keys[device.id] = {
+      iv: base64(wrapIV),
+      ciphertext: base64(
+        new Uint8Array(
+          await crypto.subtle.encrypt(
+            { name: 'AES-GCM', iv: wrapIV, additionalData: aad(context) },
+            wrapping,
+            rawKey,
+          ),
+        ),
+      ),
+    };
+  }
+  rawKey.fill(0);
+  return {
+    context,
+    version: 2,
+    sender: publicDevice(sender),
+    salt: base64(salt),
+    iv: base64(iv),
+    ciphertext: base64(new Uint8Array(ciphertext)),
+    keys,
+  };
+}
+
+export async function unsealGroup(
+  device: LocalDevice,
+  context: GroupChatContext,
+  packet: GroupSealed,
+): Promise<ClearMessage> {
+  if (
+    packet.version !== 2 ||
+    packet.sender.user_id !== context.sender_id ||
+    !context.recipient_ids.includes(device.user_id)
+  )
+    throw new Error('Messaggio non valido.');
+  const entry = packet.keys[device.id];
+  if (!entry) throw new Error('Questo messaggio precede l’autorizzazione del browser.');
+  const wrapping = await wrappingKey(
+    device.privateKey,
+    packet.sender.public_key,
+    unbase64(packet.salt),
+    context,
+    device.id,
+  );
+  const raw = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: unbase64(entry.iv), additionalData: aad(context) },
+    wrapping,
+    unbase64(entry.ciphertext),
+  );
+  const clear = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: unbase64(packet.iv), additionalData: aad(context) },
+    await aes(new Uint8Array(raw)),
+    unbase64(packet.ciphertext),
+  );
+  new Uint8Array(raw).fill(0);
+  const value = JSON.parse(new TextDecoder().decode(clear)) as ClearMessage;
+  if (typeof value.body !== 'string' || value.body.length > 2000 || value.media !== null)
     throw new Error('Messaggio non valido.');
   return value;
 }

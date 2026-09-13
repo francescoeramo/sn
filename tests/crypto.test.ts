@@ -5,7 +5,10 @@ import {
   unseal,
   openAttachment,
   publicDevice,
+  sealGroup,
+  unsealGroup,
   type ChatContext,
+  type GroupChatContext,
 } from '../lib/crypto/chat';
 const context = (): ChatContext => ({
   id: crypto.randomUUID(),
@@ -75,5 +78,49 @@ describe('Cifratura E2EE con Web Crypto', () => {
     const bytes = new Uint8Array(await packet.attachment!.arrayBuffer());
     bytes[0] ^= 1;
     await expect(openAttachment(ctx, clear.media!, bytes.buffer)).rejects.toThrow();
+  });
+  it('cifra un messaggio di gruppo per tutti i dispositivi e autentica i membri', async () => {
+    const alice = await newDevice('alice');
+    const bob = await newDevice('bob');
+    const bobPhone = await newDevice('bob');
+    const carla = await newDevice('carla');
+    const eve = await newDevice('eve');
+    const group: GroupChatContext = {
+      id: crypto.randomUUID(),
+      sender_id: 'alice',
+      group_id: crypto.randomUUID(),
+      recipient_ids: ['alice', 'bob', 'carla'],
+      expires_at: null,
+      revision: 0,
+    };
+    const packet = await sealGroup(
+      alice,
+      [alice, bob, bobPhone, carla].map(publicDevice),
+      group,
+      'Ci vediamo alle otto',
+    );
+    for (const device of [alice, bob, bobPhone, carla])
+      expect((await unsealGroup(device, group, packet)).body).toBe('Ci vediamo alle otto');
+    await expect(unsealGroup(eve, group, packet)).rejects.toThrow();
+    await expect(
+      unsealGroup(bob, { ...group, recipient_ids: ['alice', 'bob'] }, packet),
+    ).rejects.toThrow();
+  });
+
+  it('rifiuta gruppi non ordinati, dispositivi estranei e membri senza chiavi', async () => {
+    const alice = await newDevice('alice');
+    const bob = await newDevice('bob');
+    const eve = await newDevice('eve');
+    const group: GroupChatContext = {
+      id: crypto.randomUUID(),
+      sender_id: 'alice',
+      group_id: crypto.randomUUID(),
+      recipient_ids: ['bob', 'alice'],
+      expires_at: null,
+    };
+    await expect(sealGroup(alice, [alice, bob], group, 'Ciao')).rejects.toThrow();
+    group.recipient_ids.sort();
+    await expect(sealGroup(alice, [alice], group, 'Ciao')).rejects.toThrow();
+    await expect(sealGroup(alice, [alice, bob, eve], group, 'Ciao')).rejects.toThrow();
   });
 });
