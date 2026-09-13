@@ -180,3 +180,29 @@ export type Action =
   | { type: 'report'; post_id: string; reason: string }
   | { type: 'moderate'; report_id: string; remove: boolean }
   | { type: 'block'; user_id: string };
+
+export type ChatGroup = {
+  id: string;
+  name: string;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+export type ChatGroupMember = {
+  group_id: string;
+  user_id: string;
+  role: 'admin' | 'member';
+  joined_at: string;
+};
+export type ChatGroupInvite = {
+  group_id: string;
+  invitee_id: string;
+  inviter_id: string;
+  created_at: string;
+  expires_at: string;
+};
+export type ChatGroupsState = {
+  groups: ChatGroup[];
+  members: ChatGroupMember[];
+  invites: ChatGroupInvite[];
+};

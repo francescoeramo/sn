@@ -10,9 +10,19 @@ import {
   passwordResetRequest,
   passwordUpdate,
   mfaAction,
+  chatGroupActionInput,
 } from '../lib/core/rules';
 import { applyDemo, seed } from '../lib/client/demo';
 describe('Regole condivise', () => {
+  it('valida le azioni di gestione dei gruppi', () => {
+    const id = '00000000-0000-4000-8000-000000000001';
+    const create = chatGroupActionInput.parse({ action: 'create', name: '  Fine settimana ' });
+    expect(create.action === 'create' && create.name).toBe('Fine settimana');
+    expect(
+      chatGroupActionInput.safeParse({ action: 'role', groupId: id, userId: id, role: 'owner' })
+        .success,
+    ).toBe(false);
+  });
   it('la demo accetta allegati locali oltre 200 caratteri senza allargare le API', () => {
     const media = 'data:image/webp;base64,' + 'AAAA'.repeat(100);
     const next = applyDemo(seed(), {

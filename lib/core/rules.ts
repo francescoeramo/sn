@@ -257,3 +257,21 @@ export const editMessageInput = z.object({
   media_path: z.string().max(200).nullable(),
 });
 export const deleteMessageInput = z.object({ message_id: userId, everyone: z.boolean() });
+export const chatGroupActionInput = z.discriminatedUnion('action', [
+  z.object({ action: z.literal('create'), name: z.string().trim().min(1).max(60) }),
+  z.object({ action: z.literal('invite'), groupId: userId, userId }),
+  z.object({ action: z.literal('respond'), groupId: userId, accept: z.boolean() }),
+  z.object({
+    action: z.literal('rename'),
+    groupId: userId,
+    name: z.string().trim().min(1).max(60),
+  }),
+  z.object({ action: z.literal('remove'), groupId: userId, userId }),
+  z.object({
+    action: z.literal('role'),
+    groupId: userId,
+    userId,
+    role: z.enum(['admin', 'member']),
+  }),
+  z.object({ action: z.literal('leave'), groupId: userId }),
+]);

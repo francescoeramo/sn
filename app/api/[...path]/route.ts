@@ -1,4 +1,5 @@
 import { syncChat } from '@/lib/server/chat';
+import { chatGroupsState, mutateChatGroup } from '@/lib/server/groups';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createHmac, timingSafeEqual } from 'node:crypto';
@@ -180,6 +181,7 @@ export async function GET(request: NextRequest, { params }: Context) {
         ),
       );
     }
+    if (route === 'chat/groups') return json(await chatGroupsState());
     if (route === 'messages') {
       const { db, user } = await identity();
       const other = userId.parse(request.nextUrl.searchParams.get('user'));
@@ -369,6 +371,7 @@ export async function POST(request: NextRequest, { params }: Context) {
         );
       return json({ ok: true });
     }
+    if (route === 'chat/groups') return json(await mutateChatGroup(await body(request)));
     if (route === 'action') return json(await mutate(await body(request)));
     if (route === 'account/delete') {
       const data = z
