@@ -1,6 +1,12 @@
 import { PGlite } from '@electric-sql/pglite';
 import { beforeAll, afterAll, describe, it, expect } from 'vitest';
-import { newDevice, seal, type LocalDevice } from '../lib/crypto/chat';
+import {
+  newDevice,
+  seal,
+  sealGroup,
+  type GroupChatContext,
+  type LocalDevice,
+} from '../lib/crypto/chat';
 import { readFileSync, readdirSync } from 'node:fs';
 
 let db: PGlite;
@@ -296,6 +302,62 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
       [groupId],
     );
     expect(members).toEqual([{ user_id: bob, role: 'admin' }]);
+  });
+  it('salva messaggi di gruppo cifrati solo per membri e dispositivi correnti', async () => {
+    const created = await asUser<{ create_chat_group: string }>(
+      alice,
+      "select public.create_chat_group('Cena')",
+    );
+    const groupId = created[0].create_chat_group;
+    await asUser(alice, 'select public.invite_chat_group_member($1,$2)', [groupId, bob]);
+    await asUser(bob, 'select public.respond_chat_group_invite($1,true)', [groupId]);
+    const context: GroupChatContext = {
+      id: crypto.randomUUID(),
+      sender_id: alice,
+      group_id: groupId,
+      recipient_ids: [alice, bob],
+      expires_at: null,
+      revision: 0,
+    };
+    const packet = await sealGroup(
+      devices[alice],
+      [devices[alice], devices[bob]],
+      context,
+      'A che ora?',
+    );
+    await asUser(
+      alice,
+      'insert into public.chat_group_messages(id,group_id,sender_id,encrypted) values($1,$2,$3,$4)',
+      [context.id, groupId, alice, packet],
+    );
+    expect(
+      await asUser(bob, 'select * from public.chat_group_messages where id=$1', [context.id]),
+    ).toHaveLength(1);
+    expect(
+      await asUser(eve, 'select * from public.chat_group_messages where id=$1', [context.id]),
+    ).toHaveLength(0);
+    await asUser(bob, 'select public.acknowledge_group_message($1,true)', [context.id]);
+    const receipts = await asUser<{ read_at: string | null }>(
+      alice,
+      'select read_at from public.chat_group_message_receipts where message_id=$1',
+      [context.id],
+    );
+    expect(receipts[0].read_at).not.toBeNull();
+    const secondContext = { ...context, id: crypto.randomUUID() };
+    const tampered = await sealGroup(
+      devices[alice],
+      [devices[alice], devices[bob]],
+      secondContext,
+      'Secondo invio',
+    );
+    delete tampered.keys[devices[bob].id];
+    await expect(
+      asUser(
+        alice,
+        'insert into public.chat_group_messages(id,group_id,sender_id,encrypted) values($1,$2,$3,$4)',
+        [secondContext.id, groupId, alice, tampered],
+      ),
+    ).rejects.toThrow('Elenco dispositivi cambiato');
   });
   it('impone scadenze consentite nel database e nasconde messaggi e media scaduti', async () => {
     await expect(send(bob, alice, 42)).rejects.toThrow();
