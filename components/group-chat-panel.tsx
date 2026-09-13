@@ -37,6 +37,7 @@ export function GroupChatPanel({
   const [selected, setSelected] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [name, setName] = useState('');
+  const [rename, setRename] = useState('');
   const [invitee, setInvitee] = useState('');
   const load = useCallback(() => {
     if (demo) return;
@@ -73,6 +74,7 @@ export function GroupChatPanel({
   const candidates = eligible.filter(
     (person) => !members.some((member) => member.user_id === person.id),
   );
+  const pending = state?.invites.filter((invite) => invite.group_id === selected) ?? [];
   if (demo)
     return (
       <Empty title="I gruppi richiedono un account." kind="messages">
@@ -170,6 +172,30 @@ export function GroupChatPanel({
               <LogOut size={15} /> Abbandona
             </button>
           </div>
+          {admin && (
+            <form
+              className="group-rename"
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (!rename.trim()) return;
+                void mutate({ action: 'rename', groupId: group.id, name: rename }).then(() =>
+                  setRename(''),
+                );
+              }}
+            >
+              <label htmlFor="group-rename">Rinomina</label>
+              <input
+                id="group-rename"
+                value={rename}
+                maxLength={60}
+                placeholder={group.name}
+                onChange={(event) => setRename(event.target.value)}
+              />
+              <button className="text-button" disabled={busy || !rename.trim()}>
+                Salva
+              </button>
+            </form>
+          )}
           {admin && candidates.length > 0 && (
             <div className="group-add">
               <label htmlFor="group-invite-person">Invita una persona</label>
@@ -198,6 +224,11 @@ export function GroupChatPanel({
               </button>
             </div>
           )}
+          {admin && pending.length > 0 && (
+            <p className="group-pending">
+              {pending.length === 1 ? '1 invito in attesa' : `${pending.length} inviti in attesa`}
+            </p>
+          )}
           <ul className="group-members">
             {members.map((member) => {
               const person = profiles.find((item) => item.id === member.user_id);
@@ -209,6 +240,24 @@ export function GroupChatPanel({
                     <strong>{person.display_name}</strong>
                     <small>{member.role === 'admin' ? 'Admin' : 'Membro'}</small>
                   </span>
+                  {admin && (
+                    <select
+                      aria-label={`Ruolo di ${person.display_name}`}
+                      value={member.role}
+                      disabled={busy}
+                      onChange={(event) =>
+                        mutate({
+                          action: 'role',
+                          groupId: group.id,
+                          userId: member.user_id,
+                          role: event.target.value,
+                        })
+                      }
+                    >
+                      <option value="member">Membro</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  )}
                   {admin && member.user_id !== me.id && (
                     <button
                       aria-label={`Rimuovi ${person.display_name}`}

@@ -1699,7 +1699,8 @@ label small {
   padding-top: 20px;
 }
 .group-create label,
-.group-add label {
+.group-add label,
+.group-rename label {
   display: block;
   margin-bottom: 6px;
   color: var(--muted);
@@ -1712,7 +1713,8 @@ label small {
   gap: 8px;
 }
 .group-create input,
-.group-add select {
+.group-add select,
+.group-rename input {
   min-width: 0;
   flex: 1;
   border: 1px solid var(--line);
@@ -1801,6 +1803,20 @@ label small {
 .group-add {
   margin: 18px 0 10px;
 }
+.group-rename {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 13px;
+}
+.group-rename label {
+  margin: 0;
+}
+.group-pending {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 10px;
+}
 .group-add label {
   margin: 0;
 }
@@ -1832,6 +1848,12 @@ label small {
 }
 .group-members li > button {
   color: var(--muted);
+}
+.group-members select {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 10px;
 }
 .group-coming-soon {
   display: flex;
