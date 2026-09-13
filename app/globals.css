@@ -908,6 +908,24 @@ small {
 .post-actions button.liked {
   color: #b15f75;
 }
+.post-actions .like-pulse {
+  transform-origin: center;
+  animation: like-pulse 0.34s ease-out;
+}
+.post-content.revealed > * {
+  animation: content-reveal 0.22s ease-out;
+}
+@keyframes like-pulse {
+  45% {
+    transform: scale(1.24) rotate(-5deg);
+  }
+}
+@keyframes content-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+}
 .post-date {
   margin-left: auto;
   font-size: 9px;

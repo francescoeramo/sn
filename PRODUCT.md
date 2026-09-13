@@ -70,7 +70,7 @@ Le seguenti richieste guidano la pianificazione futura. Non costituiscono un'att
 - Stati vuoti implementati con testi contestuali e piccoli segni illustrativi distinti per feed, salvati, reel, ricerca, messaggi, notifiche e moderazione. Le storie conservano l’invito diretto alla prima pubblicazione.
 - Modalità scura implementata con token condivisi, scelta chiara/scura/sistema e preferenza persistente applicata prima del rendering. Il font resta self-hosted e il tema non richiede servizi esterni.
 - Il caricamento iniziale usa skeleton coerenti con storie e post, rispetta `prefers-reduced-motion` e mantiene un messaggio accessibile per i lettori di schermo. I caricamenti successivi restano contestuali alle singole viste.
-- Micro-interazioni curate: avanzamento delle storie, feedback del like e transizioni dei reel, senza trasformarli in incentivi compulsivi.
+- Micro-interazioni curate: le storie mostrano avanzamento e pausa, il like offre un breve feedback e i contenuti protetti entrano con una transizione discreta. Tutte le animazioni rispettano `prefers-reduced-motion`; i reel conservano il player nativo e l’ingresso morbido dei post senza autoplay o incentivi compulsivi.
 - Spiegare prima del primo invio cifrato cosa succede perdendo browser o dispositivo e quali possibilità di recupero esistono realmente.
 
 ## Security and Continuity Requirements

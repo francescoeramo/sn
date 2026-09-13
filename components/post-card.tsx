@@ -121,7 +121,7 @@ export function PostCard({
           </button>
         </div>
       )}
-      <div id={`post-content-${post.id}`}>
+      <div id={`post-content-${post.id}`} className={!concealed ? 'post-content revealed' : ''}>
         {!concealed && (
           <>
             {post.body && (
@@ -193,7 +193,12 @@ export function PostCard({
           disabled={pending || concealed}
           onClick={() => act({ type: 'like', post_id: post.id })}
         >
-          <Heart size={22} fill={liked ? 'currentColor' : 'none'} />
+          <Heart
+            key={liked ? 'liked' : 'plain'}
+            className={liked ? 'like-pulse' : undefined}
+            size={22}
+            fill={liked ? 'currentColor' : 'none'}
+          />
           <span>Mi piace</span>
         </button>
         <button
