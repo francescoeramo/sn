@@ -272,6 +272,31 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
     expect(await asUser(eve, 'select * from public.messages')).toHaveLength(0);
     expect(await asUser(alice, 'select * from public.messages')).toHaveLength(1);
   });
+  it('crea gruppi tramite invito e mantiene sempre un admin', async () => {
+    const created = await asUser<{ create_chat_group: string }>(
+      alice,
+      "select public.create_chat_group('Fine settimana')",
+    );
+    const groupId = created[0].create_chat_group;
+    await expect(
+      asUser(alice, 'select public.invite_chat_group_member($1,$2)', [groupId, eve]),
+    ).rejects.toThrow('Accesso negato');
+    await asUser(alice, 'select public.invite_chat_group_member($1,$2)', [groupId, bob]);
+    expect(await asUser(bob, 'select * from public.chat_groups')).toHaveLength(0);
+    expect(await asUser(bob, 'select * from public.chat_group_invites')).toHaveLength(1);
+    await asUser(bob, 'select public.respond_chat_group_invite($1,true)', [groupId]);
+    expect(await asUser(bob, 'select * from public.chat_groups')).toHaveLength(1);
+    await expect(
+      asUser(bob, "select public.rename_chat_group($1,'Altro nome')", [groupId]),
+    ).rejects.toThrow('Accesso negato');
+    await asUser(alice, 'select public.leave_chat_group($1)', [groupId]);
+    const members = await asUser<{ user_id: string; role: string }>(
+      bob,
+      'select user_id,role from public.chat_group_members where group_id=$1',
+      [groupId],
+    );
+    expect(members).toEqual([{ user_id: bob, role: 'admin' }]);
+  });
   it('impone scadenze consentite nel database e nasconde messaggi e media scaduti', async () => {
     await expect(send(bob, alice, 42)).rejects.toThrow();
     const path = bob + '/00000000-0000-4000-8000-000000000557';
