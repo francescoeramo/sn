@@ -31,7 +31,7 @@ import {
 import type { Action, Snapshot, Post } from '@/lib/core/types';
 import { LIMITS, isActive, hashtags, relativeTime } from '@/lib/core/rules';
 import { loadDemo, mutateDemo, clearDemo, seed } from '@/lib/client/demo';
-import { Avatar, Empty, Modal } from './primitives';
+import { Avatar, Empty, LoadingShell, Modal } from './primitives';
 import { deviceFor, localMessages, clearUserChat } from '@/lib/client/chat-store';
 import { chatRequest } from '@/lib/client/chat-session';
 import { publicDevice } from '@/lib/crypto/chat';
@@ -244,16 +244,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
     setQuery(tag);
     navigate('search');
   }
-  if (loading)
-    return (
-      <main className="loading-screen" aria-busy="true">
-        <span className="wordmark">
-          sn<span>●</span>
-        </span>
-        <p>Apriamo la piazza…</p>
-        <div className="loading-line" />
-      </main>
-    );
+  if (loading) return <LoadingShell />;
   if (!state)
     return (
       <>
@@ -681,6 +672,15 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                 ))}
                 {!feed.length && (
                   <Empty
+                    kind={
+                      showingSaved
+                        ? 'saved'
+                        : view === 'reels'
+                          ? 'media'
+                          : view === 'search'
+                            ? 'search'
+                            : 'feed'
+                    }
                     title={
                       showingSaved
                         ? 'Tieni da parte ciò che vuoi ritrovare.'
@@ -859,7 +859,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                     onSend={act}
                   />
                 ) : (
-                  <Empty title="Scegli una persona.">
+                  <Empty title="Scegli una persona." kind="messages">
                     Le conversazioni iniziano con due parole.
                   </Empty>
                 )}
@@ -878,7 +878,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                   </button>
                 </div>
                 {state.notifications.length === 0 && (
-                  <Empty title="Tutto tranquillo.">
+                  <Empty title="Tutto tranquillo." kind="notifications">
                     Richieste di follow, risposte e mi piace compariranno qui.
                   </Empty>
                 )}
@@ -1119,7 +1119,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                     </div>
                   ))}
                 {!state.reports.some((r) => r.status === 'open') && (
-                  <Empty title="Nessuna segnalazione aperta.">
+                  <Empty title="Nessuna segnalazione aperta." kind="moderation">
                     Le segnalazioni dei tuoi amici arriveranno qui.
                   </Empty>
                 )}

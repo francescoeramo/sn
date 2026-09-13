@@ -616,3 +616,15 @@ test('tema: scelta scura persistente senza lampo iniziale', async ({ page }) => 
     'true',
   );
 });
+
+test('stati vuoti: la ricerca offre un’indicazione contestuale', async ({ page }) => {
+  await page.goto('/demo');
+  await page
+    .getByRole('button', { name: 'Esplora', exact: true })
+    .filter({ visible: true })
+    .click();
+  await page.getByPlaceholder('Cerca persone, parole o #hashtag').fill('nessun-risultato-possibile');
+  await expect(page.getByRole('heading', { name: 'Nessun post trovato.' })).toBeVisible();
+  await expect(page.locator('.empty-art.search')).toBeVisible();
+  await expect(page.getByText('Prova un’altra parola o cerca il nome di un amico.')).toBeVisible();
+});

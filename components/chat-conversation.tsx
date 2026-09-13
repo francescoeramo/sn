@@ -291,7 +291,7 @@ export function ChatConversation({
       )}
       <div className="chat-log" role="log" aria-label="Messaggi della conversazione" ref={log}>
         {!visible.length && (
-          <Empty title="Il primo messaggio è tuo.">
+          <Empty title="Il primo messaggio è tuo." kind="messages">
             Scrivi qualcosa o condividi un allegato. Puoi attivare «Chat temporanea» quando vuoi.
           </Empty>
         )}
