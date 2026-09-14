@@ -11,7 +11,12 @@ import {
   type Device,
   type LocalDevice,
 } from '@/lib/crypto/chat';
-import { deviceFor, rememberDevices } from '@/lib/client/chat-store';
+import {
+  deviceFor,
+  keepGroupMessages,
+  localGroupMessages,
+  rememberDevices,
+} from '@/lib/client/chat-store';
 import { relativeTime } from '@/lib/core/rules';
 import { Avatar, Empty } from './primitives';
 
@@ -134,7 +139,10 @@ export function GroupChatConversation({
   const refresh = useCallback(async () => {
     if (!device || document.hidden) return;
     const next = demo
-      ? demoMessages.current
+      ? {
+          messages: await localGroupMessages(me.id, groupId),
+          receipts: demoMessages.current.receipts,
+        }
       : await groupRequest<ChatGroupMessagesState>(`messages?group=${encodeURIComponent(groupId)}`);
     const opened = await openMessages(device, next, prints);
     setMessages(opened);
@@ -221,21 +229,19 @@ export function GroupChatConversation({
         },
         text,
       );
-      if (demo)
+      if (demo) {
+        const row = {
+          id,
+          group_id: groupId,
+          sender_id: me.id,
+          encrypted,
+          created_at: new Date().toISOString(),
+        };
         demoMessages.current = {
           ...demoMessages.current,
-          messages: [
-            ...demoMessages.current.messages,
-            {
-              id,
-              group_id: groupId,
-              sender_id: me.id,
-              encrypted,
-              created_at: new Date().toISOString(),
-            },
-          ],
+          messages: await keepGroupMessages(me.id, groupId, [row]),
         };
-      else await groupRequest('message', { id, group_id: groupId, encrypted });
+      } else await groupRequest('message', { id, group_id: groupId, encrypted });
       setBody('');
       await refresh();
     } catch (cause) {

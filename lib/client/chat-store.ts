@@ -1,5 +1,5 @@
 import { newDevice, type LocalDevice } from '@/lib/crypto/chat';
-import type { Message } from '@/lib/core/types';
+import type { ChatGroupMessage, Message } from '@/lib/core/types';
 import { isActive } from '@/lib/core/rules';
 function open(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -87,6 +87,33 @@ export async function keepMessages(user: string, rows: Message[]) {
       ).values(),
     ];
     await write('messages', user, merged);
+    return merged;
+  });
+}
+
+const groupMessagesKey = (user: string, groupId: string) => `group:${user}:${groupId}`;
+
+export async function localGroupMessages(
+  user: string,
+  groupId: string,
+): Promise<ChatGroupMessage[]> {
+  const key = groupMessagesKey(user, groupId);
+  return navigator.locks.request(`sn-${key}`, async () => {
+    const rows = (await read<ChatGroupMessage[]>('messages', key)) ?? [];
+    return rows.slice(-50);
+  });
+}
+
+export async function keepGroupMessages(user: string, groupId: string, rows: ChatGroupMessage[]) {
+  const key = groupMessagesKey(user, groupId);
+  return navigator.locks.request(`sn-${key}`, async () => {
+    const previous = (await read<ChatGroupMessage[]>('messages', key)) ?? [];
+    const merged = [
+      ...new Map([...previous, ...rows].map((message) => [message.id, message])).values(),
+    ]
+      .sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id))
+      .slice(-50);
+    await write('messages', key, merged);
     return merged;
   });
 }
