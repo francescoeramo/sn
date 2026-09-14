@@ -41,7 +41,14 @@ test('messaggi: separa persone e gestione gruppi', async ({ page }) => {
   await page.getByRole('button', { name: 'Messaggi', exact: true }).click();
   await page.getByRole('tab', { name: 'Gruppi' }).click();
   await expect(page.getByRole('tab', { name: 'Gruppi' })).toHaveAttribute('aria-selected', 'true');
-  await expect(page.getByText('I gruppi richiedono un account.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Fine settimana' })).toBeVisible();
+  await page.getByLabel('Scrivi al gruppo').fill('Ci vediamo alle otto');
+  await page.getByRole('button', { name: 'Invia al gruppo' }).click();
+  await expect(page.getByRole('log')).toContainText('Ci vediamo alle otto');
+  await expect(page.getByRole('log').locator('.group-message.own')).toHaveCount(1);
+  await page.getByLabel('Rinomina').fill('Cena di sabato');
+  await page.getByRole('button', { name: 'Salva' }).click();
+  await expect(page.getByRole('heading', { name: 'Cena di sabato' })).toBeVisible();
   await page.getByRole('tab', { name: 'Persone' }).click();
   await expect(page.getByRole('tab', { name: 'Persone' })).toHaveAttribute('aria-selected', 'true');
 });

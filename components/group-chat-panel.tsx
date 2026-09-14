@@ -3,6 +3,30 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Check, LogOut, Plus, UserRoundMinus, Users, X } from 'lucide-react';
 import type { ChatGroupsState, Profile } from '@/lib/core/types';
 import { Avatar, Empty } from './primitives';
+import { GroupChatConversation } from './group-chat-conversation';
+
+const demoGroupId = '30000000-0000-4000-8000-000000000001';
+
+function demoGroups(me: Profile, eligible: Profile[]): ChatGroupsState {
+  return {
+    groups: [
+      {
+        id: demoGroupId,
+        name: 'Fine settimana',
+        created_by: me.id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    ],
+    members: [me, ...eligible.slice(0, 2)].map((person, index) => ({
+      group_id: demoGroupId,
+      user_id: person.id,
+      role: index === 0 ? 'admin' : 'member',
+      joined_at: new Date().toISOString(),
+    })),
+    invites: [],
+  };
+}
 
 async function groupsRequest(body?: unknown): Promise<ChatGroupsState> {
   const response = await fetch(
@@ -33,8 +57,10 @@ export function GroupChatPanel({
   eligible: Profile[];
   onNotice: (message: string) => void;
 }) {
-  const [state, setState] = useState<ChatGroupsState | null>(null);
-  const [selected, setSelected] = useState<string | null>(null);
+  const [state, setState] = useState<ChatGroupsState | null>(() =>
+    demo ? demoGroups(me, eligible) : null,
+  );
+  const [selected, setSelected] = useState<string | null>(demo ? demoGroupId : null);
   const [busy, setBusy] = useState(false);
   const [name, setName] = useState('');
   const [rename, setRename] = useState('');
@@ -52,6 +78,90 @@ export function GroupChatPanel({
   const mutate = async (action: unknown) => {
     setBusy(true);
     try {
+      if (demo) {
+        const value = action as {
+          action: string;
+          groupId?: string;
+          userId?: string;
+          name?: string;
+          role?: 'admin' | 'member';
+        };
+        const current = state ?? demoGroups(me, eligible);
+        if (value.action === 'create' && value.name) {
+          const id = crypto.randomUUID();
+          const now = new Date().toISOString();
+          const next = {
+            ...current,
+            groups: [
+              { id, name: value.name.trim(), created_by: me.id, created_at: now, updated_at: now },
+              ...current.groups,
+            ],
+            members: [
+              { group_id: id, user_id: me.id, role: 'admin' as const, joined_at: now },
+              ...current.members,
+            ],
+          };
+          setState(next);
+          setSelected(id);
+          return;
+        }
+        if (value.action === 'leave' && value.groupId) {
+          const next = {
+            ...current,
+            groups: current.groups.filter((item) => item.id !== value.groupId),
+            members: current.members.filter((member) => member.group_id !== value.groupId),
+          };
+          setState(next);
+          setSelected(next.groups[0]?.id ?? null);
+          return;
+        }
+        if (value.action === 'rename' && value.groupId && value.name) {
+          setState({
+            ...current,
+            groups: current.groups.map((item) =>
+              item.id === value.groupId
+                ? { ...item, name: value.name!.trim(), updated_at: new Date().toISOString() }
+                : item,
+            ),
+          });
+          return;
+        }
+        if (value.action === 'invite' && value.groupId && value.userId) {
+          setState({
+            ...current,
+            members: [
+              ...current.members,
+              {
+                group_id: value.groupId,
+                user_id: value.userId,
+                role: 'member',
+                joined_at: new Date().toISOString(),
+              },
+            ],
+          });
+          return;
+        }
+        if (value.action === 'role' && value.groupId && value.userId && value.role) {
+          setState({
+            ...current,
+            members: current.members.map((member) =>
+              member.group_id === value.groupId && member.user_id === value.userId
+                ? { ...member, role: value.role! }
+                : member,
+            ),
+          });
+          return;
+        }
+        if (value.action === 'remove' && value.groupId && value.userId) {
+          setState({
+            ...current,
+            members: current.members.filter(
+              (member) => member.group_id !== value.groupId || member.user_id !== value.userId,
+            ),
+          });
+          return;
+        }
+      }
       const next = await groupsRequest(action);
       setState(next);
       setSelected((current) =>
@@ -75,12 +185,6 @@ export function GroupChatPanel({
     (person) => !members.some((member) => member.user_id === person.id),
   );
   const pending = state?.invites.filter((invite) => invite.group_id === selected) ?? [];
-  if (demo)
-    return (
-      <Empty title="I gruppi richiedono un account." kind="messages">
-        Gli inviti e i ruoli devono essere verificati dal server.
-      </Empty>
-    );
   if (!state) return <p className="fine">Caricamento dei gruppi…</p>;
   return (
     <div className="group-chat-panel">
@@ -273,10 +377,15 @@ export function GroupChatPanel({
               );
             })}
           </ul>
-          <p className="group-coming-soon">
-            <Users size={16} /> I messaggi di gruppo saranno attivati insieme alla cifratura
-            dedicata.
-          </p>
+          <GroupChatConversation
+            key={group.id}
+            demo={demo}
+            groupId={group.id}
+            me={me}
+            members={members}
+            profiles={profiles}
+            onNotice={onNotice}
+          />
         </section>
       )}
     </div>
