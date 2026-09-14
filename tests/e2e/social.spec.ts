@@ -90,7 +90,7 @@ test('notifiche: apre le chat di gruppo dal nuovo messaggio', async ({ page }) =
   });
   await page.reload();
   await page
-    .getByRole('button', { name: 'Notifiche', exact: true })
+    .getByRole('button', { name: /^Notifiche/ })
     .filter({ visible: true })
     .click();
   await expect(page.getByText('ha scritto in un gruppo.')).toBeVisible();
