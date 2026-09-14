@@ -56,6 +56,47 @@ test('messaggi: separa persone e gestione gruppi', async ({ page }) => {
   await page.getByRole('tab', { name: 'Persone' }).click();
   await expect(page.getByRole('tab', { name: 'Persone' })).toHaveAttribute('aria-selected', 'true');
 });
+test('notifiche: apre le chat di gruppo dal nuovo messaggio', async ({ page }) => {
+  await page.goto('/demo');
+  await page.evaluate(async () => {
+    await new Promise<void>((resolve, reject) => {
+      const request = indexedDB.open('sn-demo', 1);
+      request.onsuccess = () => {
+        const database = request.result;
+        const transaction = database.transaction('state', 'readwrite');
+        const store = transaction.objectStore('state');
+        const current = store.get('snapshot');
+        current.onsuccess = () => {
+          const state = current.result;
+          state.notifications.unshift({
+            id: crypto.randomUUID(),
+            user_id: state.me.id,
+            actor_id: state.profiles[1].id,
+            kind: 'group_message',
+            post_id: null,
+            group_id: '30000000-0000-4000-8000-000000000001',
+            read: false,
+            created_at: new Date().toISOString(),
+          });
+          store.put(state, 'snapshot');
+        };
+        transaction.oncomplete = () => {
+          database.close();
+          resolve();
+        };
+        transaction.onerror = () => reject(transaction.error);
+      };
+    });
+  });
+  await page.reload();
+  await page
+    .getByRole('button', { name: 'Notifiche', exact: true })
+    .filter({ visible: true })
+    .click();
+  await expect(page.getByText('ha scritto in un gruppo.')).toBeVisible();
+  await page.getByRole('button', { name: 'Apri i gruppi' }).click();
+  await expect(page.getByRole('tab', { name: 'Gruppi' })).toHaveAttribute('aria-selected', 'true');
+});
 test('storie: dialogo accessibile e chiusura con Escape', async ({ page }) => {
   await page.goto('/demo');
   await page.getByRole('button', { name: 'Giulia', exact: true }).click();

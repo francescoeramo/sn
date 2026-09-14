@@ -959,11 +959,24 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                                   ? 'ha risposto al tuo post.'
                                   : n.kind === 'message'
                                     ? 'ti ha scritto.'
-                                    : n.kind === 'request'
-                                      ? 'ha chiesto di seguirti.'
-                                      : 'ha iniziato a seguirti.'}
+                                    : n.kind === 'group_message'
+                                      ? 'ha scritto in un gruppo.'
+                                      : n.kind === 'request'
+                                        ? 'ha chiesto di seguirti.'
+                                        : 'ha iniziato a seguirti.'}
                         </p>
                         <small>{relativeTime(n.created_at)}</small>
+                        {n.kind === 'group_message' && (
+                          <button
+                            className="text-button notification-group-link"
+                            onClick={() => {
+                              setMessageMode('groups');
+                              navigate('messages');
+                            }}
+                          >
+                            Apri i gruppi
+                          </button>
+                        )}
                         {pending && (
                           <div className="button-row">
                             <button

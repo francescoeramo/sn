@@ -32,7 +32,7 @@ Requisiti implementati in demo, API e migrazione SQL, descritti nella sezione 4 
 4. Eliminazione manuale e compatibilità con conservazione solo dispositivo, preservando le scadenze autenticate dello storico.
 5. Test SQL e browser per durata disattivata/attiva, cambio modalità, limite dei 30 minuti, concorrenza lettura/modifica, retry senza duplicati e aggiornamenti tra dispositivi.
 
-Eliminazione personale per entrambi, globale solo per il mittente. Entrambi possono cambiare le impostazioni condivise. Ricevute e revisioni sopravvivono alla consegna solo dispositivo. Mancano collaudo cloud e prova di concorrenza su connessioni Postgres reali; i test locali verificano entrambi gli ordini lettura/modifica e ricevute obsolete. Le altre voci della tabella restano aperte.
+Eliminazione personale per entrambi, globale solo per il mittente. Entrambi possono cambiare le impostazioni condivise. Ricevute e revisioni sopravvivono alla consegna solo dispositivo. Le chat di gruppo generano una notifica privata per ogni altro membro e salgono in cima all’elenco quando arriva un messaggio. Mancano collaudo cloud e prova di concorrenza su connessioni Postgres reali; i test locali verificano entrambi gli ordini lettura/modifica e ricevute obsolete. Le altre voci della tabella restano aperte.
 
 ## Prima della federazione
 

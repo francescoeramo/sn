@@ -52,6 +52,7 @@ export type Notice = {
   actor_id: string;
   kind: string;
   post_id: string | null;
+  group_id?: string | null;
   read: boolean;
   created_at: string;
 };

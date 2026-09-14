@@ -331,6 +331,18 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
       [context.id, groupId, alice, packet],
     );
     expect(
+      await asUser<{ actor_id: string; group_id: string; kind: string }>(
+        bob,
+        "select actor_id,group_id,kind from public.notifications where kind='group_message' and group_id=$1",
+        [groupId],
+      ),
+    ).toEqual([{ actor_id: alice, group_id: groupId, kind: 'group_message' }]);
+    const ordered = await asUser<{ id: string }>(
+      alice,
+      'select id from public.chat_groups order by updated_at desc',
+    );
+    expect(ordered[0].id).toBe(groupId);
+    expect(
       await asUser(bob, 'select * from public.chat_group_messages where id=$1', [context.id]),
     ).toHaveLength(1);
     expect(
