@@ -1,5 +1,10 @@
-import { actorDocument, federationStatus } from '@/lib/core/federation';
-import { federationPreviewOrigin, publicActorBy } from '@/lib/server/federation';
+import {
+  actorDocument,
+  createDocument,
+  federationStatus,
+  noteDocument,
+} from '@/lib/core/federation';
+import { federationPreviewOrigin, publicActorBy, publicPostBy } from '@/lib/server/federation';
 
 export const dynamic = 'force-dynamic';
 type Context = { params: Promise<{ path: string[] }> };
@@ -11,6 +16,15 @@ export async function GET(_request: Request, context: Context) {
     const actor = await publicActorBy('actor_key', path[1]);
     if (!actor) return Response.json({ error: 'Attore non trovato.' }, { status: 404 });
     return Response.json(actorDocument(origin, actor), {
+      headers: { 'Content-Type': 'application/activity+json', 'Cache-Control': 'no-store' },
+    });
+  }
+  if (origin && path.length === 2 && ['activities', 'objects'].includes(path[0])) {
+    const post = await publicPostBy(path[1]);
+    if (!post) return Response.json({ error: 'Contenuto non trovato.' }, { status: 404 });
+    const document =
+      path[0] === 'activities' ? createDocument(origin, post) : noteDocument(origin, post);
+    return Response.json(document, {
       headers: { 'Content-Type': 'application/activity+json', 'Cache-Control': 'no-store' },
     });
   }

@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   actorDocument,
   canonicalOrigin,
+  createDocument,
+  noteDocument,
+  objectUrl,
   webfingerAccount,
   webfingerDocument,
 } from '../lib/core/federation';
@@ -11,6 +14,13 @@ const actor = {
   username: 'marta',
   displayName: 'Marta',
   bio: 'Fotografie e pane.',
+};
+const post = {
+  activityKey: '6fbc81f6-b48e-4c0d-b541-3d28e545ce26',
+  author: actor,
+  body: 'Pane <caldo>\ne fotografie.',
+  contentWarning: 'Contiene una sorpresa & farina',
+  published: '2026-09-14T10:00:00.000Z',
 };
 
 describe('discovery ActivityPub', () => {
@@ -38,5 +48,21 @@ describe('discovery ActivityPub', () => {
     expect(
       actorDocument('https://sn.example', { ...actor, bio: '<b>Pane & foto</b>' }).summary,
     ).toBe('&lt;b&gt;Pane &amp; foto&lt;/b&gt;');
+  });
+
+  it('espone un post pubblico come Note senza eseguire markup del testo', () => {
+    const note = noteDocument('https://sn.example', post);
+    expect(note.id).toBe(objectUrl('https://sn.example', post.activityKey));
+    expect(note.attributedTo).toBe(actorDocument('https://sn.example', actor).id);
+    expect(note.content).toBe('Pane &lt;caldo&gt;<br>e fotografie.');
+    expect(note.summary).toBe('Contiene una sorpresa &amp; farina');
+    expect(note.to).toEqual(['https://www.w3.org/ns/activitystreams#Public']);
+  });
+
+  it('copia lo stesso pubblico dalla Note alla Create', () => {
+    const activity = createDocument('https://sn.example', post);
+    expect(activity.object.id).toBe(objectUrl('https://sn.example', post.activityKey));
+    expect(activity.to).toEqual(activity.object.to);
+    expect(activity.cc).toEqual(activity.object.cc);
   });
 });

@@ -4,6 +4,21 @@ export type PublicActor = {
   displayName: string;
   bio: string;
 };
+export type PublicPost = {
+  activityKey: string;
+  author: PublicActor;
+  body: string;
+  contentWarning: string;
+  published: string;
+};
+
+const publicAudience = 'https://www.w3.org/ns/activitystreams#Public';
+const escapeHtml = (value: string) =>
+  value.replace(
+    /[&<>"']/g,
+    (character) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]!,
+  );
 
 /** Stable identity plan; wire format and transports belong in a dedicated Fedify adapter. */
 export function actorUrl(origin: string, actorKey: string) {
@@ -11,6 +26,9 @@ export function actorUrl(origin: string, actorKey: string) {
 }
 export function activityUrl(origin: string, activityKey: string) {
   return new URL(`/ap/activities/${activityKey}`, origin).href;
+}
+export function objectUrl(origin: string, activityKey: string) {
+  return new URL(`/ap/objects/${activityKey}`, origin).href;
 }
 export const federationStatus = {
   enabled: false,
@@ -42,11 +60,7 @@ export function webfingerAccount(resource: string | null, origin: string) {
 
 export function actorDocument(origin: string, actor: PublicActor) {
   const id = actorUrl(origin, actor.actorKey);
-  const summary = actor.bio.replace(
-    /[&<>"']/g,
-    (character) =>
-      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]!,
-  );
+  const summary = escapeHtml(actor.bio);
   return {
     '@context': 'https://www.w3.org/ns/activitystreams',
     id,
@@ -59,6 +73,41 @@ export function actorDocument(origin: string, actor: PublicActor) {
     outbox: `${id}/outbox`,
     followers: `${id}/followers`,
     following: `${id}/following`,
+  } as const;
+}
+
+export function noteDocument(origin: string, post: PublicPost) {
+  const actor = actorUrl(origin, post.author.actorKey);
+  const id = objectUrl(origin, post.activityKey);
+  const to = [publicAudience];
+  const cc = [`${actor}/followers`];
+  return {
+    '@context': 'https://www.w3.org/ns/activitystreams',
+    id,
+    type: 'Note',
+    attributedTo: actor,
+    content: escapeHtml(post.body).replaceAll('\n', '<br>'),
+    published: post.published,
+    url: id,
+    to,
+    cc,
+    sensitive: Boolean(post.contentWarning),
+    summary: post.contentWarning ? escapeHtml(post.contentWarning) : null,
+  } as const;
+}
+
+export function createDocument(origin: string, post: PublicPost) {
+  const actor = actorUrl(origin, post.author.actorKey);
+  const object = noteDocument(origin, post);
+  return {
+    '@context': 'https://www.w3.org/ns/activitystreams',
+    id: activityUrl(origin, post.activityKey),
+    type: 'Create',
+    actor,
+    published: post.published,
+    to: object.to,
+    cc: object.cc,
+    object,
   } as const;
 }
 
