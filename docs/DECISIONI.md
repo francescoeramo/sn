@@ -44,4 +44,4 @@ Questa decisione sostituisce la scadenza predefinita di 24 ore descritta sopra. 
 
 ## Gestione degli account
 
-I moderatori possono sospendere e ripristinare gli account ordinari. La sospensione blocca immediatamente l’accesso ai dati tramite i controlli applicativi e le RLS, senza attendere la scadenza del token. Un moderatore non può sospendere sé stesso o un altro moderatore; sospensioni e ripristini entrano nel registro append-only.
+I moderatori possono sospendere e ripristinare gli account ordinari con una motivazione di 10–500 caratteri. La sospensione blocca immediatamente l’accesso ai dati tramite i controlli applicativi e le RLS, senza attendere la scadenza del token. Un moderatore non può sospendere sé stesso o un altro moderatore; sospensioni, ripristini e motivazioni entrano nel registro append-only.

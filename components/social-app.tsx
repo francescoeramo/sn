@@ -122,7 +122,10 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [suspendingAccount, setSuspendingAccount] = useState<string | null>(null);
+  const [accountDecision, setAccountDecision] = useState<{
+    id: string;
+    disabled: boolean;
+  } | null>(null);
   const [clock, setClock] = useState(0);
   const locked = useRef(false);
   const refresh = useCallback(async () => {
@@ -1204,13 +1207,10 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                             className={account.disabled ? 'secondary' : 'danger'}
                             disabled={busy}
                             onClick={() =>
-                              account.disabled
-                                ? act({
-                                    type: 'moderate-account',
-                                    user_id: account.id,
-                                    disabled: false,
-                                  })
-                                : setSuspendingAccount(account.id)
+                              setAccountDecision({
+                                id: account.id,
+                                disabled: !account.disabled,
+                              })
                             }
                           >
                             {account.disabled ? 'Ripristina' : 'Sospendi'}
@@ -1275,6 +1275,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                                 {auditTargetLabels[entry.target_type]} ·{' '}
                                 {entry.target_id.slice(0, 8)}
                               </small>
+                              {entry.reason && <small>{entry.reason}</small>}
                             </span>
                             <span>
                               {moderator?.display_name ?? 'Account rimosso'} ·{' '}
@@ -1436,37 +1437,49 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
           onClose={() => setStory(null)}
         />
       )}
-      {suspendingAccount && (
+      {accountDecision && (
         <Modal
-          title={`Sospendere ${
-            state.moderationAccounts?.find((account) => account.id === suspendingAccount)
+          title={`${accountDecision.disabled ? 'Sospendere' : 'Ripristinare'} ${
+            state.moderationAccounts?.find((account) => account.id === accountDecision.id)
               ?.display_name ?? 'questo account'
           }?`}
-          onClose={() => setSuspendingAccount(null)}
+          onClose={() => setAccountDecision(null)}
         >
           <p>
-            La persona perderà subito l’accesso a SN. I contenuti restano conservati e un moderatore
-            potrà ripristinare l’account.
+            {accountDecision.disabled
+              ? 'La persona perderà subito l’accesso a SN. I contenuti restano conservati.'
+              : 'La persona potrà accedere di nuovo a SN e ai propri contenuti.'}
           </p>
-          <div className="button-row">
-            <button className="secondary" onClick={() => setSuspendingAccount(null)}>
-              Annulla
-            </button>
-            <button
-              className="danger"
-              disabled={busy}
-              onClick={async () => {
-                const ok = await act({
-                  type: 'moderate-account',
-                  user_id: suspendingAccount,
-                  disabled: true,
-                });
-                if (ok) setSuspendingAccount(null);
-              }}
-            >
-              {busy ? 'Sospensione…' : 'Sospendi account'}
-            </button>
-          </div>
+          <form
+            onSubmit={async (event) => {
+              event.preventDefault();
+              const form = new FormData(event.currentTarget);
+              const ok = await act({
+                type: 'moderate-account',
+                user_id: accountDecision.id,
+                disabled: accountDecision.disabled,
+                reason: String(form.get('reason')),
+              });
+              if (ok) setAccountDecision(null);
+            }}
+          >
+            <label>
+              Motivo della decisione
+              <textarea name="reason" minLength={10} maxLength={500} rows={4} required autoFocus />
+            </label>
+            <div className="button-row">
+              <button type="button" className="secondary" onClick={() => setAccountDecision(null)}>
+                Annulla
+              </button>
+              <button className={accountDecision.disabled ? 'danger' : 'primary'} disabled={busy}>
+                {busy
+                  ? 'Salvataggio…'
+                  : accountDecision.disabled
+                    ? 'Sospendi account'
+                    : 'Ripristina account'}
+              </button>
+            </div>
+          </form>
         </Modal>
       )}
       {deleteOpen && (

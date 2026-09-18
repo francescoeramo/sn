@@ -372,11 +372,18 @@ export async function mutate(input: unknown) {
       break;
     }
     case 'moderate-account': {
-      const v = z.object({ user_id: userId, disabled: z.boolean() }).parse(obj);
+      const v = z
+        .object({
+          user_id: userId,
+          disabled: z.boolean(),
+          reason: z.string().trim().min(10).max(500),
+        })
+        .parse(obj);
       checked(
         await db.rpc('set_account_disabled', {
           target: v.user_id,
           next_disabled: v.disabled,
+          decision_reason: v.reason,
         }),
       );
       break;

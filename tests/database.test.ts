@@ -706,12 +706,24 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
   it('sospende gli account immediatamente e registra il ripristino', async () => {
     await db.query('insert into private.admins(user_id) values($1)', [eve]);
     await expect(
-      asUser(bob, 'select public.set_account_disabled($1,true)', [alice]),
+      asUser(bob, 'select public.set_account_disabled($1,true,$2)', [
+        alice,
+        'Violazione verificata delle regole.',
+      ]),
     ).rejects.toThrow('Accesso negato');
-    await expect(asUser(eve, 'select public.set_account_disabled($1,true)', [eve])).rejects.toThrow(
-      'Accesso negato',
-    );
-    await asUser(eve, 'select public.set_account_disabled($1,true)', [bob]);
+    await expect(
+      asUser(eve, 'select public.set_account_disabled($1,true,$2)', [
+        eve,
+        'Tentativo non consentito.',
+      ]),
+    ).rejects.toThrow('Accesso negato');
+    await expect(
+      asUser(eve, 'select public.set_account_disabled($1,true,$2)', [bob, 'breve']),
+    ).rejects.toThrow('Motiva');
+    await asUser(eve, 'select public.set_account_disabled($1,true,$2)', [
+      bob,
+      'Violazione verificata delle regole.',
+    ]);
     expect(await asUser(bob, 'select * from public.profiles where id=$1', [bob])).toHaveLength(0);
     const accounts = await asUser<{ id: string; disabled: boolean }>(
       eve,
@@ -719,14 +731,21 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
       [bob],
     );
     expect(accounts).toEqual([{ id: bob, disabled: true }]);
-    await asUser(eve, 'select public.set_account_disabled($1,false)', [bob]);
+    await asUser(eve, 'select public.set_account_disabled($1,false,$2)', [
+      bob,
+      'Verifica completata, accesso ripristinato.',
+    ]);
     expect(await asUser(bob, 'select * from public.profiles where id=$1', [bob])).toHaveLength(1);
-    const audit = await asUser<{ action: string }>(
+    const audit = await asUser<{ action: string; reason: string }>(
       eve,
-      "select action from public.moderation_audit where target_type='account' and target_id=$1 order by created_at",
+      "select action,reason from public.moderation_audit where target_type='account' and target_id=$1 order by created_at",
       [bob],
     );
     expect(audit.map((entry) => entry.action)).toEqual(['account_suspended', 'account_restored']);
+    expect(audit.map((entry) => entry.reason)).toEqual([
+      'Violazione verificata delle regole.',
+      'Verifica completata, accesso ripristinato.',
+    ]);
     await db.query('delete from private.admins where user_id=$1', [eve]);
   });
   it('i salvati sono privati anche per moderatori e non autorizzano post privati', async () => {

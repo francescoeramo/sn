@@ -456,9 +456,15 @@ test('note della comunità: proposta, revisione motivata e post originale conser
   await accounts.getByRole('button', { name: 'Sospendi' }).first().click();
   const suspension = page.getByRole('dialog', { name: /Sospendere Giulia Rossi/ });
   await expect(suspension).toContainText('perderà subito l’accesso');
+  await suspension.getByLabel('Motivo della decisione').fill('Violazione verificata delle regole.');
   await suspension.getByRole('button', { name: 'Sospendi account' }).click();
   await expect(page.getByRole('status')).toContainText('Account sospeso');
   await accounts.getByRole('button', { name: 'Ripristina' }).click();
+  const restoration = page.getByRole('dialog', { name: /Ripristinare Giulia Rossi/ });
+  await restoration
+    .getByLabel('Motivo della decisione')
+    .fill('Verifica completata, accesso ripristinato.');
+  await restoration.getByRole('button', { name: 'Ripristina account' }).click();
   await expect(page.getByRole('status')).toContainText('Account ripristinato');
   const review = page.getByRole('region', { name: 'Revisione note' });
   await expect(review).toContainText('Ho fatto una playlist');

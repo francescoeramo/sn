@@ -380,6 +380,7 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
         action: value.approve ? 'note_approved' : 'note_rejected',
         target_type: 'community_note',
         target_id: note.id,
+        reason: value.reason,
         created_at: now,
       });
       break;
@@ -628,6 +629,7 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
           action: action.remove ? 'post_removed' : 'report_dismissed',
           target_type: action.remove ? 'post' : 'report',
           target_id: action.remove && report.post_id ? report.post_id : report.id,
+          reason: '',
           created_at: now,
         });
       }
@@ -635,6 +637,9 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
     }
     case 'moderate-account': {
       if (!s.isAdmin) throw new Error('Accesso negato.');
+      const reason = action.reason.trim();
+      if (reason.length < 10 || reason.length > 500)
+        throw new Error('Motiva la decisione (10-500 caratteri).');
       const account = s.moderationAccounts?.find((item) => item.id === action.user_id);
       if (!account || account.is_admin || account.id === me) throw new Error('Accesso negato.');
       if (account.disabled === action.disabled) throw new Error('Stato account già aggiornato.');
@@ -645,6 +650,7 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
         action: action.disabled ? 'account_suspended' : 'account_restored',
         target_type: 'account',
         target_id: account.id,
+        reason,
         created_at: now,
       });
       break;

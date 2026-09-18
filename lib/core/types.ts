@@ -77,6 +77,7 @@ export type ModerationAudit = {
     | 'account_restored';
   target_type: 'report' | 'post' | 'community_note' | 'account';
   target_id: string;
+  reason: string;
   created_at: string;
 };
 export type ModerationAccount = {
@@ -197,7 +198,7 @@ export type Action =
   | { type: 'delete-post'; post_id: string }
   | { type: 'report'; post_id: string; reason: string }
   | { type: 'moderate'; report_id: string; remove: boolean }
-  | { type: 'moderate-account'; user_id: string; disabled: boolean }
+  | { type: 'moderate-account'; user_id: string; disabled: boolean; reason: string }
   | { type: 'block'; user_id: string };
 
 export type ChatGroup = {

@@ -129,6 +129,7 @@ describe('Regole condivise', () => {
       type: 'moderate-account',
       user_id: target.id,
       disabled: true,
+      reason: 'Violazione verificata delle regole.',
     });
     expect(suspended.moderationAccounts![1].disabled).toBe(true);
     expect(suspended.moderationAudit![0].action).toBe('account_suspended');
@@ -136,6 +137,7 @@ describe('Regole condivise', () => {
       type: 'moderate-account',
       user_id: target.id,
       disabled: false,
+      reason: 'Verifica completata, accesso ripristinato.',
     });
     expect(restored.moderationAccounts![1].disabled).toBe(false);
     expect(restored.moderationAudit![0].action).toBe('account_restored');
@@ -144,6 +146,7 @@ describe('Regole condivise', () => {
         type: 'moderate-account',
         user_id: restored.me.id,
         disabled: true,
+        reason: 'Tentativo non consentito.',
       }),
     ).toThrow('Accesso negato');
   });
