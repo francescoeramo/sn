@@ -68,11 +68,14 @@ const auditLabels = {
   post_removed: 'Post rimosso',
   note_approved: 'Nota approvata',
   note_rejected: 'Nota respinta',
+  account_suspended: 'Account sospeso',
+  account_restored: 'Account ripristinato',
 } as const;
 const auditTargetLabels = {
   report: 'segnalazione',
   post: 'post',
   community_note: 'nota',
+  account: 'account',
 } as const;
 function download(value: unknown, name: string) {
   const url = URL.createObjectURL(
@@ -222,13 +225,17 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                 ? 'Decisione salvata.'
                 : action.type === 'report'
                   ? 'Segnalazione inviata.'
-                  : action.type === 'profile'
-                    ? 'Profilo aggiornato.'
-                    : action.type === 'federation'
-                      ? action.enabled
-                        ? 'Federazione attivata.'
-                        : 'Federazione disattivata.'
-                      : '',
+                  : action.type === 'moderate-account'
+                    ? action.disabled
+                      ? 'Account sospeso.'
+                      : 'Account ripristinato.'
+                    : action.type === 'profile'
+                      ? 'Profilo aggiornato.'
+                      : action.type === 'federation'
+                        ? action.enabled
+                          ? 'Federazione attivata.'
+                          : 'Federazione disattivata.'
+                        : '',
       );
       return true;
     } catch (error) {
@@ -1171,6 +1178,45 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
             {view === 'moderation' && (
               <section className="panel">
                 <NotesReview state={state} onAction={act} />
+                <section aria-labelledby="moderation-accounts-title">
+                  <h2 id="moderation-accounts-title">Gestione account</h2>
+                  <p className="muted">
+                    La sospensione blocca subito l’accesso ai dati. Gli account dei moderatori non
+                    possono essere sospesi da qui.
+                  </p>
+                  <ul className="group-members">
+                    {(state.moderationAccounts ?? []).map((account) => (
+                      <li key={account.id}>
+                        <span>
+                          <strong>{account.display_name}</strong>
+                          <small>
+                            @{account.username}
+                            {account.is_admin
+                              ? ' · moderatore'
+                              : account.disabled
+                                ? ' · sospeso'
+                                : ' · attivo'}
+                          </small>
+                        </span>
+                        {!account.is_admin && (
+                          <button
+                            className={account.disabled ? 'secondary' : 'danger'}
+                            disabled={busy}
+                            onClick={() =>
+                              act({
+                                type: 'moderate-account',
+                                user_id: account.id,
+                                disabled: !account.disabled,
+                              })
+                            }
+                          >
+                            {account.disabled ? 'Ripristina' : 'Sospendi'}
+                          </button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
                 <h2>Segnalazioni da leggere</h2>
                 <p className="muted">
                   La beta usa moderazione manuale. Le decisioni automatiche potranno essere aggiunte

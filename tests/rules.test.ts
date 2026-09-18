@@ -122,6 +122,31 @@ describe('Regole condivise', () => {
       'Rendi pubblico',
     );
   });
+  it('la demo sospende e ripristina gli account senza toccare i moderatori', () => {
+    const state = seed();
+    const target = state.moderationAccounts![1];
+    const suspended = applyDemo(state, {
+      type: 'moderate-account',
+      user_id: target.id,
+      disabled: true,
+    });
+    expect(suspended.moderationAccounts![1].disabled).toBe(true);
+    expect(suspended.moderationAudit![0].action).toBe('account_suspended');
+    const restored = applyDemo(suspended, {
+      type: 'moderate-account',
+      user_id: target.id,
+      disabled: false,
+    });
+    expect(restored.moderationAccounts![1].disabled).toBe(false);
+    expect(restored.moderationAudit![0].action).toBe('account_restored');
+    expect(() =>
+      applyDemo(restored, {
+        type: 'moderate-account',
+        user_id: restored.me.id,
+        disabled: true,
+      }),
+    ).toThrow('Accesso negato');
+  });
   it('accetta le sei durate temporanee e conserva i messaggi ordinari', () => {
     const input = { user_id: seed().profiles[1].id, body: 'Ciao' };
     expect(messageInput.parse(input).ttl).toBe(0);

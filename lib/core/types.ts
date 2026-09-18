@@ -68,9 +68,23 @@ export type Report = {
 export type ModerationAudit = {
   id: string;
   moderator_id: string | null;
-  action: 'report_dismissed' | 'post_removed' | 'note_approved' | 'note_rejected';
-  target_type: 'report' | 'post' | 'community_note';
+  action:
+    | 'report_dismissed'
+    | 'post_removed'
+    | 'note_approved'
+    | 'note_rejected'
+    | 'account_suspended'
+    | 'account_restored';
+  target_type: 'report' | 'post' | 'community_note' | 'account';
   target_id: string;
+  created_at: string;
+};
+export type ModerationAccount = {
+  id: string;
+  username: string;
+  display_name: string;
+  disabled: boolean;
+  is_admin: boolean;
   created_at: string;
 };
 export type CommunityNote = {
@@ -132,6 +146,7 @@ export type Snapshot = {
   notifications: Notice[];
   reports: Report[];
   moderationAudit?: ModerationAudit[];
+  moderationAccounts?: ModerationAccount[];
   blocks: { blocker_id: string; blocked_id: string }[];
   usage: {
     bytes: number;
@@ -182,6 +197,7 @@ export type Action =
   | { type: 'delete-post'; post_id: string }
   | { type: 'report'; post_id: string; reason: string }
   | { type: 'moderate'; report_id: string; remove: boolean }
+  | { type: 'moderate-account'; user_id: string; disabled: boolean }
   | { type: 'block'; user_id: string };
 
 export type ChatGroup = {

@@ -14,7 +14,7 @@ import {
   deleteMessageInput,
 } from '@/lib/core/rules';
 import { identity, checked, adminDatabase, ApiError } from './supabase';
-import type { Bookmark, Post, SavedCursor, SavedPage } from '@/lib/core/types';
+import type { Bookmark, ModerationAccount, Post, SavedCursor, SavedPage } from '@/lib/core/types';
 
 type Database = Awaited<ReturnType<typeof identity>>['db'];
 async function bookmarksFor(db: Database): Promise<Bookmark[]> {
@@ -114,6 +114,9 @@ export async function snapshot() {
     savedPageFor(db),
     db.rpc('poll_results', { target_polls: posts.map((post: Post) => post.id) }).then(checked),
   ]);
+  const moderationAccounts = usage.isAdmin
+    ? (checked(await db.rpc('moderation_accounts')) as ModerationAccount[])
+    : [];
   return {
     bookmarks,
     saved,
@@ -129,6 +132,7 @@ export async function snapshot() {
     notifications,
     reports,
     moderationAudit,
+    moderationAccounts,
     blocks,
     usage: {
       bytes: usage.bytes,
@@ -365,6 +369,16 @@ export async function mutate(input: unknown) {
     case 'moderate': {
       const v = z.object({ report_id: userId, remove: z.boolean() }).parse(obj);
       checked(await db.rpc('moderate_report', { report_id: v.report_id, remove_post: v.remove }));
+      break;
+    }
+    case 'moderate-account': {
+      const v = z.object({ user_id: userId, disabled: z.boolean() }).parse(obj);
+      checked(
+        await db.rpc('set_account_disabled', {
+          target: v.user_id,
+          next_disabled: v.disabled,
+        }),
+      );
       break;
     }
     case 'block': {

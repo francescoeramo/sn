@@ -147,6 +147,14 @@ export function seed(): Snapshot {
     ],
     reports: [],
     moderationAudit: [],
+    moderationAccounts: profiles.map((profile, index) => ({
+      id: profile.id,
+      username: profile.username,
+      display_name: profile.display_name,
+      disabled: false,
+      is_admin: index === 0,
+      created_at: profile.created_at,
+    })),
     blocks: [],
     usage: { bytes: 0, total_bytes: 0, members: 5, max_members: 20, uploads_enabled: true },
     isAdmin: true,
@@ -175,6 +183,14 @@ export async function loadDemo(): Promise<Snapshot> {
         state.notes ??= [];
         state.pollResults ??= [];
         state.moderationAudit ??= [];
+        state.moderationAccounts ??= state.profiles.map((profile) => ({
+          id: profile.id,
+          username: profile.username,
+          display_name: profile.display_name,
+          disabled: false,
+          is_admin: profile.id === state.me.id,
+          created_at: profile.created_at,
+        }));
         state.bookmarks ??= [];
         state.saved ??= { posts: [], nextCursor: null };
         state.messages = state.messages.filter((m) => isActive(m));
@@ -615,6 +631,22 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
           created_at: now,
         });
       }
+      break;
+    }
+    case 'moderate-account': {
+      if (!s.isAdmin) throw new Error('Accesso negato.');
+      const account = s.moderationAccounts?.find((item) => item.id === action.user_id);
+      if (!account || account.is_admin || account.id === me) throw new Error('Accesso negato.');
+      if (account.disabled === action.disabled) throw new Error('Stato account già aggiornato.');
+      account.disabled = action.disabled;
+      s.moderationAudit?.unshift({
+        id: crypto.randomUUID(),
+        moderator_id: me,
+        action: action.disabled ? 'account_suspended' : 'account_restored',
+        target_type: 'account',
+        target_id: account.id,
+        created_at: now,
+      });
       break;
     }
     case 'block': {

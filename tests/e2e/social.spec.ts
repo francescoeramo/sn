@@ -452,6 +452,11 @@ test('note della comunità: proposta, revisione motivata e post originale conser
     .filter({ visible: true })
     .click();
   await page.getByRole('button', { name: 'Apri moderazione', exact: true }).click();
+  const accounts = page.getByRole('region', { name: 'Gestione account' });
+  await accounts.getByRole('button', { name: 'Sospendi' }).first().click();
+  await expect(page.getByRole('status')).toContainText('Account sospeso');
+  await accounts.getByRole('button', { name: 'Ripristina' }).click();
+  await expect(page.getByRole('status')).toContainText('Account ripristinato');
   const review = page.getByRole('region', { name: 'Revisione note' });
   await expect(review).toContainText('Ho fatto una playlist');
   await review.getByLabel('Motivo della decisione').fill('La fonte è pertinente e verificabile.');

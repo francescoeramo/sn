@@ -41,3 +41,7 @@ Salvataggi privati per post/reel e avvisi di contenuto sono aggiunti alla demo e
 Il proprietario richiede messaggi conservati per impostazione predefinita e autoeliminazione soltanto in «Chat temporanea». Il pulsante è nella conversazione; la durata si sceglie nelle impostazioni della chat. Sono richiesti modifica entro 30 minuti solo prima della lettura e stati dinamici non inviato, inviato, consegnato non letto, letto, con spunte simili a WhatsApp.
 
 Questa decisione sostituisce la scadenza predefinita di 24 ore descritta sopra. Prompt, PRODUCT.md, demo, API e migrazione locale sono aggiornati; applicazione della migrazione e collaudo cloud restano da eseguire. Nessuna modifica retroattiva allo storico cifrato è prevista. Confermati «Elimina per me» e «Elimina per tutti», quest’ultimo solo per i propri messaggi. Entrambi i partecipanti possono cambiare modalità e durata.
+
+## Gestione degli account
+
+I moderatori possono sospendere e ripristinare gli account ordinari. La sospensione blocca immediatamente l’accesso ai dati tramite i controlli applicativi e le RLS, senza attendere la scadenza del token. Un moderatore non può sospendere sé stesso o un altro moderatore; sospensioni e ripristini entrano nel registro append-only.
