@@ -24,6 +24,7 @@ const post = {
   body: 'Pane <caldo>\ne fotografie.',
   contentWarning: 'Contiene una sorpresa & farina',
   published: '2026-09-14T10:00:00.000Z',
+  media: null,
 };
 
 describe('discovery ActivityPub', () => {
@@ -67,6 +68,22 @@ describe('discovery ActivityPub', () => {
     expect(activity.object.id).toBe(objectUrl('https://sn.example', post.activityKey));
     expect(activity.to).toEqual(activity.object.to);
     expect(activity.cc).toEqual(activity.object.cc);
+  });
+
+  it('descrive un allegato senza esporre il percorso del bucket privato', () => {
+    const note = noteDocument('https://sn.example', {
+      ...post,
+      media: { path: 'privato/non-esporre', type: 'image/webp', alt: 'Pane sul tavolo.' },
+    });
+    expect(note.attachment).toEqual([
+      {
+        type: 'Image',
+        mediaType: 'image/webp',
+        name: 'Pane sul tavolo.',
+        url: `https://sn.example/ap/media/${post.activityKey}`,
+      },
+    ]);
+    expect(JSON.stringify(note)).not.toContain('privato/non-esporre');
   });
 
   it('espone un outbox paginato senza duplicare i documenti', () => {

@@ -30,7 +30,9 @@ export async function publicPostBy(activityKey: string) {
   const db = adminDatabase();
   const { data: post, error } = await db
     .from('posts')
-    .select('activity_key,author_id,body,content_warning,created_at,kind,expires_at')
+    .select(
+      'activity_key,author_id,body,content_warning,created_at,kind,expires_at,media_path,media_type,alt',
+    )
     .eq('activity_key', activityKey)
     .neq('kind', 'story')
     .is('expires_at', null)
@@ -56,7 +58,19 @@ export async function publicPostBy(activityKey: string) {
     body: post.body,
     contentWarning: post.content_warning ?? '',
     published: post.created_at,
+    media:
+      post.media_path && post.media_type
+        ? { path: post.media_path, type: post.media_type, alt: post.alt }
+        : null,
   } satisfies PublicPost;
+}
+
+export async function publicMediaBy(activityKey: string) {
+  const post = await publicPostBy(activityKey);
+  if (!post?.media) return null;
+  const { data, error } = await adminDatabase().storage.from('media').download(post.media.path);
+  if (error || !data) return null;
+  return { data, type: post.media.type };
 }
 
 const outboxPageSize = 20;
@@ -82,7 +96,9 @@ export async function publicOutbox(actorKey: string, page?: number) {
   const baseQuery = () =>
     db
       .from('posts')
-      .select('activity_key,body,content_warning,created_at', { count: 'exact' })
+      .select('activity_key,body,content_warning,created_at,media_path,media_type,alt', {
+        count: 'exact',
+      })
       .eq('author_id', profile.id)
       .neq('kind', 'story')
       .is('expires_at', null)
@@ -109,6 +125,10 @@ export async function publicOutbox(actorKey: string, page?: number) {
           body: post.body,
           contentWarning: post.content_warning ?? '',
           published: post.created_at,
+          media:
+            post.media_path && post.media_type
+              ? { path: post.media_path, type: post.media_type, alt: post.alt }
+              : null,
         }) satisfies PublicPost,
     );
   return { actor, posts, hasMore: from + data.length < (count ?? 0) };

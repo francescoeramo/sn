@@ -10,6 +10,7 @@ export type PublicPost = {
   body: string;
   contentWarning: string;
   published: string;
+  media: { path: string; type: string; alt: string } | null;
 };
 
 const publicAudience = 'https://www.w3.org/ns/activitystreams#Public';
@@ -29,6 +30,9 @@ export function activityUrl(origin: string, activityKey: string) {
 }
 export function objectUrl(origin: string, activityKey: string) {
   return new URL(`/ap/objects/${activityKey}`, origin).href;
+}
+export function mediaUrl(origin: string, activityKey: string) {
+  return new URL(`/ap/media/${activityKey}`, origin).href;
 }
 export function outboxUrl(origin: string, actorKey: string) {
   return `${actorUrl(origin, actorKey)}/outbox`;
@@ -96,6 +100,16 @@ export function noteDocument(origin: string, post: PublicPost) {
     cc,
     sensitive: Boolean(post.contentWarning),
     summary: post.contentWarning ? escapeHtml(post.contentWarning) : null,
+    attachment: post.media
+      ? [
+          {
+            type: post.media.type.startsWith('image/') ? 'Image' : 'Video',
+            mediaType: post.media.type,
+            name: post.media.alt,
+            url: mediaUrl(origin, post.activityKey),
+          },
+        ]
+      : [],
   } as const;
 }
 

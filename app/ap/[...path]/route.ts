@@ -10,6 +10,7 @@ import {
 import {
   federationPreviewOrigin,
   publicActorBy,
+  publicMediaBy,
   publicOutbox,
   publicPostBy,
 } from '@/lib/server/federation';
@@ -34,6 +35,17 @@ export async function GET(request: Request, context: Context) {
       path[0] === 'activities' ? createDocument(origin, post) : noteDocument(origin, post);
     return Response.json(document, {
       headers: { 'Content-Type': 'application/activity+json', 'Cache-Control': 'no-store' },
+    });
+  }
+  if (origin && path.length === 2 && path[0] === 'media') {
+    const media = await publicMediaBy(path[1]);
+    if (!media) return Response.json({ error: 'Allegato non trovato.' }, { status: 404 });
+    return new Response(media.data, {
+      headers: {
+        'Content-Type': media.type,
+        'Cache-Control': 'no-store',
+        'Content-Disposition': 'inline',
+      },
     });
   }
   if (origin && path.length === 3 && path[0] === 'actors' && path[2] === 'outbox') {
