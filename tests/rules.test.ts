@@ -106,6 +106,22 @@ describe('Regole condivise', () => {
       }),
     ).toThrow('3 MB');
   });
+  it('richiede un consenso separato per la federazione dei profili pubblici', () => {
+    const state = seed();
+    expect(state.me.federation_enabled).toBe(false);
+    const enabled = applyDemo(state, { type: 'federation', enabled: true });
+    expect(enabled.me.federation_enabled).toBe(true);
+    const privateProfile = applyDemo(enabled, {
+      type: 'profile',
+      display_name: enabled.me.display_name,
+      bio: enabled.me.bio,
+      is_private: true,
+    });
+    expect(privateProfile.me.federation_enabled).toBe(false);
+    expect(() => applyDemo(privateProfile, { type: 'federation', enabled: true })).toThrow(
+      'Rendi pubblico',
+    );
+  });
   it('accetta le sei durate temporanee e conserva i messaggi ordinari', () => {
     const input = { user_id: seed().profiles[1].id, body: 'Ciao' };
     expect(messageInput.parse(input).ttl).toBe(0);

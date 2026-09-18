@@ -5,6 +5,7 @@ export type Profile = {
   display_name: string;
   bio: string;
   is_private: boolean;
+  federation_enabled: boolean;
   color: string;
   created_at: string;
   onboarded_at?: string | null;
@@ -176,6 +177,7 @@ export type Action =
       ttl?: number;
     }
   | { type: 'profile'; display_name: string; bio: string; is_private: boolean }
+  | { type: 'federation'; enabled: boolean }
   | { type: 'read-notifications' }
   | { type: 'delete-post'; post_id: string }
   | { type: 'report'; post_id: string; reason: string }

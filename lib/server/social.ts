@@ -66,7 +66,7 @@ export async function snapshot() {
   const results = await Promise.all([
     db
       .from('profiles')
-      .select('id,username,display_name,bio,is_private,color,created_at')
+      .select('id,username,display_name,bio,is_private,federation_enabled,color,created_at')
       .order('created_at')
       .limit(20),
     db
@@ -144,7 +144,7 @@ export async function snapshot() {
 }
 
 export async function mutate(input: unknown) {
-  const { db, user } = await identity();
+  const { db, user, profile } = await identity();
   const obj = z.object({ type: z.string() }).passthrough().parse(input);
   switch (obj.type) {
     case 'complete-onboarding':
@@ -327,7 +327,19 @@ export async function mutate(input: unknown) {
           is_private: z.boolean(),
         })
         .parse(obj);
-      checked(await db.from('profiles').update(v).eq('id', user.id));
+      checked(
+        await db
+          .from('profiles')
+          .update(v.is_private ? { ...v, federation_enabled: false } : v)
+          .eq('id', user.id),
+      );
+      break;
+    }
+    case 'federation': {
+      const { enabled } = z.object({ enabled: z.boolean() }).parse(obj);
+      if (enabled && profile.is_private)
+        throw new ApiError('Rendi pubblico il profilo prima di attivare la federazione.');
+      checked(await db.from('profiles').update({ federation_enabled: enabled }).eq('id', user.id));
       break;
     }
     case 'read-notifications':

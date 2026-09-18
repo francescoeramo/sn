@@ -31,6 +31,7 @@ export function seed(): Snapshot {
     bio,
     color,
     is_private: false,
+    federation_enabled: false,
     created_at: ago(1500),
     onboarded_at: ago(1499),
   }));
@@ -571,7 +572,14 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
         display_name: action.display_name,
         bio: action.bio,
         is_private: action.is_private,
+        federation_enabled: action.is_private ? false : s.me.federation_enabled,
       };
+      s.profiles = s.profiles.map((p) => (p.id === me ? s.me : p));
+      break;
+    case 'federation':
+      if (action.enabled && s.me.is_private)
+        throw new Error('Rendi pubblico il profilo prima di attivare la federazione.');
+      s.me = { ...s.me, federation_enabled: action.enabled };
       s.profiles = s.profiles.map((p) => (p.id === me ? s.me : p));
       break;
     case 'read-notifications':

@@ -216,12 +216,18 @@ test('privacy, esportazione demo e modifica del profilo', async ({ page, isMobil
   await page.getByLabel('Nome visualizzato').fill('Francesco Test');
   await page.getByRole('button', { name: 'Salva modifiche' }).click();
   await expect(page.getByRole('status')).toContainText('Profilo aggiornato');
+  await page.getByRole('button', { name: 'Attiva federazione' }).click();
+  await expect(page.getByRole('status')).toContainText('Federazione attivata');
   await page.reload();
   await page
     .getByRole('button', { name: 'Impostazioni', exact: true })
     .filter({ visible: true })
     .click();
   await expect(page.getByLabel('Nome visualizzato')).toHaveValue('Francesco Test');
+  await expect(page.getByRole('button', { name: 'Disattiva federazione' })).toBeVisible();
+  await page.getByLabel('Account privato', { exact: false }).check();
+  await page.getByRole('button', { name: 'Salva modifiche' }).click();
+  await expect(page.getByRole('button', { name: 'Attiva federazione' })).toBeDisabled();
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Esporta i miei dati' }).click();
   expect((await download).suggestedFilename()).toBe('sn-dati.json');

@@ -278,6 +278,29 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
     expect(await asUser(eve, 'select * from public.messages')).toHaveLength(0);
     expect(await asUser(alice, 'select * from public.messages')).toHaveLength(1);
   });
+  it('federazione richiede profilo pubblico e consenso esplicito', async () => {
+    await expect(
+      asUser(alice, 'update public.profiles set federation_enabled=true where id=$1', [alice]),
+    ).rejects.toThrow('profiles_federation_requires_public');
+    await asUser(
+      alice,
+      'update public.profiles set is_private=false,federation_enabled=true where id=$1',
+      [alice],
+    );
+    expect(
+      await asUser<{ federation_enabled: boolean }>(
+        alice,
+        'select federation_enabled from public.profiles where id=$1',
+        [alice],
+      ),
+    ).toEqual([{ federation_enabled: true }]);
+    await asUser(
+      alice,
+      'update public.profiles set is_private=true,federation_enabled=false where id=$1',
+      [alice],
+    );
+  });
+
   it('crea gruppi tramite invito e mantiene sempre un admin', async () => {
     const created = await asUser<{ create_chat_group: string }>(
       alice,

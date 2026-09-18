@@ -14,6 +14,7 @@ export async function publicActorBy(field: 'username' | 'actor_key', value: stri
     .select('actor_key,username,display_name,bio')
     .eq(field, value)
     .eq('is_private', false)
+    .eq('federation_enabled', true)
     .eq('disabled', false)
     .maybeSingle();
   if (error || !data) return null;
@@ -40,6 +41,7 @@ export async function publicPostBy(activityKey: string) {
     .select('actor_key,username,display_name,bio')
     .eq('id', post.author_id)
     .eq('is_private', false)
+    .eq('federation_enabled', true)
     .eq('disabled', false)
     .maybeSingle();
   if (profileError || !profile) return null;
@@ -66,6 +68,7 @@ export async function publicOutbox(actorKey: string, page?: number) {
     .select('id,actor_key,username,display_name,bio')
     .eq('actor_key', actorKey)
     .eq('is_private', false)
+    .eq('federation_enabled', true)
     .eq('disabled', false)
     .maybeSingle();
   if (profileError || !profile) return null;

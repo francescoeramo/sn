@@ -224,7 +224,11 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                   ? 'Segnalazione inviata.'
                   : action.type === 'profile'
                     ? 'Profilo aggiornato.'
-                    : '',
+                    : action.type === 'federation'
+                      ? action.enabled
+                        ? 'Federazione attivata.'
+                        : 'Federazione disattivata.'
+                      : '',
       );
       return true;
     } catch (error) {
@@ -1060,6 +1064,24 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                       Salva modifiche <Check size={17} />
                     </button>
                   </form>
+                </section>
+                <section className="panel">
+                  <h2>Federazione</h2>
+                  <p className="muted">
+                    Consenti ai social compatibili, come Mastodon e Pixelfed, di trovare il tuo
+                    profilo e leggere i post pubblici. La funzione è ancora in anteprima locale: SN
+                    non invia né riceve contenuti da altri server.
+                  </p>
+                  {me.is_private && (
+                    <p className="fine">Rendi pubblico il profilo per attivare questa scelta.</p>
+                  )}
+                  <button
+                    className={me.federation_enabled ? 'secondary' : 'primary'}
+                    disabled={busy || me.is_private}
+                    onClick={() => act({ type: 'federation', enabled: !me.federation_enabled })}
+                  >
+                    {me.federation_enabled ? 'Disattiva federazione' : 'Attiva federazione'}
+                  </button>
                 </section>
                 <section className="panel">
                   <h2>Il tuo spazio</h2>

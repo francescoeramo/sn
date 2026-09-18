@@ -2761,6 +2761,9 @@ label small {
     max-width: 570px;
     padding: 23px 17px 105px;
   }
+  .content-grid :is(button, input, textarea, select) {
+    scroll-margin-block: 90px;
+  }
   .page-heading h1 {
     font-size: 30px;
   }
