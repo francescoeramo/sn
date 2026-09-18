@@ -122,6 +122,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [suspendingAccount, setSuspendingAccount] = useState<string | null>(null);
   const [clock, setClock] = useState(0);
   const locked = useRef(false);
   const refresh = useCallback(async () => {
@@ -1203,11 +1204,13 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                             className={account.disabled ? 'secondary' : 'danger'}
                             disabled={busy}
                             onClick={() =>
-                              act({
-                                type: 'moderate-account',
-                                user_id: account.id,
-                                disabled: !account.disabled,
-                              })
+                              account.disabled
+                                ? act({
+                                    type: 'moderate-account',
+                                    user_id: account.id,
+                                    disabled: false,
+                                  })
+                                : setSuspendingAccount(account.id)
                             }
                           >
                             {account.disabled ? 'Ripristina' : 'Sospendi'}
@@ -1432,6 +1435,39 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
           demo={demo}
           onClose={() => setStory(null)}
         />
+      )}
+      {suspendingAccount && (
+        <Modal
+          title={`Sospendere ${
+            state.moderationAccounts?.find((account) => account.id === suspendingAccount)
+              ?.display_name ?? 'questo account'
+          }?`}
+          onClose={() => setSuspendingAccount(null)}
+        >
+          <p>
+            La persona perderà subito l’accesso a SN. I contenuti restano conservati e un moderatore
+            potrà ripristinare l’account.
+          </p>
+          <div className="button-row">
+            <button className="secondary" onClick={() => setSuspendingAccount(null)}>
+              Annulla
+            </button>
+            <button
+              className="danger"
+              disabled={busy}
+              onClick={async () => {
+                const ok = await act({
+                  type: 'moderate-account',
+                  user_id: suspendingAccount,
+                  disabled: true,
+                });
+                if (ok) setSuspendingAccount(null);
+              }}
+            >
+              {busy ? 'Sospensione…' : 'Sospendi account'}
+            </button>
+          </div>
+        </Modal>
       )}
       {deleteOpen && (
         <Modal

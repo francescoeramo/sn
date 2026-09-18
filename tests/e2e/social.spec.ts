@@ -454,6 +454,9 @@ test('note della comunità: proposta, revisione motivata e post originale conser
   await page.getByRole('button', { name: 'Apri moderazione', exact: true }).click();
   const accounts = page.getByRole('region', { name: 'Gestione account' });
   await accounts.getByRole('button', { name: 'Sospendi' }).first().click();
+  const suspension = page.getByRole('dialog', { name: /Sospendere Giulia Rossi/ });
+  await expect(suspension).toContainText('perderà subito l’accesso');
+  await suspension.getByRole('button', { name: 'Sospendi account' }).click();
   await expect(page.getByRole('status')).toContainText('Account sospeso');
   await accounts.getByRole('button', { name: 'Ripristina' }).click();
   await expect(page.getByRole('status')).toContainText('Account ripristinato');

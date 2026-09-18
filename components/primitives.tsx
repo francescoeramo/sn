@@ -1,6 +1,6 @@
 'use client';
 import Image from 'next/image';
-import { useEffect, useRef } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import {
   Bell,
   Bookmark,
@@ -63,6 +63,7 @@ export function Modal({
   wide?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
   useEffect(() => {
     ref.current?.showModal();
     const el = ref.current;
@@ -72,6 +73,7 @@ export function Modal({
     <dialog
       ref={ref}
       className={`modal ${wide ? 'wide' : ''}`}
+      aria-labelledby={titleId}
       onCancel={onClose}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
@@ -79,7 +81,7 @@ export function Modal({
     >
       <div className="modal-inner">
         <header>
-          <h2>{title}</h2>
+          <h2 id={titleId}>{title}</h2>
           <button className="icon-button" onClick={onClose} aria-label="Chiudi">
             <X size={22} />
           </button>
