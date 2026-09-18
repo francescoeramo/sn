@@ -30,6 +30,9 @@ export function activityUrl(origin: string, activityKey: string) {
 export function objectUrl(origin: string, activityKey: string) {
   return new URL(`/ap/objects/${activityKey}`, origin).href;
 }
+export function outboxUrl(origin: string, actorKey: string) {
+  return `${actorUrl(origin, actorKey)}/outbox`;
+}
 export const federationStatus = {
   enabled: false,
   reason: 'La federazione non è attiva nella beta privata.',
@@ -108,6 +111,36 @@ export function createDocument(origin: string, post: PublicPost) {
     to: object.to,
     cc: object.cc,
     object,
+  } as const;
+}
+
+export function outboxDocument(origin: string, actor: PublicActor, totalItems: number) {
+  const id = outboxUrl(origin, actor.actorKey);
+  return {
+    '@context': 'https://www.w3.org/ns/activitystreams',
+    id,
+    type: 'OrderedCollection',
+    totalItems,
+    first: `${id}?page=1`,
+  } as const;
+}
+
+export function outboxPageDocument(
+  origin: string,
+  actor: PublicActor,
+  posts: PublicPost[],
+  page: number,
+  hasMore: boolean,
+) {
+  const outbox = outboxUrl(origin, actor.actorKey);
+  return {
+    '@context': 'https://www.w3.org/ns/activitystreams',
+    id: `${outbox}?page=${page}`,
+    type: 'OrderedCollectionPage',
+    partOf: outbox,
+    orderedItems: posts.map((post) => createDocument(origin, post)),
+    ...(page > 1 ? { prev: `${outbox}?page=${page - 1}` } : {}),
+    ...(hasMore ? { next: `${outbox}?page=${page + 1}` } : {}),
   } as const;
 }
 

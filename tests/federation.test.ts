@@ -5,6 +5,8 @@ import {
   createDocument,
   noteDocument,
   objectUrl,
+  outboxDocument,
+  outboxPageDocument,
   webfingerAccount,
   webfingerDocument,
 } from '../lib/core/federation';
@@ -64,5 +66,22 @@ describe('discovery ActivityPub', () => {
     expect(activity.object.id).toBe(objectUrl('https://sn.example', post.activityKey));
     expect(activity.to).toEqual(activity.object.to);
     expect(activity.cc).toEqual(activity.object.cc);
+  });
+
+  it('espone un outbox paginato senza duplicare i documenti', () => {
+    const collection = outboxDocument('https://sn.example', actor, 21);
+    const page = outboxPageDocument('https://sn.example', actor, [post], 1, true);
+    expect(collection.totalItems).toBe(21);
+    expect(collection.first).toBe(`${collection.id}?page=1`);
+    expect(page.partOf).toBe(collection.id);
+    expect(page.orderedItems[0]).toEqual(createDocument('https://sn.example', post));
+    expect(page.next).toBe(`${collection.id}?page=2`);
+    expect(page).not.toHaveProperty('prev');
+  });
+
+  it('collega le pagine successive dell’outbox', () => {
+    const page = outboxPageDocument('https://sn.example', actor, [], 2, false);
+    expect(page.prev).toBe(`${page.partOf}?page=1`);
+    expect(page).not.toHaveProperty('next');
   });
 });

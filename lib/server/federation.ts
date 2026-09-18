@@ -56,3 +56,57 @@ export async function publicPostBy(activityKey: string) {
     published: post.created_at,
   } satisfies PublicPost;
 }
+
+const outboxPageSize = 20;
+
+export async function publicOutbox(actorKey: string, page?: number) {
+  const db = adminDatabase();
+  const { data: profile, error: profileError } = await db
+    .from('profiles')
+    .select('id,actor_key,username,display_name,bio')
+    .eq('actor_key', actorKey)
+    .eq('is_private', false)
+    .eq('disabled', false)
+    .maybeSingle();
+  if (profileError || !profile) return null;
+
+  const actor = {
+    actorKey: profile.actor_key,
+    username: profile.username,
+    displayName: profile.display_name,
+    bio: profile.bio,
+  } satisfies PublicActor;
+  const baseQuery = () =>
+    db
+      .from('posts')
+      .select('activity_key,body,content_warning,created_at', { count: 'exact' })
+      .eq('author_id', profile.id)
+      .neq('kind', 'story')
+      .is('expires_at', null)
+      .neq('body', '');
+
+  if (page === undefined) {
+    const { count, error } = await baseQuery().limit(0);
+    return error ? null : { actor, totalItems: count ?? 0 };
+  }
+
+  const from = (page - 1) * outboxPageSize;
+  const { data, count, error } = await baseQuery()
+    .order('created_at', { ascending: false })
+    .order('activity_key', { ascending: false })
+    .range(from, from + outboxPageSize - 1);
+  if (error || !data) return null;
+  const posts = data
+    .filter((post) => post.body.trim())
+    .map(
+      (post) =>
+        ({
+          activityKey: post.activity_key,
+          author: actor,
+          body: post.body,
+          contentWarning: post.content_warning ?? '',
+          published: post.created_at,
+        }) satisfies PublicPost,
+    );
+  return { actor, posts, hasMore: from + data.length < (count ?? 0) };
+}
