@@ -18,9 +18,14 @@ export default defineConfig({
     { name: 'mobile', use: { ...devices['Pixel 7'] } },
   ],
   webServer: {
-    command: 'npm run start -- --port 3100',
+    command: 'node scripts/prepare-standalone.mjs && node .next/standalone/server.js',
     url: 'http://127.0.0.1:3100',
     reuseExistingServer: !process.env.CI,
-    env: { NEXT_TELEMETRY_DISABLED: '1', APP_ORIGIN: 'http://127.0.0.1:3100' },
+    env: {
+      NEXT_TELEMETRY_DISABLED: '1',
+      APP_ORIGIN: 'http://127.0.0.1:3100',
+      HOSTNAME: '127.0.0.1',
+      PORT: '3100',
+    },
   },
 });

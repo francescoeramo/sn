@@ -78,7 +78,7 @@ Il workflow `ci.yml` esegue lint, TypeScript, test SQL/unitari, audit npm, build
 
 Per Vercel Hobby: importa quel repository come Next.js, imposta le variabili di `.env.example`, collega `main` e scegli una regione compatibile col database. Non usare chiavi segrete con prefisso `NEXT_PUBLIC_`. Non è stato effettuato un deploy remoto.
 
-La build produce anche output `standalone`; l’app può essere spostata su un host Node.js. Supabase/Postgres e la logica in `lib/core` restano separati dall’interfaccia. Nessuna funzione richiede una libreria UI proprietaria o un piano Pro.
+La build produce anche output `standalone`; prima di avviare `.next/standalone/server.js`, `node scripts/prepare-standalone.mjs` copia gli asset statici e la cartella `public` richiesti dal server. Supabase/Postgres e la logica in `lib/core` restano separati dall’interfaccia. Nessuna funzione richiede una libreria UI proprietaria o un piano Pro.
 
 ## Manutenzione
 
