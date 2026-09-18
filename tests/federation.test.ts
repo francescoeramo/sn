@@ -3,6 +3,7 @@ import {
   actorDocument,
   canonicalOrigin,
   createDocument,
+  emptyActorCollection,
   noteDocument,
   objectUrl,
   outboxDocument,
@@ -83,5 +84,14 @@ describe('discovery ActivityPub', () => {
     const page = outboxPageDocument('https://sn.example', actor, [], 2, false);
     expect(page.prev).toBe(`${page.partOf}?page=1`);
     expect(page).not.toHaveProperty('next');
+  });
+
+  it('non espone il grafo sociale locale nelle collezioni federate', () => {
+    for (const relation of ['followers', 'following'] as const) {
+      const collection = emptyActorCollection('https://sn.example', actor, relation);
+      expect(collection.id).toBe(`${actorDocument('https://sn.example', actor).id}/${relation}`);
+      expect(collection.totalItems).toBe(0);
+      expect(collection.orderedItems).toEqual([]);
+    }
   });
 });

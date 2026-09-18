@@ -1,6 +1,7 @@
 import {
   actorDocument,
   createDocument,
+  emptyActorCollection,
   federationStatus,
   noteDocument,
   outboxDocument,
@@ -55,6 +56,18 @@ export async function GET(request: Request, context: Context) {
       outbox.hasMore ?? false,
     );
     return Response.json(document, {
+      headers: { 'Content-Type': 'application/activity+json', 'Cache-Control': 'no-store' },
+    });
+  }
+  if (
+    origin &&
+    path.length === 3 &&
+    path[0] === 'actors' &&
+    (path[2] === 'followers' || path[2] === 'following')
+  ) {
+    const actor = await publicActorBy('actor_key', path[1]);
+    if (!actor) return Response.json({ error: 'Collezione non trovata.' }, { status: 404 });
+    return Response.json(emptyActorCollection(origin, actor, path[2]), {
       headers: { 'Content-Type': 'application/activity+json', 'Cache-Control': 'no-store' },
     });
   }

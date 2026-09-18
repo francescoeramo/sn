@@ -144,6 +144,20 @@ export function outboxPageDocument(
   } as const;
 }
 
+export function emptyActorCollection(
+  origin: string,
+  actor: PublicActor,
+  relation: 'followers' | 'following',
+) {
+  return {
+    '@context': 'https://www.w3.org/ns/activitystreams',
+    id: `${actorUrl(origin, actor.actorKey)}/${relation}`,
+    type: 'OrderedCollection',
+    totalItems: 0,
+    orderedItems: [],
+  } as const;
+}
+
 export function webfingerDocument(origin: string, actor: PublicActor) {
   return {
     subject: `acct:${actor.username}@${new URL(origin).host}`,
