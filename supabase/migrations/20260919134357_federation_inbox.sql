@@ -63,7 +63,7 @@ begin
           accepted_at=now();
     insert into private.federation_queue(activity_id,actor_id,target_host,target_url,payload,status)
     values(reply->>'id',target_actor,lower(split_part(split_part(remote_inbox_url,'://',2),'/',1)),remote_inbox_url,reply,'paused')
-    on conflict(activity_id) do nothing;
+    on conflict do nothing;
     return 'followed';
   end if;
 

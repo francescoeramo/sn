@@ -14,7 +14,8 @@ import {
   deleteMessageInput,
 } from '@/lib/core/rules';
 import { identity, checked, adminDatabase, ApiError } from './supabase';
-import { ensureFederationActorKey } from './federation';
+import { enqueueFederatedActivity, ensureFederationActorKey, publicPostBy } from './federation';
+import { createDocument, deleteDocument } from '@/lib/core/federation';
 import type { Bookmark, ModerationAccount, Post, SavedCursor, SavedPage } from '@/lib/core/types';
 
 type Database = Awaited<ReturnType<typeof identity>>['db'];
@@ -228,16 +229,26 @@ export async function mutate(input: unknown) {
           }),
         );
       else {
-        checked(
-          await db.from('posts').insert({
-            author_id: user.id,
-            body: v.body,
-            content_warning: v.content_warning,
-            kind: v.kind,
-            media_path: v.media_path,
-            alt: v.alt,
-          }),
+        const post = checked(
+          await db
+            .from('posts')
+            .insert({
+              author_id: user.id,
+              body: v.body,
+              content_warning: v.content_warning,
+              kind: v.kind,
+              media_path: v.media_path,
+              alt: v.alt,
+            })
+            .select('activity_key')
+            .single(),
         );
+        const federated = await publicPostBy(post.activity_key);
+        if (federated && process.env.APP_ORIGIN)
+          await enqueueFederatedActivity(
+            user.id,
+            createDocument(process.env.APP_ORIGIN, federated),
+          );
       }
       break;
     }
@@ -355,11 +366,22 @@ export async function mutate(input: unknown) {
     case 'delete-post': {
       const id = userId.parse(obj.post_id);
       const post = checked(
-        await db.from('posts').select('id').eq('id', id).eq('author_id', user.id).single(),
+        await db
+          .from('posts')
+          .select('id,activity_key')
+          .eq('id', id)
+          .eq('author_id', user.id)
+          .single(),
       );
       if (!post) throw new ApiError('Post non disponibile.', 404);
+      const federated = await publicPostBy(post.activity_key);
       // Delete row first to revoke visibility immediately; maintenance removes the orphaned blob.
       checked(await db.from('posts').delete().eq('id', id).eq('author_id', user.id));
+      if (federated && process.env.APP_ORIGIN)
+        await enqueueFederatedActivity(
+          user.id,
+          deleteDocument(process.env.APP_ORIGIN, federated, crypto.randomUUID()),
+        );
       break;
     }
     case 'report': {

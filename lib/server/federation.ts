@@ -105,6 +105,19 @@ export async function recordFederatedActivity(
   return data as string;
 }
 
+export async function enqueueFederatedActivity(
+  actorId: string,
+  activity: { id: string } & Record<string, unknown>,
+) {
+  const { data, error } = await adminDatabase().rpc('enqueue_federated_activity', {
+    target_actor: actorId,
+    outgoing_id: activity.id,
+    outgoing: activity,
+  });
+  if (error) throw new ApiError('Attività federata non accodata.', 503);
+  return Number(data ?? 0);
+}
+
 export async function publicPostBy(activityKey: string) {
   const db = adminDatabase();
   const { data: post, error } = await db

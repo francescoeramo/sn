@@ -148,6 +148,20 @@ export function createDocument(origin: string, post: PublicPost) {
   } as const;
 }
 
+export function deleteDocument(origin: string, post: PublicPost, deleteKey: string) {
+  const actor = actorUrl(origin, post.author.actorKey);
+  const object = objectUrl(origin, post.activityKey);
+  return {
+    '@context': 'https://www.w3.org/ns/activitystreams',
+    id: activityUrl(origin, deleteKey),
+    type: 'Delete',
+    actor,
+    to: [publicAudience],
+    cc: [`${actor}/followers`],
+    object: { id: object, type: 'Tombstone' },
+  } as const;
+}
+
 export function outboxDocument(origin: string, actor: PublicActor, totalItems: number) {
   const id = outboxUrl(origin, actor.actorKey);
   return {

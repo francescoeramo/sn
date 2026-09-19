@@ -24,7 +24,7 @@ Senza questa anteprima, `/.well-known/webfinger` e `/ap/*` rispondono **503**. L
 
 Ogni attore federato ha una coppia RSA. Il database conserva la chiave privata cifrata con AES-256-GCM e `FEDERATION_KEY_SECRET`; l’Actor pubblica solo la chiave pubblica. L’inbox accetta soltanto `Follow` e `Undo` con firma RSA-SHA256, digest, data e destinatario validi. Il recupero della chiave remota richiede HTTPS, vieta redirect e indirizzi privati o riservati, limita risposta e tempo di attesa. Le attività sono deduplicate nel database.
 
-Gli `Accept` entrano in una coda persistente. `POST /api/maintenance` li consegna solo con `FEDERATION_DELIVERY_ENABLED=true`, quattro per esecuzione, con firma HTTP e retry dopo 5 minuti, 30 minuti, 2 ore e 12 ore. Il quinto errore chiude la consegna. La produzione resta disattivata e non è stata provata con server Mastodon o Pixelfed reali.
+Gli `Accept`, i `Create` dei nuovi post testuali e i relativi `Delete` entrano in una coda persistente, con una consegna distinta per ogni inbox remota. `POST /api/maintenance` li consegna solo con `FEDERATION_DELIVERY_ENABLED=true`, quattro per esecuzione, con firma HTTP e retry dopo 5 minuti, 30 minuti, 2 ore e 12 ore. Il quinto errore chiude la consegna. La produzione resta disattivata e non è stata provata con server Mastodon o Pixelfed reali.
 
 La libreria candidata è [Fedify](https://fedify.dev/manual/federation), con [licenza MIT](https://github.com/fedify-dev/fedify/blob/main/LICENSE). Gestisce dispatcher, firme e trasporto ActivityPub; l’adapter Postgres evita un servizio Redis separato. Non è stata aggiunta come dipendenza inutilizzata.
 

@@ -370,6 +370,35 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
       (await db.query<{ status: string }>('select status from private.federation_queue')).rows,
     ).toEqual([{ status: 'delivered' }]);
 
+    const create = {
+      id: 'https://sn.example/ap/activities/create-1',
+      type: 'Create',
+      actor: reply.actor,
+      object: { id: 'https://sn.example/ap/objects/post-1', type: 'Note' },
+    };
+    await db.exec('set role service_role');
+    try {
+      const queued = await db.query<{ enqueue_federated_activity: number }>(
+        'select public.enqueue_federated_activity($1,$2,$3)',
+        [alice, create.id, create],
+      );
+      const duplicate = await db.query<{ enqueue_federated_activity: number }>(
+        'select public.enqueue_federated_activity($1,$2,$3)',
+        [alice, create.id, create],
+      );
+      expect(queued.rows[0].enqueue_federated_activity).toBe(1);
+      expect(duplicate.rows[0].enqueue_federated_activity).toBe(0);
+    } finally {
+      await db.exec('reset role');
+    }
+    expect(
+      (
+        await db.query<{ status: string }>(
+          'select status from private.federation_queue order by activity_id',
+        )
+      ).rows,
+    ).toEqual([{ status: 'delivered' }, { status: 'pending' }]);
+
     const undo = {
       id: 'https://remote.example/activities/undo-1',
       type: 'Undo',

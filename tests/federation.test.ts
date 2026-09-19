@@ -4,6 +4,7 @@ import {
   actorDocument,
   canonicalOrigin,
   createDocument,
+  deleteDocument,
   emptyActorCollection,
   federationDeliveryOutcome,
   noteDocument,
@@ -87,6 +88,20 @@ describe('discovery ActivityPub', () => {
     expect(activity.object.id).toBe(objectUrl('https://sn.example', post.activityKey));
     expect(activity.to).toEqual(activity.object.to);
     expect(activity.cc).toEqual(activity.object.cc);
+  });
+
+  it('ritira un oggetto federato con una Tombstone stabile', () => {
+    const activity = deleteDocument(
+      'https://sn.example',
+      post,
+      '82d73a68-3da0-4a35-b84b-93428dce7059',
+    );
+    expect(activity.actor).toBe(actorDocument('https://sn.example', actor).id);
+    expect(activity.object).toEqual({
+      id: objectUrl('https://sn.example', post.activityKey),
+      type: 'Tombstone',
+    });
+    expect(activity.to).toEqual(['https://www.w3.org/ns/activitystreams#Public']);
   });
 
   it('descrive un allegato senza esporre il percorso del bucket privato', () => {
