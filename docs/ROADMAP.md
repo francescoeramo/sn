@@ -9,7 +9,7 @@ Aggiornato il 13 settembre 2026. `PRODUCT.md` contiene i vincoli correnti; i doc
 | Note della comunità                              | Proposta e revisione manuale implementate.                                                                                                                                                             |
 | Salvataggi privati                               | Implementati in demo, API e migrazione locale. Da applicare e collaudare sul progetto cloud dedicato.                                                                                                  |
 | Avvisi di contenuto                              | Implementati per post, reel e storie; media caricati dopo la scelta. Da collaudare anche sul backend cloud.                                                                                            |
-| Federazione                                      | Opt-in separato, discovery WebFinger/Actor, outbox paginato, Note/Create e allegati dei post testuali pubblici sono testabili in sviluppo; resta disattivata in produzione. Firme, inbox e consegna sono ancora da implementare. |
+| Federazione                                      | Opt-in separato, discovery WebFinger/Actor, outbox paginato, Note/Create e allegati dei post testuali pubblici sono testabili in sviluppo. Ogni attore ha una coppia RSA con chiave privata cifrata e sono disponibili le firme HTTP per le consegne. Restano da implementare verifica delle richieste, inbox, coda attiva e interoperabilità; la produzione rimane disattivata. |
 | Chat di gruppo                                   | Ruoli, inviti, messaggi E2EE v2, ricevute e interfaccia sono implementati. La demo conserva i pacchetti cifrati in IndexedDB; manca il collaudo cloud.                                                 |
 | 2FA e sessioni                                   | TOTP facoltativa, revoca sessioni e data ultimo accesso senza raccolta IP aggiuntiva implementati localmente. Da collaudare con Auth cloud.                                                            |
 | Sondaggi                                         | Opzioni, voto singolo e scadenza facoltativa implementati localmente. Da applicare e collaudare sul progetto cloud dedicato.                                                                           |
@@ -36,7 +36,7 @@ Eliminazione personale per entrambi, globale solo per il mittente. Entrambi poss
 
 ## Prima della federazione
 
-Definire attori solo per profili pubblici, WebFinger, HTTP Signatures, traduzione delle attività Create/Like/Follow/Accept/Reject e visibilità degli oggetti remoti. Chiarire revoca dei follow, blocchi e limiti della cancellazione su server terzi. Gli avvisi di contenuto devono mantenersi nel passaggio tra piattaforme. Nessun profilo privato diventa automaticamente un attore pubblico.
+Completare verifica delle firme HTTP in ingresso, inbox, consegna e traduzione delle attività Like/Follow/Accept/Reject. Gli attori pubblici, WebFinger, la firma delle richieste e Create sono predisposti in anteprima locale. Chiarire revoca dei follow, blocchi e limiti della cancellazione su server terzi. Gli avvisi di contenuto devono mantenersi nel passaggio tra piattaforme. Nessun profilo privato diventa automaticamente un attore pubblico.
 
 ## Verifica e pubblicazione
 

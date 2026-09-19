@@ -1,3 +1,4 @@
+import { createVerify } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import {
   actorDocument,
@@ -11,12 +12,21 @@ import {
   webfingerAccount,
   webfingerDocument,
 } from '../lib/core/federation';
+import {
+  decryptFederationPrivateKey,
+  encryptFederationPrivateKey,
+  generateFederationKeyPair,
+  signedFederationHeaders,
+} from '../lib/server/federation-crypto';
+
+const pair = generateFederationKeyPair();
 
 const actor = {
   actorKey: '2dfdb22d-e931-4dcb-bc68-65b3414d5b3c',
   username: 'marta',
   displayName: 'Marta',
   bio: 'Fotografie e pane.',
+  publicKeyPem: pair.publicKeyPem,
 };
 const post = {
   activityKey: '6fbc81f6-b48e-4c0d-b541-3d28e545ce26',
@@ -46,6 +56,11 @@ describe('discovery ActivityPub', () => {
     expect(document.id).toBe(webfinger.links[0].href);
     expect(document.url).toBe('https://sn.example/users/marta');
     expect(document.inbox).toBe(`${document.id}/inbox`);
+    expect(document.publicKey).toEqual({
+      id: `${document.id}#main-key`,
+      owner: document.id,
+      publicKeyPem: pair.publicKeyPem,
+    });
   });
 
   it('non inserisce markup arbitrario nella biografia federata', () => {
@@ -110,5 +125,45 @@ describe('discovery ActivityPub', () => {
       expect(collection.totalItems).toBe(0);
       expect(collection.orderedItems).toEqual([]);
     }
+  });
+
+  it('cifra la chiave privata e rifiuta segreti o dati alterati', () => {
+    const secret = Buffer.alloc(32, 7).toString('base64');
+    const encrypted = encryptFederationPrivateKey(pair.privateKeyPem, secret);
+    expect(encrypted).not.toContain('PRIVATE KEY');
+    expect(decryptFederationPrivateKey(encrypted, secret)).toBe(pair.privateKeyPem);
+    const altered = `${encrypted.slice(0, -1)}${encrypted.endsWith('A') ? 'B' : 'A'}`;
+    expect(() => decryptFederationPrivateKey(altered, secret)).toThrow(
+      'Impossibile decifrare',
+    );
+    expect(() => encryptFederationPrivateKey(pair.privateKeyPem, 'corta')).toThrow(
+      'Chiave di cifratura',
+    );
+  });
+
+  it('firma le consegne POST includendo destinazione, data e digest', () => {
+    const body = JSON.stringify({ type: 'Follow' });
+    const headers = signedFederationHeaders(
+      'https://remote.example/inbox?shared=1',
+      body,
+      'https://sn.example/ap/actors/key#main-key',
+      pair.privateKeyPem,
+      new Date('2026-09-19T10:00:00Z'),
+    );
+    const signature = /signature="([^"]+)"/.exec(headers.Signature)?.[1];
+    const signingString = `(request-target): post /inbox?shared=1\nhost: remote.example\ndate: ${headers.Date}\ndigest: ${headers.Digest}`;
+    const verifier = createVerify('RSA-SHA256');
+    verifier.update(signingString);
+    verifier.end();
+    expect(signature).toBeTruthy();
+    expect(verifier.verify(pair.publicKeyPem, signature!, 'base64')).toBe(true);
+    expect(() =>
+      signedFederationHeaders(
+        'http://remote.example/inbox',
+        body,
+        'https://sn.example/key',
+        pair.privateKeyPem,
+      ),
+    ).toThrow('HTTPS');
   });
 });

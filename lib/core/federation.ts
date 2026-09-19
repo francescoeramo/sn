@@ -3,6 +3,7 @@ export type PublicActor = {
   username: string;
   displayName: string;
   bio: string;
+  publicKeyPem: string;
 };
 export type PublicPost = {
   activityKey: string;
@@ -69,7 +70,7 @@ export function actorDocument(origin: string, actor: PublicActor) {
   const id = actorUrl(origin, actor.actorKey);
   const summary = escapeHtml(actor.bio);
   return {
-    '@context': 'https://www.w3.org/ns/activitystreams',
+    '@context': ['https://www.w3.org/ns/activitystreams', 'https://w3id.org/security/v1'],
     id,
     type: 'Person',
     preferredUsername: actor.username,
@@ -80,6 +81,11 @@ export function actorDocument(origin: string, actor: PublicActor) {
     outbox: `${id}/outbox`,
     followers: `${id}/followers`,
     following: `${id}/following`,
+    publicKey: {
+      id: `${id}#main-key`,
+      owner: id,
+      publicKeyPem: actor.publicKeyPem,
+    },
   } as const;
 }
 

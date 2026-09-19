@@ -14,6 +14,7 @@ import {
   deleteMessageInput,
 } from '@/lib/core/rules';
 import { identity, checked, adminDatabase, ApiError } from './supabase';
+import { ensureFederationActorKey } from './federation';
 import type { Bookmark, ModerationAccount, Post, SavedCursor, SavedPage } from '@/lib/core/types';
 
 type Database = Awaited<ReturnType<typeof identity>>['db'];
@@ -343,6 +344,8 @@ export async function mutate(input: unknown) {
       const { enabled } = z.object({ enabled: z.boolean() }).parse(obj);
       if (enabled && profile.is_private)
         throw new ApiError('Rendi pubblico il profilo prima di attivare la federazione.');
+      if (enabled && !(await ensureFederationActorKey(user.id)))
+        throw new ApiError('Non è stato possibile preparare la chiave della federazione.', 503);
       checked(await db.from('profiles').update({ federation_enabled: enabled }).eq('id', user.id));
       break;
     }

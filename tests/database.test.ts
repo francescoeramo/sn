@@ -301,6 +301,23 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
     );
   });
 
+  it('non espone le chiavi private federate ai membri', async () => {
+    await db.query(
+      "insert into public.federation_actor_keys(actor_id,public_key_pem,private_key_encrypted) values($1,'-----BEGIN PUBLIC KEY-----test','v1:iv:tag:cipher')",
+      [alice],
+    );
+    await expect(asUser(alice, 'select * from public.federation_actor_keys')).rejects.toThrow(
+      'permission denied',
+    );
+    await expect(
+      asUser(
+        alice,
+        "insert into public.federation_actor_keys(actor_id,public_key_pem,private_key_encrypted) values($1,'-----BEGIN PUBLIC KEY-----x','v1:x:x:x')",
+        [bob],
+      ),
+    ).rejects.toThrow('permission denied');
+  });
+
   it('crea gruppi tramite invito e mantiene sempre un admin', async () => {
     const created = await asUser<{ create_chat_group: string }>(
       alice,
