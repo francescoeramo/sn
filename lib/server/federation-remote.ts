@@ -16,6 +16,17 @@ async function requirePublicHost(url: URL) {
     throw new ApiError('Indirizzo federato non consentito.', 400);
 }
 
+export async function requirePublicFederationUrl(value: string) {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new ApiError('Indirizzo federato non valido.', 400);
+  }
+  await requirePublicHost(url);
+  return url;
+}
+
 export type RemoteActorKey = {
   actor: string;
   inbox: string;

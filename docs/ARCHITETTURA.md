@@ -16,21 +16,24 @@ PGlite esegue il vero motore Postgres e verifica schema, trigger e RLS con ruoli
 
 La durata massima video è controllata nel browser. Il server verifica dimensione e firma del contenitore, ma non esegue ffprobe/antivirus né certifica la durata dei file inviati via API. Per la beta su invito il limite di byte protegge la quota; prima di aprire a sconosciuti va introdotta una pipeline media con decodifica e convalida in isolamento. La ricodifica browser dipende da MediaRecorder/captureStream; se non disponibile, si accettano solo file già entro 3 MiB.
 
-## Federazione: discovery locale in anteprima
+## Federazione: trasporto locale in anteprima
 
-Gli UUID `actor_key` e `activity_key` permettono URI stabili indipendenti dal nome utente. Sono presenti tabelle private per coda e blocchi delle istanze. In sviluppo, `FEDERATION_DISCOVERY_PREVIEW=true` abilita WebFinger, i documenti Actor, l’outbox paginato e i documenti Note/Create dei post testuali in sola lettura per i profili pubblici e attivi che hanno dato un consenso separato. Rendere privato il profilo revoca il consenso. `/users/:username` è un alias leggibile; l’ID canonico dell’attore resta `/ap/actors/:actor_key`. Note e Create usano l’`activity_key` stabile del post su percorsi distinti. La variabile è ignorata in produzione.
+Gli UUID `actor_key` e `activity_key` permettono URI stabili indipendenti dal nome utente. In sviluppo, `FEDERATION_DISCOVERY_PREVIEW=true` abilita WebFinger, Actor, outbox, Note/Create e l’inbox dei profili pubblici e attivi che hanno dato un consenso separato. Rendere privato il profilo revoca il consenso. `/users/:username` è un alias leggibile; l’ID canonico dell’attore resta `/ap/actors/:actor_key`. Note e Create usano l’`activity_key` stabile del post su percorsi distinti. La variabile è ignorata in produzione.
 
-Senza questa anteprima, `/.well-known/webfinger` e `/ap/*` rispondono **503**. L’anteprima non espone storie, account privati, account disabilitati o post che contengono soltanto media. Foto e video allegati ai post testuali passano da `/ap/media/:activity_key`: il server ricontrolla profilo, opt-in e post prima di leggere il file dal bucket privato, senza esporne il percorso. Le collezioni federate `followers` e `following` restano vuote e non rivelano il grafo sociale locale. Inbox, consegna e richieste POST restano disattivate; SN non accetta attività e non esegue fetch remoti. Questi documenti locali permettono di verificarne forma e identità, ma non abilitano l’interoperabilità.
+Senza questa anteprima, `/.well-known/webfinger` e `/ap/*` rispondono **503**. L’anteprima non espone storie, account privati, account disabilitati o post che contengono soltanto media. Foto e video allegati ai post testuali passano da `/ap/media/:activity_key`: il server ricontrolla profilo, opt-in e post prima di leggere il file dal bucket privato, senza esporne il percorso. Le collezioni `followers` e `following` restano vuote e non rivelano il grafo sociale locale.
+
+Ogni attore federato ha una coppia RSA. Il database conserva la chiave privata cifrata con AES-256-GCM e `FEDERATION_KEY_SECRET`; l’Actor pubblica solo la chiave pubblica. L’inbox accetta soltanto `Follow` e `Undo` con firma RSA-SHA256, digest, data e destinatario validi. Il recupero della chiave remota richiede HTTPS, vieta redirect e indirizzi privati o riservati, limita risposta e tempo di attesa. Le attività sono deduplicate nel database.
+
+Gli `Accept` entrano in una coda persistente. `POST /api/maintenance` li consegna solo con `FEDERATION_DELIVERY_ENABLED=true`, quattro per esecuzione, con firma HTTP e retry dopo 5 minuti, 30 minuti, 2 ore e 12 ore. Il quinto errore chiude la consegna. La produzione resta disattivata e non è stata provata con server Mastodon o Pixelfed reali.
 
 La libreria candidata è [Fedify](https://fedify.dev/manual/federation), con [licenza MIT](https://github.com/fedify-dev/fedify/blob/main/LICENSE). Gestisce dispatcher, firme e trasporto ActivityPub; l’adapter Postgres evita un servizio Redis separato. Non è stata aggiunta come dipendenza inutilizzata.
 
 Per abilitarla servono:
 
-1. Dominio stabile, chiavi attore e lifecycle di rotazione, endpoint Note/inbox/outbox collegati a Fedify e passaggio della discovery dalla sola anteprima alla produzione.
-2. Coda persistente con retry, deduplicazione, firma/verifica HTTP e limiti di consegna. Nessuna memoria locale come unica coda su Vercel.
-3. Fetch remoto con protezione SSRF, verifica DNS e redirect, blocco reti private, limiti su payload e timeout; niente accesso al database privilegiato da payload federati.
-4. Opt-in esplicito per contenuti pubblici, gestione Follow/Accept/Undo/Delete e ritiri da account privati. Le storie e i DM restano locali inizialmente.
-5. Test incrociati con Mastodon e Pixelfed, moderazione delle istanze e bilancio di banda/storage prima dell’apertura.
+1. Dominio stabile, rotazione delle chiavi e passaggio controllato dall’anteprima alla produzione.
+2. Attività `Like`, `Reject` e `Delete`, ritiri quando un account diventa privato e gestione degli oggetti remoti. Storie e DM restano locali.
+3. Cache verificata delle chiavi remote e difesa dal DNS rebinding prima di attivare fetch e consegne su Internet.
+4. Test incrociati con Mastodon e Pixelfed, moderazione delle istanze e bilancio di banda/storage prima dell’apertura.
 
 Questa parte del brief resta aperta: non presentare SN come interoperabile con il Fediverse finché questi test non passano.
 

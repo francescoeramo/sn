@@ -82,7 +82,7 @@ La build produce anche output `standalone`; prima di avviare `.next/standalone/s
 
 ## Manutenzione
 
-`POST /api/maintenance` richiede `Origin` uguale ad `APP_ORIGIN` e `Authorization: Bearer <CRON_SECRET>`. Rimuove storie scadute, reclama fino a 100 file inutilizzati per esecuzione e riprende cancellazioni account interrotte. Le prenotazioni rimangono conteggiate finché la rimozione Storage non riesce. Il job è idempotente; un errore di Storage non libera la quota.
+`POST /api/maintenance` richiede `Origin` uguale ad `APP_ORIGIN` e `Authorization: Bearer <CRON_SECRET>`. Rimuove storie scadute, reclama fino a 100 file inutilizzati per esecuzione e riprende cancellazioni account interrotte. Le prenotazioni rimangono conteggiate finché la rimozione Storage non riesce. Con `FEDERATION_DELIVERY_ENABLED=true` consegna anche quattro attività federate firmate per esecuzione; dopo gli intervalli di retry, il quinto errore chiude il tentativo. Lasciare la variabile disattivata fino ai test con server dedicati.
 
 È incluso un workflow GitHub manuale (`maintenance.yml`). Dopo il deploy imposta i segreti `SN_ORIGIN` e `SN_CRON_SECRET` e aggiungi uno schedule giornaliero, oppure usa un timer locale gratuito. Non è attivo alcun job remoto al momento. La scadenza delle storie è applicata ai controlli di lettura anche senza job; la cancellazione fisica richiede il job.
 

@@ -32,6 +32,7 @@ import {
   ApiError,
 } from '@/lib/server/supabase';
 import { snapshot, mutate, exportData, deleteAccount, savedPage } from '@/lib/server/social';
+import { processFederationQueue } from '@/lib/server/federation-delivery';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -480,7 +481,8 @@ export async function POST(request: NextRequest, { params }: Context) {
           );
         checked(await admin.auth.admin.deleteUser(profile.id));
       }
-      return json({ removed });
+      const federation = await processFederationQueue();
+      return json({ removed, federation });
     }
     return json({ error: 'Endpoint non trovato.' }, 404);
   } catch (error) {

@@ -353,6 +353,22 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
     }
     expect((await db.query('select * from public.federation_remote_follows')).rows).toHaveLength(1);
     expect((await db.query('select * from private.federation_queue')).rows).toHaveLength(1);
+    await db.exec('set role service_role');
+    try {
+      const claimed = await db.query<{ queue_id: string; attempts: number }>(
+        'select queue_id,attempts from public.claim_federation_deliveries(4)',
+      );
+      expect(claimed.rows).toHaveLength(1);
+      expect(claimed.rows[0].attempts).toBe(1);
+      await db.query("select public.complete_federation_delivery($1,'delivered',null)", [
+        claimed.rows[0].queue_id,
+      ]);
+    } finally {
+      await db.exec('reset role');
+    }
+    expect(
+      (await db.query<{ status: string }>('select status from private.federation_queue')).rows,
+    ).toEqual([{ status: 'delivered' }]);
 
     const undo = {
       id: 'https://remote.example/activities/undo-1',

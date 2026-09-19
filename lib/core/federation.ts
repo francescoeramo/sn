@@ -43,6 +43,20 @@ export const federationStatus = {
   reason: 'La federazione non è attiva nella beta privata.',
 } as const;
 
+export function federationDeliveryOutcome(
+  status: number | null,
+  attempts: number,
+  now = Date.now(),
+) {
+  const delivered = status !== null && status >= 200 && status < 300;
+  const retryable =
+    status === null || status === 408 || status === 425 || status === 429 || status >= 500;
+  if (delivered) return { outcome: 'delivered' as const, retryAt: null };
+  if (!retryable || attempts >= 5) return { outcome: 'failed' as const, retryAt: null };
+  const delays = [5, 30, 120, 720];
+  return { outcome: 'retry' as const, retryAt: new Date(now + delays[attempts - 1] * 60000) };
+}
+
 export function canonicalOrigin(value: string | undefined) {
   if (!value) return null;
   try {

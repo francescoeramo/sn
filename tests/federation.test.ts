@@ -5,6 +5,7 @@ import {
   canonicalOrigin,
   createDocument,
   emptyActorCollection,
+  federationDeliveryOutcome,
   noteDocument,
   objectUrl,
   outboxDocument,
@@ -224,5 +225,25 @@ describe('discovery ActivityPub', () => {
       expect(isPublicFederationAddress(address)).toBe(false);
     expect(isPublicFederationAddress('93.184.216.34')).toBe(true);
     expect(isPublicFederationAddress('2606:2800:220:1:248:1893:25c8:1946')).toBe(true);
+  });
+
+  it('ritenta gli errori temporanei e chiude quelli permanenti', () => {
+    const now = Date.parse('2026-09-19T10:00:00Z');
+    expect(federationDeliveryOutcome(202, 1, now)).toEqual({
+      outcome: 'delivered',
+      retryAt: null,
+    });
+    expect(federationDeliveryOutcome(429, 2, now)).toEqual({
+      outcome: 'retry',
+      retryAt: new Date('2026-09-19T10:30:00Z'),
+    });
+    expect(federationDeliveryOutcome(503, 5, now)).toEqual({
+      outcome: 'failed',
+      retryAt: null,
+    });
+    expect(federationDeliveryOutcome(404, 1, now)).toEqual({
+      outcome: 'failed',
+      retryAt: null,
+    });
   });
 });
