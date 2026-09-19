@@ -1,4 +1,5 @@
 import {
+  actorUrl,
   actorDocument,
   createDocument,
   emptyActorCollection,
@@ -7,13 +8,24 @@ import {
   outboxDocument,
   outboxPageDocument,
 } from '@/lib/core/federation';
+import { BodyTooLarge, readLimited } from '@/lib/core/http';
 import {
   federationPreviewOrigin,
+  inboxActorByKey,
   publicActorBy,
   publicMediaBy,
   publicOutbox,
   publicPostBy,
+  recordFederatedActivity,
 } from '@/lib/server/federation';
+import {
+  FederationCryptoError,
+  parseLegacySignature,
+  verifyLegacyFederationRequest,
+} from '@/lib/server/federation-crypto';
+import { fetchRemoteActorKey } from '@/lib/server/federation-remote';
+import { ApiError } from '@/lib/server/supabase';
+import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
 type Context = { params: Promise<{ path: string[] }> };
@@ -85,6 +97,95 @@ export async function GET(request: Request, context: Context) {
   }
   return Response.json(federationStatus, { status: 503, headers: { 'Cache-Control': 'no-store' } });
 }
-export function POST() {
-  return Response.json(federationStatus, { status: 503, headers: { 'Cache-Control': 'no-store' } });
+const activityUrlValue = z.url({ protocol: /^https$/ }).max(2048);
+const inboundActivity = z
+  .object({
+    id: activityUrlValue,
+    type: z.enum(['Follow', 'Undo']),
+    actor: activityUrlValue,
+    object: z.union([
+      activityUrlValue,
+      z.object({
+        id: activityUrlValue,
+        type: z.literal('Follow'),
+        actor: activityUrlValue,
+        object: activityUrlValue,
+      }),
+    ]),
+  })
+  .passthrough();
+
+export async function POST(request: Request, context: Context) {
+  try {
+    const origin = federationPreviewOrigin();
+    const { path } = await context.params;
+    if (!origin || path.length !== 3 || path[0] !== 'actors' || path[2] !== 'inbox')
+      return Response.json(federationStatus, {
+        status: 503,
+        headers: { 'Cache-Control': 'no-store' },
+      });
+    const contentType = request.headers.get('content-type') ?? '';
+    if (
+      !contentType.startsWith('application/activity+json') &&
+      !contentType.startsWith('application/ld+json')
+    )
+      throw new ApiError('Formato ActivityPub non valido.', 415);
+    const local = await inboxActorByKey(path[1]);
+    if (!local) throw new ApiError('Inbox non trovata.', 404);
+    const body = await readLimited(request, 131072);
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(new TextDecoder().decode(body));
+    } catch {
+      throw new ApiError('Attività non valida.', 400);
+    }
+    const activity = inboundActivity.parse(parsed);
+    const localActor = actorUrl(origin, local.actor.actorKey);
+    if (activity.type === 'Follow') {
+      if (activity.object !== localActor) throw new ApiError('Destinatario non valido.', 400);
+    } else {
+      const object = activity.object;
+      if (
+        typeof object !== 'object' ||
+        object.actor !== activity.actor ||
+        object.object !== localActor
+      )
+        throw new ApiError('Undo non valido.', 400);
+    }
+    const { keyId } = parseLegacySignature(request.headers.get('signature'));
+    const remote = await fetchRemoteActorKey(keyId, activity.actor);
+    verifyLegacyFederationRequest(request, body, remote.publicKeyPem);
+    const reply =
+      activity.type === 'Follow'
+        ? {
+            '@context': 'https://www.w3.org/ns/activitystreams',
+            id: new URL(`/ap/activities/${crypto.randomUUID()}`, origin).href,
+            type: 'Accept',
+            actor: localActor,
+            object: activity,
+          }
+        : null;
+    await recordFederatedActivity(local.id, activity, remote.inbox, reply);
+    return new Response(null, { status: 202, headers: { 'Cache-Control': 'no-store' } });
+  } catch (error) {
+    const status =
+      error instanceof BodyTooLarge
+        ? 413
+        : error instanceof ApiError
+          ? error.status
+          : error instanceof FederationCryptoError
+            ? 401
+            : error instanceof z.ZodError
+              ? 400
+              : 500;
+    const message =
+      status === 413
+        ? 'Attività troppo grande.'
+        : status === 500
+          ? 'Inbox non disponibile.'
+          : error instanceof Error
+            ? error.message
+            : 'Attività non valida.';
+    return Response.json({ error: message }, { status, headers: { 'Cache-Control': 'no-store' } });
+  }
 }

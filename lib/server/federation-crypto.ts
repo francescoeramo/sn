@@ -3,16 +3,20 @@ import {
   createDecipheriv,
   createHash,
   createSign,
+  createVerify,
   generateKeyPairSync,
   randomBytes,
+  timingSafeEqual,
 } from 'node:crypto';
 
 export class FederationCryptoError extends Error {}
 
 const encodedPart = /^[A-Za-z0-9+/]+={0,2}$/;
+const signatureParameter = /(?:^|,)\s*([a-zA-Z]+)="([^"]*)"\s*(?=,|$)/g;
 
 function encryptionKey(secret: string | undefined) {
-  if (!secret) throw new FederationCryptoError('Chiave di cifratura della federazione non configurata.');
+  if (!secret)
+    throw new FederationCryptoError('Chiave di cifratura della federazione non configurata.');
   const key = Buffer.from(secret, 'base64');
   if (key.length !== 32)
     throw new FederationCryptoError('Chiave di cifratura della federazione non valida.');
@@ -87,4 +91,88 @@ export function signedFederationHeaders(
     Signature: `keyId="${keyId}",algorithm="rsa-sha256",headers="(request-target) host date digest",signature="${signature}"`,
     'Content-Type': 'application/activity+json',
   } as const;
+}
+
+export function parseLegacySignature(value: string | null) {
+  if (!value || value.length > 8192) throw new FederationCryptoError('Firma HTTP mancante.');
+  const parameters = new Map<string, string>();
+  let matched = '';
+  for (const match of value.matchAll(signatureParameter)) {
+    matched += match[0];
+    const name = match[1].toLowerCase();
+    if (parameters.has(name)) throw new FederationCryptoError('Firma HTTP non valida.');
+    parameters.set(name, match[2]);
+  }
+  if (matched.replace(/^,|\s/g, '') !== value.replace(/\s/g, ''))
+    throw new FederationCryptoError('Firma HTTP non valida.');
+  const keyId = parameters.get('keyid');
+  const signature = parameters.get('signature');
+  const headers = (parameters.get('headers') ?? 'date').toLowerCase().split(/\s+/);
+  const algorithm = parameters.get('algorithm');
+  if (
+    !keyId ||
+    !signature ||
+    (algorithm && !['rsa-sha256', 'hs2019'].includes(algorithm.toLowerCase())) ||
+    new Set(headers).size !== headers.length ||
+    !['(request-target)', 'host', 'date', 'digest'].every((header) => headers.includes(header))
+  )
+    throw new FederationCryptoError('Firma HTTP non valida.');
+  try {
+    const url = new URL(keyId);
+    if (url.protocol !== 'https:' || url.username || url.password)
+      throw new FederationCryptoError('Identità della firma non valida.');
+  } catch (error) {
+    if (error instanceof FederationCryptoError) throw error;
+    throw new FederationCryptoError('Identità della firma non valida.');
+  }
+  return { keyId, signature, headers };
+}
+
+export function verifyLegacyFederationRequest(
+  request: { method: string; url: string; headers: Headers },
+  body: Uint8Array,
+  publicKeyPem: string,
+  now = new Date(),
+) {
+  const parsed = parseLegacySignature(request.headers.get('signature'));
+  const date = request.headers.get('date');
+  const digest = request.headers.get('digest');
+  if (!date || !digest) throw new FederationCryptoError('Firma HTTP incompleta.');
+  const signedAt = Date.parse(date);
+  if (
+    !Number.isFinite(signedAt) ||
+    signedAt < now.getTime() - 12 * 60 * 60 * 1000 ||
+    signedAt > now.getTime() + 5 * 60 * 1000
+  )
+    throw new FederationCryptoError('Data della firma HTTP non valida.');
+  const expectedDigest = Buffer.from(createHash('sha256').update(body).digest('base64'));
+  const digestMatch = /^SHA-256=([A-Za-z0-9+/]+={0,2})$/i.exec(digest);
+  if (!digestMatch) throw new FederationCryptoError('Digest HTTP non valido.');
+  const suppliedDigest = Buffer.from(digestMatch[1]);
+  if (
+    suppliedDigest.length !== expectedDigest.length ||
+    !timingSafeEqual(suppliedDigest, expectedDigest)
+  )
+    throw new FederationCryptoError('Digest HTTP non valido.');
+  const url = new URL(request.url);
+  if (request.headers.get('host') !== url.host)
+    throw new FederationCryptoError('Destinazione della firma HTTP non valida.');
+  const lines = parsed.headers.map((header) => {
+    if (header === '(request-target)')
+      return `${header}: ${request.method.toLowerCase()} ${url.pathname}${url.search}`;
+    const value = request.headers.get(header);
+    if (!value) throw new FederationCryptoError(`Header firmato mancante: ${header}.`);
+    return `${header}: ${value}`;
+  });
+  const verifier = createVerify('RSA-SHA256');
+  verifier.update(lines.join('\n'));
+  verifier.end();
+  let valid = false;
+  try {
+    valid = verifier.verify(publicKeyPem, parsed.signature, 'base64');
+  } catch {
+    valid = false;
+  }
+  if (!valid) throw new FederationCryptoError('Firma HTTP non valida.');
+  return parsed.keyId;
 }

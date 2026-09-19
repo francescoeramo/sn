@@ -318,6 +318,67 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
     ).rejects.toThrow('permission denied');
   });
 
+  it('deduplica Follow federati e applica Undo dello stesso attore', async () => {
+    await asUser(
+      alice,
+      'update public.profiles set is_private=false,federation_enabled=true where id=$1',
+      [alice],
+    );
+    const follow = {
+      id: 'https://remote.example/activities/follow-1',
+      type: 'Follow',
+      actor: 'https://remote.example/users/marta',
+      object: 'https://sn.example/ap/actors/alice',
+    };
+    const reply = {
+      id: 'https://sn.example/ap/activities/accept-1',
+      type: 'Accept',
+      actor: 'https://sn.example/ap/actors/alice',
+      object: follow,
+    };
+    await db.exec('set role service_role');
+    try {
+      const first = await db.query<{ receive_federated_activity: string }>(
+        'select public.receive_federated_activity($1,$2,$3,$4)',
+        [alice, follow, 'https://remote.example/inbox', reply],
+      );
+      const duplicate = await db.query<{ receive_federated_activity: string }>(
+        'select public.receive_federated_activity($1,$2,$3,$4)',
+        [alice, follow, 'https://remote.example/inbox', reply],
+      );
+      expect(first.rows[0].receive_federated_activity).toBe('followed');
+      expect(duplicate.rows[0].receive_federated_activity).toBe('duplicate');
+    } finally {
+      await db.exec('reset role');
+    }
+    expect((await db.query('select * from public.federation_remote_follows')).rows).toHaveLength(1);
+    expect((await db.query('select * from private.federation_queue')).rows).toHaveLength(1);
+
+    const undo = {
+      id: 'https://remote.example/activities/undo-1',
+      type: 'Undo',
+      actor: follow.actor,
+      object: follow,
+    };
+    await db.exec('set role service_role');
+    try {
+      await db.query('select public.receive_federated_activity($1,$2,$3,$4)', [
+        alice,
+        undo,
+        'https://remote.example/inbox',
+        null,
+      ]);
+    } finally {
+      await db.exec('reset role');
+    }
+    expect((await db.query('select * from public.federation_remote_follows')).rows).toHaveLength(0);
+    await asUser(
+      alice,
+      'update public.profiles set is_private=true,federation_enabled=false where id=$1',
+      [alice],
+    );
+  });
+
   it('crea gruppi tramite invito e mantiene sempre un admin', async () => {
     const created = await asUser<{ create_chat_group: string }>(
       alice,

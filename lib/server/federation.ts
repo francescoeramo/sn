@@ -65,6 +65,46 @@ export async function publicActorBy(field: 'username' | 'actor_key', value: stri
   } satisfies PublicActor;
 }
 
+export async function inboxActorByKey(actorKey: string) {
+  const { data, error } = await adminDatabase()
+    .from('profiles')
+    .select('id,actor_key,username,display_name,bio')
+    .eq('actor_key', actorKey)
+    .eq('is_private', false)
+    .eq('federation_enabled', true)
+    .eq('disabled', false)
+    .maybeSingle();
+  if (error || !data) return null;
+  const publicKeyPem = await actorPublicKey(data.id);
+  if (!publicKeyPem) return null;
+  return {
+    id: data.id,
+    actor: {
+      actorKey: data.actor_key,
+      username: data.username,
+      displayName: data.display_name,
+      bio: data.bio,
+      publicKeyPem,
+    } satisfies PublicActor,
+  };
+}
+
+export async function recordFederatedActivity(
+  localActorId: string,
+  activity: Record<string, unknown>,
+  remoteInbox: string,
+  reply: Record<string, unknown> | null,
+) {
+  const { data, error } = await adminDatabase().rpc('receive_federated_activity', {
+    target_actor: localActorId,
+    activity,
+    remote_inbox_url: remoteInbox,
+    reply,
+  });
+  if (error) throw new ApiError('Attività federata non accettata.', 400);
+  return data as string;
+}
+
 export async function publicPostBy(activityKey: string) {
   const db = adminDatabase();
   const { data: post, error } = await db

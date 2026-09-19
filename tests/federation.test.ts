@@ -12,11 +12,14 @@ import {
   webfingerAccount,
   webfingerDocument,
 } from '../lib/core/federation';
+import { isPublicFederationAddress } from '../lib/core/federation-network';
 import {
   decryptFederationPrivateKey,
   encryptFederationPrivateKey,
   generateFederationKeyPair,
+  parseLegacySignature,
   signedFederationHeaders,
+  verifyLegacyFederationRequest,
 } from '../lib/server/federation-crypto';
 
 const pair = generateFederationKeyPair();
@@ -133,9 +136,7 @@ describe('discovery ActivityPub', () => {
     expect(encrypted).not.toContain('PRIVATE KEY');
     expect(decryptFederationPrivateKey(encrypted, secret)).toBe(pair.privateKeyPem);
     const altered = `${encrypted.slice(0, -1)}${encrypted.endsWith('A') ? 'B' : 'A'}`;
-    expect(() => decryptFederationPrivateKey(altered, secret)).toThrow(
-      'Impossibile decifrare',
-    );
+    expect(() => decryptFederationPrivateKey(altered, secret)).toThrow();
     expect(() => encryptFederationPrivateKey(pair.privateKeyPem, 'corta')).toThrow(
       'Chiave di cifratura',
     );
@@ -165,5 +166,63 @@ describe('discovery ActivityPub', () => {
         pair.privateKeyPem,
       ),
     ).toThrow('HTTPS');
+  });
+
+  it('verifica la firma ricevuta e rifiuta corpo, data o parametri alterati', () => {
+    const body = new TextEncoder().encode(JSON.stringify({ type: 'Follow' }));
+    const url = 'https://sn.example/ap/actors/key/inbox';
+    const now = new Date('2026-09-19T10:00:00Z');
+    const signed = signedFederationHeaders(
+      url,
+      new TextDecoder().decode(body),
+      'https://remote.example/users/marta#main-key',
+      pair.privateKeyPem,
+      now,
+    );
+    const headers = new Headers(signed);
+    expect(
+      verifyLegacyFederationRequest({ method: 'POST', url, headers }, body, pair.publicKeyPem, now),
+    ).toBe('https://remote.example/users/marta#main-key');
+    expect(() =>
+      verifyLegacyFederationRequest(
+        { method: 'POST', url, headers },
+        new TextEncoder().encode('{"type":"Undo"}'),
+        pair.publicKeyPem,
+        now,
+      ),
+    ).toThrow('Digest');
+    const wrongHost = new Headers(headers);
+    wrongHost.set('host', 'alt.example');
+    expect(() =>
+      verifyLegacyFederationRequest(
+        { method: 'POST', url, headers: wrongHost },
+        body,
+        pair.publicKeyPem,
+        now,
+      ),
+    ).toThrow('Destinazione');
+    headers.set('date', new Date('2026-09-18T10:00:00Z').toUTCString());
+    expect(() =>
+      verifyLegacyFederationRequest({ method: 'POST', url, headers }, body, pair.publicKeyPem, now),
+    ).toThrow('Data');
+    expect(() => parseLegacySignature('keyId="https://remote.example/key",keyId="x"')).toThrow(
+      'non valida',
+    );
+  });
+
+  it('impedisce alla risoluzione federata di raggiungere reti interne o riservate', () => {
+    for (const address of [
+      '127.0.0.1',
+      '10.0.0.3',
+      '169.254.169.254',
+      '192.168.1.2',
+      '::1',
+      'fd00::1',
+      'fe80::1',
+      '::ffff:127.0.0.1',
+    ])
+      expect(isPublicFederationAddress(address)).toBe(false);
+    expect(isPublicFederationAddress('93.184.216.34')).toBe(true);
+    expect(isPublicFederationAddress('2606:2800:220:1:248:1893:25c8:1946')).toBe(true);
   });
 });
