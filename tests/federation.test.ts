@@ -2,6 +2,7 @@ import { createVerify } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import {
   actorDocument,
+  actorDeleteDocument,
   canonicalOrigin,
   createDocument,
   deleteDocument,
@@ -102,6 +103,17 @@ describe('discovery ActivityPub', () => {
       type: 'Tombstone',
     });
     expect(activity.to).toEqual(['https://www.w3.org/ns/activitystreams#Public']);
+  });
+
+  it('ritira l’attore quando il profilo lascia la federazione', () => {
+    const activity = actorDeleteDocument(
+      'https://sn.example',
+      actor.actorKey,
+      '53f9fb1c-50a7-428c-a814-44839f06d959',
+    );
+    expect(activity.actor).toBe(actorDocument('https://sn.example', actor).id);
+    expect(activity.object).toBe(activity.actor);
+    expect(activity.type).toBe('Delete');
   });
 
   it('descrive un allegato senza esporre il percorso del bucket privato', () => {

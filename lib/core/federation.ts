@@ -162,6 +162,18 @@ export function deleteDocument(origin: string, post: PublicPost, deleteKey: stri
   } as const;
 }
 
+export function actorDeleteDocument(origin: string, actorKey: string, deleteKey: string) {
+  const actor = actorUrl(origin, actorKey);
+  return {
+    '@context': 'https://www.w3.org/ns/activitystreams',
+    id: activityUrl(origin, deleteKey),
+    type: 'Delete',
+    actor,
+    to: [publicAudience],
+    object: actor,
+  } as const;
+}
+
 export function outboxDocument(origin: string, actor: PublicActor, totalItems: number) {
   const id = outboxUrl(origin, actor.actorKey);
   return {

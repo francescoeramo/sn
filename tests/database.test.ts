@@ -417,11 +417,58 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
       await db.exec('reset role');
     }
     expect((await db.query('select * from public.federation_remote_follows')).rows).toHaveLength(0);
+
+    const secondFollow = { ...follow, id: 'https://remote.example/activities/follow-2' };
+    const secondReply = {
+      ...reply,
+      id: 'https://sn.example/ap/activities/accept-2',
+      object: secondFollow,
+    };
+    await db.exec('set role service_role');
+    try {
+      await db.query('select public.receive_federated_activity($1,$2,$3,$4)', [
+        alice,
+        secondFollow,
+        'https://remote.example/inbox',
+        secondReply,
+      ]);
+    } finally {
+      await db.exec('reset role');
+    }
     await asUser(
       alice,
       'update public.profiles set is_private=true,federation_enabled=false where id=$1',
       [alice],
     );
+    expect(
+      await asUser<{ federation_enabled: boolean }>(
+        alice,
+        'select federation_enabled from public.profiles where id=$1',
+        [alice],
+      ),
+    ).toEqual([{ federation_enabled: false }]);
+    await db.exec('set role service_role');
+    try {
+      const claimed = await db.query<{ actor_id: string; event_key: string }>(
+        'select actor_id,event_key from public.claim_federation_withdrawals(4)',
+      );
+      expect(claimed.rows).toHaveLength(1);
+      const actorDelete = {
+        id: `https://sn.example/ap/activities/${claimed.rows[0].event_key}`,
+        type: 'Delete',
+        actor: reply.actor,
+        object: reply.actor,
+      };
+      const completed = await db.query<{ complete_federation_withdrawal: number }>(
+        'select public.complete_federation_withdrawal($1,$2)',
+        [claimed.rows[0].actor_id, actorDelete],
+      );
+      expect(completed.rows[0].complete_federation_withdrawal).toBe(1);
+    } finally {
+      await db.exec('reset role');
+    }
+    expect((await db.query('select * from public.federation_remote_follows')).rows).toHaveLength(0);
+    expect((await db.query('select * from private.federation_withdrawals')).rows).toHaveLength(0);
   });
 
   it('crea gruppi tramite invito e mantiene sempre un admin', async () => {

@@ -1,5 +1,5 @@
 import 'server-only';
-import { actorUrl, federationDeliveryOutcome } from '@/lib/core/federation';
+import { actorDeleteDocument, actorUrl, federationDeliveryOutcome } from '@/lib/core/federation';
 import { adminDatabase, ApiError, checked } from './supabase';
 import { decryptFederationPrivateKey, signedFederationHeaders } from './federation-crypto';
 import { requirePublicFederationUrl } from './federation-remote';
@@ -58,13 +58,32 @@ async function deliver(item: Delivery) {
 }
 
 export async function processFederationQueue() {
-  if (process.env.FEDERATION_DELIVERY_ENABLED !== 'true')
-    return { processed: 0, delivered: 0, retried: 0, failed: 0 };
   const db = adminDatabase();
+  const origin = process.env.APP_ORIGIN;
+  let withdrawals = 0;
+  if (origin) {
+    const pending = checked(await db.rpc('claim_federation_withdrawals', { batch_size: 4 })) as {
+      actor_id: string;
+      event_key: string;
+      actor_key: string;
+    }[];
+    for (const item of pending) {
+      const activity = actorDeleteDocument(origin, item.actor_key, item.event_key);
+      checked(
+        await db.rpc('complete_federation_withdrawal', {
+          target_actor: item.actor_id,
+          outgoing: activity,
+        }),
+      );
+      withdrawals++;
+    }
+  }
+  if (process.env.FEDERATION_DELIVERY_ENABLED !== 'true')
+    return { processed: 0, delivered: 0, retried: 0, failed: 0, withdrawals };
   const items = checked(
     await db.rpc('claim_federation_deliveries', { batch_size: 4 }),
   ) as Delivery[];
-  const result = { processed: items.length, delivered: 0, retried: 0, failed: 0 };
+  const result = { processed: items.length, delivered: 0, retried: 0, failed: 0, withdrawals };
   for (const item of items) {
     let decision: ReturnType<typeof federationDeliveryOutcome>;
     try {
