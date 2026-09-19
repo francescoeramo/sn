@@ -51,7 +51,67 @@ SN è pensato per chi vuole ritrovare il piacere di condividere e conversare sen
 - Player dedicato per video brevi verticali (massimo 20 secondi).
 - Compressione e ottimizzazione lato client prima dell'upload per preservare le quote del server.
 
-### 4. Messaggistica diretta: conservazione, Chat temporanea e stati
+### 4. Cerchie e spazi condivisi
+
+Le cerchie sono piccoli spazi privati e intenzionali: per esempio «Amici stretti», «Calcetto», «Famiglia» o «Università». Non sono community pubbliche né canali di promozione.
+
+- Ogni persona può creare una cerchia, scegliere nome, immagine facoltativa e descrizione breve, quindi invitare solo contatti con follow reciproco. L’invito richiede accettazione; un membro può uscire in ogni momento.
+- Creatore e amministratori possono rinominare la cerchia, invitare, rimuovere membri e archiviare lo spazio. La rimozione revoca l’accesso ai contenuti futuri e a quelli non già esportati; non dichiarare revocabili screenshot o copie locali.
+- Nel compositore, oltre a «follower approvati» e «community», l’autore può selezionare una o più cerchie. La visibilità effettiva è l’intersezione tra privacy del profilo, blocchi e membership della cerchia.
+- Ogni cerchia offre un mini-feed cronologico, finito e senza ranking, con post, commenti, sondaggi ed eventi pertinenti. Non introdurre contatori pubblici, inviti automatici o suggerimenti invasivi.
+- Schema proposto: `circles`, `circle_members`, `circle_posts`; RLS deve rendere leggibili membership e contenuti solo ai membri autorizzati, e impedire al client di assegnarsi ruoli o iscriversi da solo.
+
+### 5. Eventi semplici
+
+Gli eventi servono a trasformare una conversazione in un incontro o in un’attività reale, non a creare una piattaforma di ticketing.
+
+- Un evento ha titolo, descrizione breve, inizio, fine facoltativa, luogo testuale facoltativo, visibilità (cerchia o follower approvati) e limite di partecipanti facoltativo. Non richiedere geolocalizzazione, mappe di terze parti o dati di pagamento.
+- Gli invitati rispondono «Partecipo», «Forse» o «Non riesco». L’organizzatore vede l’elenco solo quando la visibilità dell’evento lo consente; i partecipanti non devono poter dedurre la presenza di persone a cui non hanno accesso.
+- La pagina evento raccoglie commenti, aggiornamenti dell’organizzatore e un album collaborativo post-evento. Promemoria locali o email sono strettamente opt-in: niente pressione, streak o notifiche ripetute.
+- Le modifiche sostanziali a data, luogo o annullamento generano una singola notifica utile agli invitati. Lo storico delle risposte deve registrare il consenso e rispettare blocchi, rimozioni e cancellazione account.
+- Schema proposto: `events`, `event_invites`, `event_updates`; API idempotenti per risposte e RLS separata per organizzatore, invitati e contenuti associati.
+
+### 6. Digest scelto dall’utente
+
+Il digest dà un motivo sereno per rientrare senza trasformare il feed in un flusso infinito.
+
+- La persona sceglie se riceverlo, con frequenza giornaliera o settimanale, fascia oraria e canale (in-app; email solo con consenso esplicito). L’impostazione predefinita è disattivata.
+- Il digest contiene al massimo cinque elementi recenti: aggiornamenti di persone, cerchie o argomenti selezionati dall’utente e contenuti non ancora visti. Non usa profili comportamentali, punteggi opachi, dati di lettura venduti a terzi o contenuti sponsorizzati.
+- L’ordinamento resta spiegabile: prima contenuti delle cerchie scelte, poi persone preferite, quindi altri post cronologici. Ogni elemento indica perché compare e permette di ridurre o interrompere quel tipo di suggerimento.
+- La generazione deve avvenire lato server con query che rispettano RLS, privacy, blocchi, scadenze e avvisi di contenuto. Salvare solo preferenze e ultimo invio, non una cronologia di sorveglianza delle aperture.
+- Schema proposto: `digest_preferences`, `digest_deliveries`; un job pianificato crea il digest e segna l’invio in modo idempotente. Se il job non è disponibile, l’app resta pienamente utilizzabile.
+
+### 7. Post collaborativi e album condivisi
+
+I post collaborativi permettono di raccontare insieme un viaggio, una serata o un progetto senza duplicare foto e conversazioni.
+
+- L’autore invita collaboratori tra i contatti reciproci prima o dopo la pubblicazione. Un invito deve essere accettato; rifiuto, uscita o rimozione non generano notifiche pubbliche.
+- I collaboratori approvati possono aggiungere media, didascalie o aggiornamenti entro i permessi scelti dall’autore. L’autore conserva la possibilità di pubblicare, nascondere elementi, revocare un invito o archiviare l’album.
+- Un album ha una visibilità unica e comprensibile: non combinare automaticamente pubblico, privato e cerchie diverse. Se cambia la visibilità, spiegare a collaboratori e autore chi avrà accesso prima di confermare.
+- Per gli eventi, l’album è disponibile solo dopo l’inizio dell’evento e può essere chiuso dall’organizzatore. Foto e video rispettano le quote già previste e non richiedono servizi di elaborazione esterni.
+- Schema proposto: `collaborative_posts`, `collaborators`, `album_items`; transazioni e RLS devono impedire contributi dopo rimozione, blocco o scadenza della visibilità.
+
+### 8. Conversazioni più espressive
+
+Prendere la chiarezza di Discord e Threads, senza introdurre meccaniche di amplificazione pubblica.
+
+- Reazioni leggere e private a post, commenti e messaggi: un set piccolo, accessibile e senza classifica. L’autore può vedere che una persona ha reagito, ma il feed non espone un punteggio competitivo.
+- Risposte a uno specifico commento o passaggio di testo, con citazione breve e collegamento al contesto originale. Le citazioni devono rispettare la visibilità del contenuto: niente testo trasportato in uno spazio a cui il lettore non ha accesso.
+- Menzioni con consenso: ogni persona sceglie chi può menzionarla. La notifica è singola, silenziabile e non viene inviata se esiste un blocco reciproco o se il contenuto non è visibile al destinatario.
+- Condivisione interna con nota personale: invia un post a una chat o cerchia consentita, senza creare una copia pubblica, un contatore di condivisioni o una cascata di repost.
+- Schema proposto: `reactions`, `comment_replies`, `mentions`, `shares`; vincoli univoci per una reazione per persona/tipo/oggetto e trigger per notifiche idempotenti.
+
+### 9. Scoperta intenzionale e salute del prodotto
+
+SN deve aiutare a ritrovare persone e conversazioni, non decidere cosa guardare per massimizzare il tempo trascorso.
+
+- La pagina Esplora propone solo percorsi espliciti: hashtag scelti, persone seguite da contatti già approvati e profili locali o nuovi che l’utente ha scelto di cercare. Ogni sezione dice quale relazione o interesse l’ha prodotta e può essere nascosta.
+- Non creare una scheda «Per te» a scorrimento infinito, autoplay generalizzato, classifiche, streak, premi di presenza, badge di engagement o notifiche progettate per richiamare senza novità concreta.
+- Misurare la salute della beta con dati aggregati e minimizzati: persone che completano onboarding, seguono almeno cinque contatti, ricevono una risposta, partecipano a una cerchia o a un evento e tornano volontariamente entro 7/28 giorni. Non usare questi dati per profilazione individuale o ranking.
+- Prima di ogni rilascio, definire un’ipotesi verificabile e una soglia di successo: ad esempio «una cerchia attiva deve produrre almeno una conversazione reciproca alla settimana, senza aumentare le notifiche non richieste». Raccogliere anche feedback qualitativo da utenti reali.
+- Offrire in Impostazioni comandi chiari per silenziare notifiche, interrompere digest, lasciare cerchie e scaricare/eliminare i dati associati.
+
+### 10. Messaggistica diretta: conservazione, Chat temporanea e stati
 Le chat sono consentite esclusivamente tra utenti con follow reciproco e devono garantire:
 
 - **Vera Crittografia End-to-End (E2EE)**:
@@ -163,6 +223,16 @@ La compatibilità con Mastodon e Pixelfed rimane un obiettivo architetturale:
    - Fase 2: Schema DB e logica per messaggi effimeri e media in chat.
    - Fase 3: Architettura E2EE con Web Crypto API e gestione chiavi locali.
    - Fase 4: Schema e moderazione per Community Notes (anti-fake news) e Annunci etici con approvazione admin.
+   - Fase 5: Collaudo cloud della beta esistente con account reali, Auth, Storage, SMTP, RLS e test desktop/mobile. Non iniziare le nuove funzioni sociali prima di questa verifica.
+   - Fase 6: Cerchie e relativo mini-feed; poi eventi. Consegnare migrazione, API, demo IndexedDB, policy RLS, test SQL e test E2E in un unico blocco per ciascuna funzione.
+   - Fase 7: Digest opt-in, album/post collaborativi, reazioni/menzioni/condivisioni interne e scoperta intenzionale. Per ogni rilascio verificare che privacy, blocchi, quote, export, cancellazione account e stati vuoti restino coerenti.
+
+### Decisioni correnti che prevalgono sulle sezioni storiche
+
+- Le funzioni delle sezioni 4–9 sono proposte da implementare, non funzionalità già disponibili.
+- La sostenibilità tramite pubblicità o sponsorizzazioni non è autorizzata nella beta corrente. Non implementare annunci, placement nel feed, targeting o moduli commerciali senza una nuova decisione esplicita del proprietario.
+- Il feed resta cronologico e finito. Il digest e la scoperta intenzionale non autorizzano ranking opaco né un feed algoritmico.
+- Non definire l’intera piattaforma «zero-knowledge»: la cifratura end-to-end riguarda i nuovi messaggi e allegati secondo lo stato e i limiti documentati nel progetto. Ogni promessa di sicurezza va verificata prima di essere pubblicata.
 
 ### Decisione confermata: eliminazione in chat
 
