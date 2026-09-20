@@ -471,6 +471,118 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
     expect((await db.query('select * from private.federation_withdrawals')).rows).toHaveLength(0);
   });
 
+  it('registra Like federati, Undo e Reject senza creare profili locali', async () => {
+    await asUser(
+      alice,
+      'update public.profiles set is_private=false,federation_enabled=true where id=$1',
+      [alice],
+    );
+    const post = (
+      await db.query<{ id: string; activity_key: string }>(
+        'select id,activity_key from public.posts where author_id=$1 order by created_at limit 1',
+        [alice],
+      )
+    ).rows[0];
+    const actor = 'https://remote.example/users/marta';
+    const inbox = 'https://remote.example/inbox';
+    const follow = {
+      id: 'https://remote.example/activities/follow-reactions',
+      type: 'Follow',
+      actor,
+      object: 'https://sn.example/ap/actors/alice',
+    };
+    const accept = {
+      id: 'https://sn.example/ap/activities/accept-reactions',
+      type: 'Accept',
+      actor: follow.object,
+      object: follow,
+    };
+    const like = {
+      id: 'https://remote.example/activities/like-1',
+      type: 'Like',
+      actor,
+      object: `https://sn.example/ap/objects/${post.activity_key}`,
+    };
+    await db.exec('set role service_role');
+    try {
+      await db.query('select public.receive_federated_activity($1,$2,$3,$4,$5)', [
+        alice,
+        follow,
+        inbox,
+        accept,
+        null,
+      ]);
+      const liked = await db.query<{ receive_federated_activity: string }>(
+        'select public.receive_federated_activity($1,$2,$3,$4,$5)',
+        [alice, like, inbox, null, post.id],
+      );
+      expect(liked.rows[0].receive_federated_activity).toBe('liked');
+
+      const reject = {
+        id: 'https://remote.example/activities/reject-1',
+        type: 'Reject',
+        actor,
+        object: accept.id,
+      };
+      const rejected = await db.query<{ receive_federated_activity: string }>(
+        'select public.receive_federated_activity($1,$2,$3,$4,$5)',
+        [alice, reject, inbox, null, null],
+      );
+      expect(rejected.rows[0].receive_federated_activity).toBe('rejected');
+
+      const undo = {
+        id: 'https://remote.example/activities/undo-like-1',
+        type: 'Undo',
+        actor,
+        object: like,
+      };
+      const undone = await db.query<{ receive_federated_activity: string }>(
+        'select public.receive_federated_activity($1,$2,$3,$4,$5)',
+        [alice, undo, inbox, null, post.id],
+      );
+      expect(undone.rows[0].receive_federated_activity).toBe('undone');
+    } finally {
+      await db.exec('reset role');
+    }
+    expect((await db.query('select * from public.federation_remote_likes')).rows).toHaveLength(0);
+    expect((await db.query('select * from public.federation_rejections')).rows).toHaveLength(1);
+    expect(
+      (
+        await db.query<{ status: string }>(
+          'select status from private.federation_queue where activity_id=$1',
+          [accept.id],
+        )
+      ).rows,
+    ).toEqual([{ status: 'pending' }]);
+    expect((await db.query('select count(*)::integer as count from public.profiles')).rows).toEqual(
+      [{ count: 3 }],
+    );
+    await asUser(
+      alice,
+      'update public.profiles set is_private=true,federation_enabled=false where id=$1',
+      [alice],
+    );
+  });
+
+  it('applica la blocklist federata soltanto dal ruolo di servizio', async () => {
+    await db.query(
+      "insert into private.blocked_instances(hostname,reason) values('remote.example','abusi ripetuti')",
+    );
+    await db.exec('set role service_role');
+    try {
+      const blocked = await db.query<{ federation_instance_blocked: boolean }>(
+        "select public.federation_instance_blocked('REMOTE.EXAMPLE.')",
+      );
+      expect(blocked.rows[0].federation_instance_blocked).toBe(true);
+    } finally {
+      await db.exec('reset role');
+    }
+    await expect(
+      asUser(alice, "select public.federation_instance_blocked('remote.example')"),
+    ).rejects.toThrow('permission denied');
+    await db.query("delete from private.blocked_instances where hostname='remote.example'");
+  });
+
   it('crea gruppi tramite invito e mantiene sempre un admin', async () => {
     const created = await asUser<{ create_chat_group: string }>(
       alice,

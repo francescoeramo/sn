@@ -69,3 +69,11 @@ Le Note della comunità sono testate nel database contro letture di estranei, pr
 - Lint, TypeScript e build produzione superati.
 - Due test mirati verificano la guida del comando e il rifiuto di destinazioni relative o interne al repository.
 - Non è stato eseguito un dump remoto: servono la connessione del progetto SN e una chiave GPG dedicata. La prima prova di ripristino e la copia separata degli oggetti Storage restano attività operative.
+
+## 20 settembre 2026 — reazioni federate e blocklist
+
+- Lint e TypeScript superati; 99 test unitari e SQL PGlite superati.
+- L’inbox registra `Like`, `Undo` e `Reject` firmati senza creare profili locali né mescolare i like remoti con quelli della community.
+- La blocklist delle istanze viene controllata prima e dopo la risoluzione DNS ed è interrogabile soltanto dal service role.
+- La build Turbopack non è arrivata alla compilazione: l’host ha negato l’apertura della porta interna usata dal loader CSS. Il tentativo Webpack si è fermato leggendo l’output `tsc --showConfig`; il typecheck diretto passa. Questi due errori di ambiente non sostituiscono una build riuscita in CI.
+- Migrazione non applicata al progetto cloud e interoperabilità con Mastodon o Pixelfed non collaudata. Il worker delle consegne resta disattivato.

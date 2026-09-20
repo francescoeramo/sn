@@ -12,6 +12,7 @@ import { BodyTooLarge, readLimited } from '@/lib/core/http';
 import {
   federationPreviewOrigin,
   inboxActorByKey,
+  inboxPostByActivityKey,
   publicActorBy,
   publicMediaBy,
   publicOutbox,
@@ -98,22 +99,48 @@ export async function GET(request: Request, context: Context) {
   return Response.json(federationStatus, { status: 503, headers: { 'Cache-Control': 'no-store' } });
 }
 const activityUrlValue = z.url({ protocol: /^https$/ }).max(2048);
-const inboundActivity = z
+const embeddedActivity = z
   .object({
     id: activityUrlValue,
-    type: z.enum(['Follow', 'Undo']),
+    type: z.enum(['Follow', 'Like']),
     actor: activityUrlValue,
-    object: z.union([
-      activityUrlValue,
-      z.object({
-        id: activityUrlValue,
-        type: z.literal('Follow'),
-        actor: activityUrlValue,
-        object: activityUrlValue,
-      }),
-    ]),
+    object: activityUrlValue,
   })
   .passthrough();
+const inboundActivity = z.discriminatedUnion('type', [
+  z
+    .object({
+      id: activityUrlValue,
+      type: z.literal('Follow'),
+      actor: activityUrlValue,
+      object: activityUrlValue,
+    })
+    .passthrough(),
+  z
+    .object({
+      id: activityUrlValue,
+      type: z.literal('Like'),
+      actor: activityUrlValue,
+      object: activityUrlValue,
+    })
+    .passthrough(),
+  z
+    .object({
+      id: activityUrlValue,
+      type: z.literal('Undo'),
+      actor: activityUrlValue,
+      object: embeddedActivity,
+    })
+    .passthrough(),
+  z
+    .object({
+      id: activityUrlValue,
+      type: z.literal('Reject'),
+      actor: activityUrlValue,
+      object: z.union([activityUrlValue, z.object({ id: activityUrlValue }).passthrough()]),
+    })
+    .passthrough(),
+]);
 
 export async function POST(request: Request, context: Context) {
   try {
@@ -141,16 +168,29 @@ export async function POST(request: Request, context: Context) {
     }
     const activity = inboundActivity.parse(parsed);
     const localActor = actorUrl(origin, local.actor.actorKey);
+    let targetPostId: string | null = null;
     if (activity.type === 'Follow') {
       if (activity.object !== localActor) throw new ApiError('Destinatario non valido.', 400);
-    } else {
+    } else if (activity.type === 'Like') {
+      const object = new URL(activity.object);
+      const prefix = new URL('/ap/objects/', origin).href;
+      if (!object.href.startsWith(prefix)) throw new ApiError('Oggetto Like non valido.', 400);
+      targetPostId = await inboxPostByActivityKey(object.href.slice(prefix.length), local.id);
+      if (!targetPostId) throw new ApiError('Oggetto Like non trovato.', 404);
+    } else if (activity.type === 'Undo') {
       const object = activity.object;
       if (
-        typeof object !== 'object' ||
         object.actor !== activity.actor ||
-        object.object !== localActor
+        (object.type === 'Follow' && object.object !== localActor)
       )
         throw new ApiError('Undo non valido.', 400);
+      if (object.type === 'Like') {
+        const url = new URL(object.object);
+        const prefix = new URL('/ap/objects/', origin).href;
+        if (!url.href.startsWith(prefix)) throw new ApiError('Undo non valido.', 400);
+        targetPostId = await inboxPostByActivityKey(url.href.slice(prefix.length), local.id);
+        if (!targetPostId) throw new ApiError('Oggetto Like non trovato.', 404);
+      }
     }
     const { keyId } = parseLegacySignature(request.headers.get('signature'));
     const remote = await fetchRemoteActorKey(keyId, activity.actor);
@@ -165,7 +205,7 @@ export async function POST(request: Request, context: Context) {
             object: activity,
           }
         : null;
-    await recordFederatedActivity(local.id, activity, remote.inbox, reply);
+    await recordFederatedActivity(local.id, activity, remote.inbox, reply, targetPostId);
     return new Response(null, { status: 202, headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     const status =

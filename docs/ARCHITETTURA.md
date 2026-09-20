@@ -22,7 +22,7 @@ Gli UUID `actor_key` e `activity_key` permettono URI stabili indipendenti dal no
 
 Senza questa anteprima, `/.well-known/webfinger` e `/ap/*` rispondono **503**. L’anteprima non espone storie, account privati, account disabilitati o post che contengono soltanto media. Foto e video allegati ai post testuali passano da `/ap/media/:activity_key`: il server ricontrolla profilo, opt-in e post prima di leggere il file dal bucket privato, senza esporne il percorso. Le collezioni `followers` e `following` restano vuote e non rivelano il grafo sociale locale.
 
-Ogni attore federato ha una coppia RSA. Il database conserva la chiave privata cifrata con AES-256-GCM e `FEDERATION_KEY_SECRET`; l’Actor pubblica solo la chiave pubblica. L’inbox accetta soltanto `Follow` e `Undo` con firma RSA-SHA256, digest, data e destinatario validi. Il recupero della chiave remota richiede HTTPS, vieta redirect e indirizzi privati o riservati, limita risposta e tempo di attesa. Le attività sono deduplicate nel database. Rendere privato o sospendere un profilo disattiva la federazione nello stesso aggiornamento e crea un ritiro persistente; la manutenzione accoda la `Delete` dell’attore prima di cancellare i follower remoti.
+Ogni attore federato ha una coppia RSA. Il database conserva la chiave privata cifrata con AES-256-GCM e `FEDERATION_KEY_SECRET`; l’Actor pubblica solo la chiave pubblica. L’inbox accetta `Follow`, `Like`, `Reject` e i relativi `Undo` con firma RSA-SHA256, digest, data e destinatario validi. I like remoti sono separati dagli account e dai like locali; i reject registrano la risposta senza confonderla con l’esito HTTP della consegna. Il recupero della chiave remota richiede HTTPS, applica la blocklist prima e dopo la risoluzione DNS, vieta redirect e indirizzi privati o riservati e limita risposta e tempo di attesa. Le attività sono deduplicate nel database. Rendere privato o sospendere un profilo disattiva la federazione nello stesso aggiornamento e crea un ritiro persistente; la manutenzione accoda la `Delete` dell’attore prima di cancellare i follower remoti.
 
 Gli `Accept`, i `Create` dei nuovi post testuali e i relativi `Delete` entrano in una coda persistente, con una consegna distinta per ogni inbox remota. `POST /api/maintenance` li consegna solo con `FEDERATION_DELIVERY_ENABLED=true`, quattro per esecuzione, con firma HTTP e retry dopo 5 minuti, 30 minuti, 2 ore e 12 ore. Il quinto errore chiude la consegna. La produzione resta disattivata e non è stata provata con server Mastodon o Pixelfed reali.
 
@@ -31,7 +31,7 @@ La libreria candidata è [Fedify](https://fedify.dev/manual/federation), con [li
 Per abilitarla servono:
 
 1. Dominio stabile, rotazione delle chiavi e passaggio controllato dall’anteprima alla produzione.
-2. Attività `Like`, `Reject` e `Delete`, ritiri quando un account diventa privato e gestione degli oggetti remoti. Storie e DM restano locali.
+2. Gestione degli oggetti remoti e delle attività in uscita collegate. Storie e DM restano locali.
 3. Cache verificata delle chiavi remote e difesa dal DNS rebinding prima di attivare fetch e consegne su Internet.
 4. Test incrociati con Mastodon e Pixelfed, moderazione delle istanze e bilancio di banda/storage prima dell’apertura.
 

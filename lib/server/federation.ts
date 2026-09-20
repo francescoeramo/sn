@@ -94,15 +94,29 @@ export async function recordFederatedActivity(
   activity: Record<string, unknown>,
   remoteInbox: string,
   reply: Record<string, unknown> | null,
+  targetPostId: string | null = null,
 ) {
   const { data, error } = await adminDatabase().rpc('receive_federated_activity', {
     target_actor: localActorId,
     activity,
     remote_inbox_url: remoteInbox,
     reply,
+    target_post: targetPostId,
   });
   if (error) throw new ApiError('Attività federata non accettata.', 400);
   return data as string;
+}
+
+export async function inboxPostByActivityKey(activityKey: string, actorId: string) {
+  const { data, error } = await adminDatabase()
+    .from('posts')
+    .select('id')
+    .eq('activity_key', activityKey)
+    .eq('author_id', actorId)
+    .neq('kind', 'story')
+    .is('expires_at', null)
+    .maybeSingle();
+  return error || !data ? null : data.id;
 }
 
 export async function enqueueFederatedActivity(

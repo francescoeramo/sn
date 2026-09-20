@@ -3,17 +3,27 @@ import { lookup } from 'node:dns/promises';
 import { isIP } from 'node:net';
 import { isPublicFederationAddress } from '@/lib/core/federation-network';
 import { readLimited } from '@/lib/core/http';
-import { ApiError } from './supabase';
+import { adminDatabase, ApiError } from './supabase';
+
+async function requireAllowedInstance(hostname: string) {
+  const { data, error } = await adminDatabase().rpc('federation_instance_blocked', {
+    candidate: hostname,
+  });
+  if (error) throw new ApiError('Blocklist federata non disponibile.', 503);
+  if (data) throw new ApiError('Istanza federata bloccata.', 403);
+}
 
 async function requirePublicHost(url: URL) {
   if (url.protocol !== 'https:' || url.username || url.password || !url.hostname)
     throw new ApiError('Indirizzo federato non valido.', 400);
+  await requireAllowedInstance(url.hostname);
   const directFamily = isIP(url.hostname);
   const addresses = directFamily
     ? [{ address: url.hostname }]
     : await lookup(url.hostname, { all: true, verbatim: true });
   if (!addresses.length || addresses.some(({ address }) => !isPublicFederationAddress(address)))
     throw new ApiError('Indirizzo federato non consentito.', 400);
+  await requireAllowedInstance(url.hostname);
 }
 
 export async function requirePublicFederationUrl(value: string) {
