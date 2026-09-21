@@ -26,7 +26,15 @@ export function Avatar({
     </span>
   );
 }
-export function Media({ post, demo = false }: { post: Post; demo?: boolean }) {
+export function Media({
+  post,
+  demo = false,
+  priority = false,
+}: {
+  post: Post;
+  demo?: boolean;
+  priority?: boolean;
+}) {
   if (!post.media_path) return null;
   const src = demo ? post.media_path : `/api/media?path=${encodeURIComponent(post.media_path)}`;
   return post.media_type?.startsWith('video/') ? (
@@ -47,6 +55,7 @@ export function Media({ post, demo = false }: { post: Post; demo?: boolean }) {
       alt={post.alt || 'Immagine condivisa'}
       width={960}
       height={660}
+      loading={priority ? 'eager' : 'lazy'}
       unoptimized
     />
   );

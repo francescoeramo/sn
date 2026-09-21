@@ -2,7 +2,7 @@ import 'server-only';
 import { actorDeleteDocument, actorUrl, federationDeliveryOutcome } from '@/lib/core/federation';
 import { adminDatabase, ApiError, checked } from './supabase';
 import { decryptFederationPrivateKey, signedFederationHeaders } from './federation-crypto';
-import { requirePublicFederationUrl } from './federation-remote';
+import { postPinnedFederationActivity, requirePublicFederationUrl } from './federation-remote';
 
 type Delivery = {
   queue_id: string;
@@ -42,15 +42,11 @@ async function deliver(item: Delivery) {
   const keyId = `${actorUrl(origin, profile.actor_key)}#main-key`;
   let status: number | null = null;
   try {
-    const response = await fetch(target, {
-      method: 'POST',
-      headers: signedFederationHeaders(target.href, body, keyId, privateKey),
+    status = await postPinnedFederationActivity(
+      target,
+      signedFederationHeaders(target.href, body, keyId, privateKey),
       body,
-      redirect: 'manual',
-      signal: AbortSignal.timeout(10000),
-    });
-    status = response.status;
-    await response.body?.cancel();
+    );
   } catch {
     status = null;
   }

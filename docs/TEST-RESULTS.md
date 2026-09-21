@@ -77,3 +77,14 @@ Le Note della comunità sono testate nel database contro letture di estranei, pr
 - La blocklist delle istanze viene controllata prima e dopo la risoluzione DNS ed è interrogabile soltanto dal service role.
 - La build Turbopack non è arrivata alla compilazione: l’host ha negato l’apertura della porta interna usata dal loader CSS. Il tentativo Webpack si è fermato leggendo l’output `tsc --showConfig`; il typecheck diretto passa. Questi due errori di ambiente non sostituiscono una build riuscita in CI.
 - Migrazione non applicata al progetto cloud e interoperabilità con Mastodon o Pixelfed non collaudata. Il worker delle consegne resta disattivato.
+
+## 21 settembre 2026 — oggetti e chiavi remote
+
+- Lint e TypeScript superati; 71 test mirati unitari e SQL PGlite superati. La suite completa conta 104 test superati.
+- L’inbox accetta Note incorporate con `Create`, ne applica la sostituzione completa con `Update` e cancella il contenuto con `Delete`. I test coprono deduplicazione, attribuzione e origin, destinatario, tombstone e isolamento dal ruolo `authenticated`.
+- La cache delle chiavi remote è privata, scade dopo sei ore e consente un solo recupero dopo il fallimento di una firma verificata con una chiave memorizzata.
+- Il recupero del documento dell’attore e il worker delle consegne usano l’indirizzo pubblico già verificato per la connessione HTTPS, senza una seconda risoluzione DNS.
+- Il limite di 120 attività l’ora per attore remoto e destinatario locale viene applicato nel database dopo la deduplicazione; i retry della stessa attività restano idempotenti.
+- Le Note remote sono convertite da HTML a testo inerte, ordinate insieme ai post locali e mostrate con origine e limiti delle interazioni. La demo è stata verificata a 1440 × 1000 e 390 × 844 senza overflow o error overlay. Axe non rileva violazioni WCAG A/AA; restano due controlli di contrasto inconcludenti su glifi decorativi. Il detector Impeccable non segnala problemi nei file modificati.
+- Playwright: 47 test su 50 sono passati nel primo giro contro il server di sviluppo. Due test delle notifiche esponevano una corsa nell’apertura di IndexedDB, corretta aspettando il caricamento della piazza. Il test mobile delle Note era coperto dal toolbar di sviluppo di Next; l’invocazione diretta dello stesso pulsante ha confermato il flusso. I percorsi falliti sono poi passati su entrambe le viewport.
+- La build Turbopack non arriva alla compilazione perché l’host vieta la porta interna del loader CSS anche fuori sandbox. Il fallback Webpack si ferma leggendo `tsc --showConfig`; il typecheck diretto passa. Migrazione cloud e interoperabilità con server federati reali non sono state eseguite. Il worker delle consegne resta disattivato.

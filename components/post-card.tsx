@@ -18,6 +18,7 @@ export function PostCard({
   post,
   state,
   demo,
+  priority = false,
   now,
   onAction,
   onProfile,
@@ -26,6 +27,7 @@ export function PostCard({
   post: Post;
   state: Snapshot;
   demo: boolean;
+  priority?: boolean;
   now: number;
   onAction: (a: Action) => Promise<boolean>;
   onProfile: (id: string) => void;
@@ -180,7 +182,7 @@ export function PostCard({
                 </p>
               </section>
             )}
-            <Media post={post} demo={demo} />
+            <Media post={post} demo={demo} priority={priority} />
             <PostNotes loadedNotes={post.notes} postId={post.id} state={state} onAction={act} />
           </>
         )}

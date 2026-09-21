@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   actorDocument,
   actorDeleteDocument,
+  activityPubPlainText,
   canonicalOrigin,
   createDocument,
   deleteDocument,
@@ -12,6 +13,8 @@ import {
   objectUrl,
   outboxDocument,
   outboxPageDocument,
+  remoteObjectWriteError,
+  remoteDeleteError,
   webfingerAccount,
   webfingerDocument,
 } from '../lib/core/federation';
@@ -44,6 +47,12 @@ const post = {
 };
 
 describe('discovery ActivityPub', () => {
+  it('converte il contenuto HTML remoto in testo inerte', () => {
+    expect(activityPubPlainText('<p>Pane &amp; foto<br>oggi</p><script>alert(1)</script>')).toBe(
+      'Pane & foto\noggi\nalert(1)',
+    );
+    expect(activityPubPlainText('Una &#x1F35E; e due&nbsp;foto')).toBe('Una 🍞 e due foto');
+  });
   it('usa solo una origine canonica sicura', () => {
     expect(canonicalOrigin('https://sn.example/path')).toBe('https://sn.example');
     expect(canonicalOrigin('javascript:alert(1)')).toBeNull();
@@ -272,5 +281,43 @@ describe('discovery ActivityPub', () => {
       outcome: 'failed',
       retryAt: null,
     });
+  });
+
+  it('accetta Note remote solo dallo stesso attore e per la inbox destinataria', () => {
+    const localActor = 'https://sn.example/ap/actors/alice';
+    const create = {
+      id: 'https://remote.example/activities/create-1',
+      actor: 'https://remote.example/users/marta',
+      to: [localActor],
+      object: {
+        id: 'https://remote.example/notes/1',
+        attributedTo: 'https://remote.example/users/marta',
+      },
+    };
+    expect(remoteObjectWriteError(create, localActor)).toBeNull();
+    expect(
+      remoteObjectWriteError(
+        { ...create, to: ['https://elsewhere.example/users/leo'] },
+        localActor,
+      ),
+    ).toBe('Oggetto remoto non indirizzato a questa inbox.');
+    expect(
+      remoteObjectWriteError(
+        { ...create, object: { ...create.object, id: 'https://forged.example/notes/1' } },
+        localActor,
+      ),
+    ).toBe('Oggetto remoto non attribuito all’attore.');
+  });
+
+  it('autorizza Delete soltanto sullo stesso origin dell’attore', () => {
+    const remove = {
+      id: 'https://remote.example/activities/delete-1',
+      actor: 'https://remote.example/users/marta',
+      object: { id: 'https://remote.example/notes/1' },
+    };
+    expect(remoteDeleteError(remove)).toBeNull();
+    expect(remoteDeleteError({ ...remove, object: 'https://forged.example/notes/1' })).toBe(
+      'Cancellazione remota non autorizzata.',
+    );
   });
 });

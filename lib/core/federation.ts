@@ -13,6 +13,20 @@ export type PublicPost = {
   published: string;
   media: { path: string; type: string; alt: string } | null;
 };
+type Audience = string | string[] | undefined;
+type RemoteCreate = {
+  id: string;
+  actor: string;
+  to?: Audience;
+  cc?: Audience;
+  object: {
+    id: string;
+    attributedTo: string;
+    to?: Audience;
+    cc?: Audience;
+  };
+};
+type RemoteDelete = { id: string; actor: string; object: string | { id: string } };
 
 const publicAudience = 'https://www.w3.org/ns/activitystreams#Public';
 const escapeHtml = (value: string) =>
@@ -66,6 +80,61 @@ export function canonicalOrigin(value: string | undefined) {
   } catch {
     return null;
   }
+}
+
+export function activityPubPlainText(value: string) {
+  const withBreaks = value.replace(/<\/?(?:p|div|li|br)\b[^>]*>/gi, '\n');
+  const withoutTags = withBreaks.replace(/<[^>]*>/g, '');
+  return withoutTags
+    .replace(/&#(\d+);/g, (_, code: string) => String.fromCodePoint(Number(code)))
+    .replace(/&#x([\da-f]+);/gi, (_, code: string) =>
+      String.fromCodePoint(Number.parseInt(code, 16)),
+    )
+    .replace(
+      /&(amp|lt|gt|quot|apos|nbsp);/g,
+      (entity) =>
+        ({
+          '&amp;': '&',
+          '&lt;': '<',
+          '&gt;': '>',
+          '&quot;': '"',
+          '&apos;': "'",
+          '&nbsp;': ' ',
+        })[entity] ?? entity,
+    )
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function recipients(...values: Audience[]) {
+  return new Set(values.flatMap((value) => (typeof value === 'string' ? [value] : (value ?? []))));
+}
+
+export function remoteObjectWriteError(activity: RemoteCreate, localActor: string) {
+  const actorOrigin = new URL(activity.actor).origin;
+  if (
+    new URL(activity.id).origin !== actorOrigin ||
+    new URL(activity.object.id).origin !== actorOrigin ||
+    activity.object.attributedTo !== activity.actor
+  )
+    return 'Oggetto remoto non attribuito all’attore.';
+  const addressed = recipients(activity.to, activity.cc, activity.object.to, activity.object.cc);
+  if (
+    !addressed.has(localActor) &&
+    !addressed.has(`${localActor}/followers`) &&
+    !addressed.has(publicAudience)
+  )
+    return 'Oggetto remoto non indirizzato a questa inbox.';
+  return null;
+}
+
+export function remoteDeleteError(activity: RemoteDelete) {
+  const objectId = typeof activity.object === 'string' ? activity.object : activity.object.id;
+  const actorOrigin = new URL(activity.actor).origin;
+  return new URL(activity.id).origin === actorOrigin && new URL(objectId).origin === actorOrigin
+    ? null
+    : 'Cancellazione remota non autorizzata.';
 }
 
 export function webfingerAccount(resource: string | null, origin: string) {

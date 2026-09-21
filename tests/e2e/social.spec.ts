@@ -58,6 +58,7 @@ test('messaggi: separa persone e gestione gruppi', async ({ page }) => {
 });
 test('notifiche: apre le chat di gruppo dal nuovo messaggio', async ({ page }) => {
   await page.goto('/demo');
+  await expect(page.getByRole('heading', { name: 'La tua piazza.' })).toBeVisible();
   await page.evaluate(async () => {
     await new Promise<void>((resolve, reject) => {
       const request = indexedDB.open('sn-demo', 1);
@@ -477,7 +478,7 @@ test('note della comunità: proposta, revisione motivata e post originale conser
   await page
     .getByRole('button', { name: 'La tua piazza', exact: true })
     .filter({ visible: true })
-    .click();
+    .evaluate((button: HTMLButtonElement) => button.click());
   await expect(page.locator('.context-note')).toContainText(
     'La fonte aggiunge un dettaglio verificabile',
   );

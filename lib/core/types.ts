@@ -24,6 +24,17 @@ export type Post = {
   created_at: string;
   expires_at: string | null;
 };
+export type RemotePost = {
+  id: string;
+  actor: string;
+  username: string;
+  display_name: string;
+  host: string;
+  body: string;
+  content_warning: string;
+  created_at: string;
+  updated_at: string | null;
+};
 export type PollOption = { id: string; poll_id: string; position: number; body: string };
 export type Poll = { post_id: string; closes_at: string | null; options: PollOption[] };
 export type PollResult = { poll_id: string; option_id: string; votes: number; selected: boolean };
@@ -140,6 +151,7 @@ export type Snapshot = {
   me: Profile;
   profiles: Profile[];
   posts: Post[];
+  remotePosts?: RemotePost[];
   comments: Comment[];
   likes: { user_id: string; post_id: string }[];
   follows: Follow[];

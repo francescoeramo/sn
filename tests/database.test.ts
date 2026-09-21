@@ -564,6 +564,116 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
     );
   });
 
+  it('conserva Note remote e applica Delete senza esporle ai membri', async () => {
+    await asUser(
+      alice,
+      'update public.profiles set is_private=false,federation_enabled=true where id=$1',
+      [alice],
+    );
+    const actor = 'https://remote.example/users/marta';
+    const objectId = 'https://remote.example/notes/remote-1';
+    const create = {
+      id: 'https://remote.example/activities/create-1',
+      type: 'Create',
+      actor,
+      object: {
+        id: objectId,
+        type: 'Note',
+        attributedTo: actor,
+        content: '<p>Pane e fotografie.</p>',
+        summary: 'Cibo',
+        sensitive: true,
+        published: '2026-09-21T10:00:00Z',
+      },
+    };
+    await db.exec('set role service_role');
+    try {
+      const created = await db.query<{ receive_federated_activity: string }>(
+        'select public.receive_federated_activity($1,$2,$3,$4,$5)',
+        [alice, create, 'https://remote.example/inbox', null, null],
+      );
+      expect(created.rows[0].receive_federated_activity).toBe('created');
+      const duplicate = await db.query<{ receive_federated_activity: string }>(
+        'select public.receive_federated_activity($1,$2,$3,$4,$5)',
+        [alice, create, 'https://remote.example/inbox', null, null],
+      );
+      expect(duplicate.rows[0].receive_federated_activity).toBe('duplicate');
+
+      const update = {
+        id: 'https://remote.example/activities/update-1',
+        type: 'Update',
+        actor,
+        object: {
+          ...create.object,
+          content: '<p>Pane, fotografie e marmellata.</p>',
+          summary: null,
+          sensitive: false,
+        },
+      };
+      const updated = await db.query<{ receive_federated_activity: string }>(
+        'select public.receive_federated_activity($1,$2,$3,$4,$5)',
+        [alice, update, 'https://remote.example/inbox', null, null],
+      );
+      expect(updated.rows[0].receive_federated_activity).toBe('updated');
+      expect(
+        (
+          await db.query<{ content: string; sensitive: boolean; updated_at: Date | null }>(
+            'select content,sensitive,updated_at from public.federation_remote_objects where object_id=$1',
+            [objectId],
+          )
+        ).rows,
+      ).toEqual([
+        {
+          content: '<p>Pane, fotografie e marmellata.</p>',
+          sensitive: false,
+          updated_at: expect.any(Date),
+        },
+      ]);
+
+      const remove = {
+        id: 'https://remote.example/activities/delete-1',
+        type: 'Delete',
+        actor,
+        object: { id: objectId, type: 'Tombstone' },
+      };
+      const deleted = await db.query<{ receive_federated_activity: string }>(
+        'select public.receive_federated_activity($1,$2,$3,$4,$5)',
+        [alice, remove, 'https://remote.example/inbox', null, null],
+      );
+      expect(deleted.rows[0].receive_federated_activity).toBe('deleted');
+    } finally {
+      await db.exec('reset role');
+    }
+    expect(
+      (
+        await db.query<{
+          content: string;
+          summary: string | null;
+          sensitive: boolean;
+          deleted_at: Date | null;
+        }>(
+          'select content,summary,sensitive,deleted_at from public.federation_remote_objects where object_id=$1',
+          [objectId],
+        )
+      ).rows,
+    ).toEqual([
+      {
+        content: '',
+        summary: null,
+        sensitive: false,
+        deleted_at: expect.any(Date),
+      },
+    ]);
+    await expect(asUser(alice, 'select * from public.federation_remote_objects')).rejects.toThrow(
+      'permission denied',
+    );
+    await asUser(
+      alice,
+      'update public.profiles set is_private=true,federation_enabled=false where id=$1',
+      [alice],
+    );
+  });
+
   it('applica la blocklist federata soltanto dal ruolo di servizio', async () => {
     await db.query(
       "insert into private.blocked_instances(hostname,reason) values('remote.example','abusi ripetuti')",
@@ -581,6 +691,84 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
       asUser(alice, "select public.federation_instance_blocked('remote.example')"),
     ).rejects.toThrow('permission denied');
     await db.query("delete from private.blocked_instances where hostname='remote.example'");
+  });
+
+  it('protegge la cache delle chiavi remote dai client', async () => {
+    await db.exec('set role service_role');
+    try {
+      await db.query(
+        `insert into public.federation_remote_actor_keys(
+          key_id,remote_actor,remote_inbox,public_key_pem
+        ) values($1,$2,$3,$4)`,
+        [
+          'https://remote.example/users/marta#main-key',
+          'https://remote.example/users/marta',
+          'https://remote.example/inbox',
+          '-----BEGIN PUBLIC KEY-----test',
+        ],
+      );
+    } finally {
+      await db.exec('reset role');
+    }
+    await expect(
+      asUser(alice, 'select * from public.federation_remote_actor_keys'),
+    ).rejects.toThrow('permission denied');
+  });
+
+  it('limita le attività firmate di un attore remoto senza bloccare i duplicati', async () => {
+    const actor = 'https://rate.example/users/noisy';
+    await asUser(
+      bob,
+      'update public.profiles set is_private=false,federation_enabled=true where id=$1',
+      [bob],
+    );
+    await db.exec('set role service_role');
+    try {
+      await db.query(
+        `insert into public.federation_inbox(activity_id,local_actor_id,remote_actor,activity_type)
+         select 'https://rate.example/activities/' || value,$1,$2,'Create'
+         from generate_series(1,120) value`,
+        [bob, actor],
+      );
+      const duplicate = {
+        id: 'https://rate.example/activities/1',
+        type: 'Create',
+        actor,
+        object: {
+          id: 'https://rate.example/notes/1',
+          type: 'Note',
+          attributedTo: actor,
+          content: 'Duplicato',
+        },
+      };
+      const repeated = await db.query<{ receive_federated_activity: string }>(
+        'select public.receive_federated_activity($1,$2,$3,$4,$5)',
+        [bob, duplicate, 'https://rate.example/inbox', null, null],
+      );
+      expect(repeated.rows[0].receive_federated_activity).toBe('duplicate');
+      const excess = {
+        ...duplicate,
+        id: 'https://rate.example/activities/121',
+        object: { ...duplicate.object, id: 'https://rate.example/notes/121' },
+      };
+      await expect(
+        db.query('select public.receive_federated_activity($1,$2,$3,$4,$5)', [
+          bob,
+          excess,
+          'https://rate.example/inbox',
+          null,
+          null,
+        ]),
+      ).rejects.toThrow('Limite attività federate superato');
+      await db.query('delete from public.federation_inbox where remote_actor=$1', [actor]);
+    } finally {
+      await db.exec('reset role');
+    }
+    await asUser(
+      bob,
+      'update public.profiles set is_private=true,federation_enabled=false where id=$1',
+      [bob],
+    );
   });
 
   it('crea gruppi tramite invito e mantiene sempre un admin', async () => {

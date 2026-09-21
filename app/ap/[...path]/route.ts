@@ -7,6 +7,8 @@ import {
   noteDocument,
   outboxDocument,
   outboxPageDocument,
+  remoteObjectWriteError,
+  remoteDeleteError,
 } from '@/lib/core/federation';
 import { BodyTooLarge, readLimited } from '@/lib/core/http';
 import {
@@ -99,6 +101,21 @@ export async function GET(request: Request, context: Context) {
   return Response.json(federationStatus, { status: 503, headers: { 'Cache-Control': 'no-store' } });
 }
 const activityUrlValue = z.url({ protocol: /^https$/ }).max(2048);
+const audienceValue = z.union([activityUrlValue, z.array(activityUrlValue).max(64)]);
+const remoteNote = z
+  .object({
+    id: activityUrlValue,
+    type: z.literal('Note'),
+    attributedTo: activityUrlValue,
+    content: z.string().max(20000).default(''),
+    summary: z.string().max(500).nullable().optional(),
+    sensitive: z.boolean().optional(),
+    published: z.iso.datetime({ offset: true }).optional(),
+    inReplyTo: activityUrlValue.nullable().optional(),
+    to: audienceValue.optional(),
+    cc: audienceValue.optional(),
+  })
+  .passthrough();
 const embeddedActivity = z
   .object({
     id: activityUrlValue,
@@ -138,6 +155,37 @@ const inboundActivity = z.discriminatedUnion('type', [
       type: z.literal('Reject'),
       actor: activityUrlValue,
       object: z.union([activityUrlValue, z.object({ id: activityUrlValue }).passthrough()]),
+    })
+    .passthrough(),
+  z
+    .object({
+      id: activityUrlValue,
+      type: z.literal('Create'),
+      actor: activityUrlValue,
+      object: remoteNote,
+      to: audienceValue.optional(),
+      cc: audienceValue.optional(),
+    })
+    .passthrough(),
+  z
+    .object({
+      id: activityUrlValue,
+      type: z.literal('Update'),
+      actor: activityUrlValue,
+      object: remoteNote,
+      to: audienceValue.optional(),
+      cc: audienceValue.optional(),
+    })
+    .passthrough(),
+  z
+    .object({
+      id: activityUrlValue,
+      type: z.literal('Delete'),
+      actor: activityUrlValue,
+      object: z.union([
+        activityUrlValue,
+        z.object({ id: activityUrlValue, type: z.literal('Tombstone').optional() }).passthrough(),
+      ]),
     })
     .passthrough(),
 ]);
@@ -191,10 +239,22 @@ export async function POST(request: Request, context: Context) {
         targetPostId = await inboxPostByActivityKey(url.href.slice(prefix.length), local.id);
         if (!targetPostId) throw new ApiError('Oggetto Like non trovato.', 404);
       }
+    } else if (activity.type === 'Create' || activity.type === 'Update') {
+      const reason = remoteObjectWriteError(activity, localActor);
+      if (reason) throw new ApiError(reason, 400);
+    } else if (activity.type === 'Delete') {
+      const reason = remoteDeleteError(activity);
+      if (reason) throw new ApiError(reason, 400);
     }
     const { keyId } = parseLegacySignature(request.headers.get('signature'));
-    const remote = await fetchRemoteActorKey(keyId, activity.actor);
-    verifyLegacyFederationRequest(request, body, remote.publicKeyPem);
+    let remote = await fetchRemoteActorKey(keyId, activity.actor);
+    try {
+      verifyLegacyFederationRequest(request, body, remote.publicKeyPem);
+    } catch (error) {
+      if (!(error instanceof FederationCryptoError) || !remote.cached) throw error;
+      remote = await fetchRemoteActorKey(keyId, activity.actor, true);
+      verifyLegacyFederationRequest(request, body, remote.publicKeyPem);
+    }
     const reply =
       activity.type === 'Follow'
         ? {

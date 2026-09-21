@@ -15,8 +15,15 @@ import {
 } from '@/lib/core/rules';
 import { identity, checked, adminDatabase, ApiError } from './supabase';
 import { enqueueFederatedActivity, ensureFederationActorKey, publicPostBy } from './federation';
-import { createDocument, deleteDocument } from '@/lib/core/federation';
-import type { Bookmark, ModerationAccount, Post, SavedCursor, SavedPage } from '@/lib/core/types';
+import { activityPubPlainText, createDocument, deleteDocument } from '@/lib/core/federation';
+import type {
+  Bookmark,
+  ModerationAccount,
+  Post,
+  RemotePost,
+  SavedCursor,
+  SavedPage,
+} from '@/lib/core/types';
 
 type Database = Awaited<ReturnType<typeof identity>>['db'];
 async function bookmarksFor(db: Database): Promise<Bookmark[]> {
@@ -57,6 +64,58 @@ async function savedPageFor(db: Database, before?: SavedCursor): Promise<SavedPa
     nextCursor:
       rows.length === 40 && last ? { created_at: last.created_at, post_id: last.post_id } : null,
   };
+}
+async function remotePostsFor(userId: string): Promise<RemotePost[]> {
+  const db = adminDatabase();
+  const objects = checked(
+    await db
+      .from('federation_remote_objects')
+      .select('object_id,remote_actor,content,summary,published_at,received_at,updated_at')
+      .eq('local_actor_id', userId)
+      .is('deleted_at', null)
+      .order('received_at', { ascending: false })
+      .limit(40),
+  ) as {
+    object_id: string;
+    remote_actor: string;
+    content: string;
+    summary: string | null;
+    published_at: string | null;
+    received_at: string;
+    updated_at: string | null;
+  }[];
+  const actors = [...new Set(objects.map((item) => item.remote_actor))];
+  const keys = actors.length
+    ? (checked(
+        await db
+          .from('federation_remote_actor_keys')
+          .select('remote_actor,username,display_name,fetched_at')
+          .in('remote_actor', actors)
+          .order('fetched_at', { ascending: false }),
+      ) as {
+        remote_actor: string;
+        username: string | null;
+        display_name: string | null;
+        fetched_at: string;
+      }[])
+    : [];
+  const identities = new Map(keys.map((key) => [key.remote_actor, key]));
+  return objects.map((item) => {
+    const identity = identities.get(item.remote_actor);
+    const actor = new URL(item.remote_actor);
+    const fallback = actor.pathname.split('/').filter(Boolean).at(-1) ?? actor.hostname;
+    return {
+      id: item.object_id,
+      actor: item.remote_actor,
+      username: identity?.username ?? fallback,
+      display_name: identity?.display_name ?? identity?.username ?? fallback,
+      host: actor.host,
+      body: activityPubPlainText(item.content),
+      content_warning: activityPubPlainText(item.summary ?? ''),
+      created_at: item.published_at ?? item.received_at,
+      updated_at: item.updated_at,
+    };
+  });
 }
 export async function savedPage(before?: SavedCursor) {
   const { db } = await identity();
@@ -111,10 +170,11 @@ export async function snapshot() {
     usage,
     notes,
   ] = results.map((r) => checked(r));
-  const [bookmarks, saved, pollResults] = await Promise.all([
+  const [bookmarks, saved, pollResults, remotePosts] = await Promise.all([
     bookmarksFor(db),
     savedPageFor(db),
     db.rpc('poll_results', { target_polls: posts.map((post: Post) => post.id) }).then(checked),
+    remotePostsFor(user.id),
   ]);
   const moderationAccounts = usage.isAdmin
     ? (checked(await db.rpc('moderation_accounts')) as ModerationAccount[])
@@ -127,6 +187,7 @@ export async function snapshot() {
     me: profile,
     profiles,
     posts,
+    remotePosts,
     comments,
     likes,
     follows,

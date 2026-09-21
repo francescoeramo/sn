@@ -41,6 +41,7 @@ import { AuthScreen } from './auth-screen';
 import { Composer } from './composer';
 import { NotesReview } from './community-notes';
 import { PostCard } from './post-card';
+import { RemotePostCard } from './remote-post-card';
 import { SecuritySettings } from './security-settings';
 import { WelcomeOnboarding } from './welcome-onboarding';
 import { ThemeSettings } from './theme-settings';
@@ -324,6 +325,16 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                 ? p.body.toLocaleLowerCase('it').includes(terms)
                 : filter === 'all' || p.author_id === me.id || followed.has(p.author_id)),
       );
+  const remoteFeed =
+    view === 'home' || view === 'search'
+      ? (state.remotePosts ?? []).filter(
+          (post) => view !== 'search' || post.body.toLocaleLowerCase('it').includes(terms),
+        )
+      : [];
+  const combinedFeed = [
+    ...feed.map((post) => ({ kind: 'local' as const, post })),
+    ...remoteFeed.map((post) => ({ kind: 'remote' as const, post })),
+  ].sort((a, b) => b.post.created_at.localeCompare(a.post.created_at));
   const tags = [
     ...new Set(visiblePosts.filter((p) => !p.content_warning).flatMap((p) => hashtags(p.body))),
   ].slice(0, 4);
@@ -675,19 +686,24 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
             )}
             {['home', 'search', 'profile', 'reels'].includes(view) && (
               <>
-                {feed.map((post) => (
-                  <PostCard
-                    key={post.id}
-                    post={post}
-                    state={state}
-                    demo={demo}
-                    now={clock}
-                    onAction={act}
-                    onProfile={(id) => navigate('profile', id)}
-                    onTag={search}
-                  />
-                ))}
-                {!feed.length && (
+                {combinedFeed.map((item, index) =>
+                  item.kind === 'local' ? (
+                    <PostCard
+                      key={item.post.id}
+                      post={item.post}
+                      state={state}
+                      demo={demo}
+                      priority={index === 0}
+                      now={clock}
+                      onAction={act}
+                      onProfile={(id) => navigate('profile', id)}
+                      onTag={search}
+                    />
+                  ) : (
+                    <RemotePostCard key={item.post.id} post={item.post} />
+                  ),
+                )}
+                {!combinedFeed.length && (
                   <Empty
                     kind={
                       showingSaved
@@ -789,7 +805,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                     Carica post precedenti
                   </button>
                 )}
-                {feed.length > 0 && !state.nextCursor && (
+                {combinedFeed.length > 0 && !state.nextCursor && (
                   <div className="feed-end">
                     <span>✳</span>
                     <p>

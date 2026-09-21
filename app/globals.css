@@ -914,6 +914,49 @@ small {
   transform-origin: center;
   animation: like-pulse 0.34s ease-out;
 }
+.federated-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 10px;
+  white-space: nowrap;
+}
+.remote-post-footer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px 15px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+.remote-post-footer p {
+  margin: 0;
+  max-width: 65ch;
+}
+.remote-post-footer a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  color: var(--violet-dark);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  white-space: nowrap;
+}
+@media (max-width: 480px) {
+  .remote-post-footer {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .remote-post-footer a {
+    margin-left: 0;
+    min-height: 32px;
+  }
+}
 .post-content.revealed > * {
   animation: content-reveal 0.22s ease-out;
 }
@@ -3442,6 +3485,22 @@ label small {
 }
 :root[data-theme='dark'] .form-message {
   color: #d4c0e6;
+}
+:root[data-theme='dark'] .demo-banner {
+  color: #d4c8e2;
+}
+:root[data-theme='dark'] .beta-pill {
+  color: #b8c6a5;
+}
+:root[data-theme='dark'] .hashtag {
+  color: var(--violet-dark);
+}
+:root[data-theme='dark'] .post-actions button,
+:root[data-theme='dark'] .comment-preview {
+  color: var(--muted);
+}
+:root[data-theme='dark'] .comment-preview strong {
+  color: var(--ink);
 }
 :root[data-theme='dark'] input::placeholder,
 :root[data-theme='dark'] textarea::placeholder {

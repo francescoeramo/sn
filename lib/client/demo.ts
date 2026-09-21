@@ -101,6 +101,19 @@ export function seed(): Snapshot {
         expires_at: new Date(Date.now() + 20 * 3600000).toISOString(),
       })),
     ],
+    remotePosts: [
+      {
+        id: 'https://social.example/notes/mercato-1',
+        actor: 'https://social.example/users/elena',
+        username: 'elena',
+        display_name: 'Elena',
+        host: 'social.example',
+        body: 'Il mercato di quartiere chiude alle due. Oggi ci sono cassette di pesche a metà prezzo davanti al banco in fondo.',
+        content_warning: '',
+        created_at: ago(24),
+        updated_at: null,
+      },
+    ],
     comments: [
       {
         id: uid(201),
