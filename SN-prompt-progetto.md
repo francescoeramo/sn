@@ -195,12 +195,15 @@ Per finanziare i costi di banda e storage al superamento del free-tier, il siste
 
 ---
 
-## Federazione Futura (ActivityPub / Fediverse)
+## Federazione ActivityPub / Fediverse
 
-La compatibilità con Mastodon e Pixelfed rimane un obiettivo architetturale:
-- Gli UUID `actor_key` e `activity_key` garantiscono identità stabili e indipendenti dall'username.
-- Le tabelle per code di federazione e istanze bloccate sono presenti nello schema (`private.federation_queue`, `private.blocked_instances`).
-- Attualmente gli endpoint `/.well-known/webfinger` e `/ap/*` restituiscono HTTP 503 per sicurezza, in attesa di un'integrazione completa con una libreria validata (es. [Fedify](https://fedify.dev/)) con rigorose difese anti-SSRF.
+La compatibilità con Mastodon e Pixelfed è disponibile come anteprima locale, non ancora come interoperabilità di produzione:
+- Gli UUID `actor_key` e `activity_key` garantiscono identità stabili e indipendenti dall'username. Solo i profili pubblici, attivi e con consenso federativo separato possono essere esposti.
+- Con `FEDERATION_DISCOVERY_PREVIEW=true` in sviluppo, WebFinger, Actor, outbox, Note/Create e allegati dei post testuali sono leggibili. Senza anteprima, e sempre in produzione finché non viene autorizzata l'apertura, `/.well-known/webfinger` e `/ap/*` rispondono HTTP 503.
+- L'inbox verifica firme HTTP, digest, data, destinatario e coerenza dell'origin per `Follow`, `Like`, `Reject`, `Create`, `Update`, `Delete` e relativi `Undo`. Le Note remote sono conservate in tabelle private, aggiornate o trasformate in tombstone e mostrate nel feed con origine federata esplicita, senza simulare interazioni locali non supportate.
+- Il recupero delle chiavi remote e le consegne applicano blocklist, HTTPS obbligatorio, divieto di redirect, limiti di tempo e dimensione e pinning dell'IP pubblico verificato contro il DNS rebinding. Le chiavi hanno cache privata di sei ore con un solo refresh dopo una firma fallita; le attività sono deduplicate e limitate a 120 l'ora per coppia attore remoto–destinatario locale.
+- `private.federation_queue` conserva `Accept`, `Create` e `Delete` in uscita con retry. Il worker di consegna è disattivato per impostazione predefinita e non va abilitato prima del collaudo con server Mastodon/Pixelfed dedicati, moderazione degli oggetti remoti e verifica del consumo di banda e storage.
+- Rendere privato o sospendere un profilo revoca l'opt-in e accoda il ritiro dell'attore. Storie e messaggi diretti restano locali. Non presentare SN come interoperabile con il Fediverso finché i test incrociati non sono conclusi.
 
 ---
 

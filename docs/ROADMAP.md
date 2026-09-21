@@ -1,6 +1,6 @@
 # SN — lavoro confermato
 
-Aggiornato il 13 settembre 2026. `PRODUCT.md` contiene i vincoli correnti; i documenti precedenti possono descrivere fasi superate. Nessuna monetizzazione pubblicitaria. Il completamento locale non equivale al collaudo o al deploy cloud.
+Aggiornato il 21 settembre 2026. `PRODUCT.md` contiene i vincoli correnti; i documenti precedenti possono descrivere fasi superate. Nessuna monetizzazione pubblicitaria. Il completamento locale non equivale al collaudo o al deploy cloud.
 
 | Area                                             | Stato e passo successivo                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -34,10 +34,22 @@ Requisiti implementati in demo, API e migrazione SQL, descritti nella sezione 4 
 
 Eliminazione personale per entrambi, globale solo per il mittente. Entrambi possono cambiare le impostazioni condivise. Ricevute e revisioni sopravvivono alla consegna solo dispositivo. Le chat di gruppo generano una notifica privata per ogni altro membro e salgono in cima all’elenco quando arriva un messaggio. Mancano collaudo cloud e prova di concorrenza su connessioni Postgres reali; i test locali verificano entrambi gli ordini lettura/modifica e ricevute obsolete. Le altre voci della tabella restano aperte.
 
-## Prima della federazione
+## Prima dell’apertura federata
 
 Collaudare le consegne e progettare la moderazione degli oggetti remoti. Gli attori pubblici, WebFinger, Create/Delete in uscita, firme HTTP, inbox Follow/Like/Reject/Undo e Create/Update/Delete in ingresso sono predisposti in anteprima locale. Le Note remote sono mostrate come contenuti federati senza controlli locali di like, commento o salvataggio; il collegamento all’origine richiede un’azione esplicita. Like, Note e risposte Reject remote restano dati federati separati dagli account locali. Il worker resta disattivato finché non passa i test con server dedicati. Chiarire blocchi e limiti della cancellazione su server terzi. Gli avvisi di contenuto vengono conservati sulle Note ricevute, ma il passaggio completo tra piattaforme non è ancora collaudato. Nessun profilo privato diventa automaticamente un attore pubblico.
 
+## Funzioni sociali successive al collaudo cloud
+
+Queste funzioni sono requisiti approvati ma non ancora disponibili. Procedere per blocchi completi, senza iniziarle prima del collaudo della beta corrente:
+
+1. Cerchie private su invito, mini-feed cronologico e RLS sulla membership; poi eventi semplici con risposte idempotenti, notifiche sobrie e album post-evento.
+2. Digest giornaliero o settimanale strettamente opt-in, massimo cinque elementi, ordinamento spiegabile e nessuna cronologia di sorveglianza delle aperture.
+3. Post collaborativi e album con inviti accettati, visibilità unica e revoca effettiva dei contributi futuri.
+4. Reazioni private, risposte contestuali, menzioni con consenso e condivisioni interne senza metriche competitive.
+5. Scoperta intenzionale tramite scelte esplicite, accompagnata soltanto da metriche aggregate e minimizzate. Nessun feed «Per te», ranking opaco, streak o scorrimento infinito.
+
+Ogni blocco deve includere migrazione, API, demo IndexedDB, RLS, export e cancellazione coerenti, test SQL e test browser desktop/mobile.
+
 ## Verifica e pubblicazione
 
-Per ogni blocco completo: lint, TypeScript, test unitari e SQL, audit dipendenze, build e test browser desktop/mobile. Applicare migrazioni e collaudare servizi reali solo sull'infrastruttura dedicata a SN. Conservare almeno il 10% della finestra d'uso di cinque ore durante questa sessione.
+Per ogni blocco completo: lint, TypeScript, test unitari e SQL, audit dipendenze, build e test browser desktop/mobile. Applicare migrazioni e collaudare servizi reali solo sull'infrastruttura dedicata a SN. Nelle sessioni di sviluppo assistito, fermarsi quando resta il 40% della finestra d’uso di cinque ore.
