@@ -674,10 +674,132 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
     );
   });
 
-  it('applica la blocklist federata soltanto dal ruolo di servizio', async () => {
-    await db.query(
-      "insert into private.blocked_instances(hostname,reason) values('remote.example','abusi ripetuti')",
+  it('segnala e nasconde una Nota federata con una decisione registrata', async () => {
+    await asUser(
+      alice,
+      'update public.profiles set is_private=false,federation_enabled=true where id=$1',
+      [alice],
     );
+    const actor = 'https://moderation.example/users/noemi';
+    const objectId = 'https://moderation.example/notes/1';
+    const activity = {
+      id: 'https://moderation.example/activities/create-1',
+      type: 'Create',
+      actor,
+      object: {
+        id: objectId,
+        type: 'Note',
+        attributedTo: actor,
+        content: '<p>Contenuto da controllare.</p>',
+      },
+    };
+    await db.exec('set role service_role');
+    try {
+      await db.query('select public.receive_federated_activity($1,$2,$3,$4,$5)', [
+        alice,
+        activity,
+        'https://moderation.example/inbox',
+        null,
+        null,
+      ]);
+    } finally {
+      await db.exec('reset role');
+    }
+    await asUser(alice, 'select public.report_federated_object($1,$2)', [
+      objectId,
+      'Contiene dati personali.',
+    ]);
+    await expect(
+      asUser(alice, 'select public.report_federated_object($1,$2)', [objectId, 'Duplicato.']),
+    ).rejects.toThrow('già segnalato');
+    await expect(
+      asUser(bob, 'select public.report_federated_object($1,$2)', [objectId, 'Non ricevuto.']),
+    ).rejects.toThrow('non disponibile');
+    let report = (
+      await asUser<{ id: string; status: string }>(
+        alice,
+        'select id,status from public.federation_remote_reports where object_id=$1',
+        [objectId],
+      )
+    )[0];
+    await db.query('insert into private.admins(user_id) values($1)', [alice]);
+    await asUser(alice, 'select public.moderate_federated_report($1,false)', [report.id]);
+    await asUser(alice, 'select public.report_federated_object($1,$2)', [
+      objectId,
+      'Il contenuto aggiornato espone ancora dati personali.',
+    ]);
+    report = (
+      await asUser<{ id: string; status: string }>(
+        alice,
+        'select id,status from public.federation_remote_reports where object_id=$1',
+        [objectId],
+      )
+    )[0];
+    expect(report.status).toBe('open');
+    await asUser(alice, 'select public.moderate_federated_report($1,true)', [report.id]);
+    expect(
+      await asUser<{ status: string }>(
+        alice,
+        'select status from public.federation_remote_reports where id=$1',
+        [report.id],
+      ),
+    ).toEqual([{ status: 'hidden' }]);
+    expect(
+      (
+        await db.query<{ hidden_by: string; hidden_at: Date }>(
+          'select hidden_by,hidden_at from public.federation_remote_objects where object_id=$1',
+          [objectId],
+        )
+      ).rows,
+    ).toEqual([{ hidden_by: alice, hidden_at: expect.any(Date) }]);
+    const audit = await asUser<{ action: string; target_id: string }>(
+      alice,
+      "select action,target_id from public.moderation_audit where target_type='remote_report' and target_id=$1",
+      [report.id],
+    );
+    expect(audit.map((entry) => entry.action).sort()).toEqual([
+      'remote_object_hidden',
+      'remote_report_dismissed',
+    ]);
+    expect(audit.every((entry) => entry.target_id === report.id)).toBe(true);
+    await db.query(
+      "delete from public.moderation_audit where target_type='remote_report' and target_id=$1",
+      [report.id],
+    );
+    await db.query('delete from public.federation_remote_reports where id=$1', [report.id]);
+    await db.query('delete from public.federation_remote_objects where object_id=$1', [objectId]);
+    await db.query('delete from private.admins where user_id=$1', [alice]);
+    await asUser(
+      alice,
+      'update public.profiles set is_private=true,federation_enabled=false where id=$1',
+      [alice],
+    );
+  });
+
+  it('applica la blocklist federata soltanto dal ruolo di servizio', async () => {
+    await db.query('insert into private.admins(user_id) values($1)', [alice]);
+    await asUser(
+      alice,
+      "select public.set_federation_instance_blocked('REMOTE.EXAMPLE.',true,'Abusi federati ripetuti.')",
+    );
+    expect(
+      await asUser<{ hostname: string; reason: string }>(
+        alice,
+        'select hostname,reason from public.federation_blocked_instances()',
+      ),
+    ).toEqual([{ hostname: 'remote.example', reason: 'Abusi federati ripetuti.' }]);
+    await expect(
+      asUser(
+        alice,
+        "select public.set_federation_instance_blocked('remote.example',true,'Secondo blocco non valido.')",
+      ),
+    ).rejects.toThrow('già bloccata');
+    await expect(
+      asUser(
+        bob,
+        "select public.set_federation_instance_blocked('other.example',true,'Tentativo senza privilegi.')",
+      ),
+    ).rejects.toThrow('Accesso negato');
     await db.exec('set role service_role');
     try {
       const blocked = await db.query<{ federation_instance_blocked: boolean }>(
@@ -690,7 +812,22 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
     await expect(
       asUser(alice, "select public.federation_instance_blocked('remote.example')"),
     ).rejects.toThrow('permission denied');
-    await db.query("delete from private.blocked_instances where hostname='remote.example'");
+    await asUser(
+      alice,
+      "select public.set_federation_instance_blocked('remote.example',false,'Verifica completata: riapertura.')",
+    );
+    expect(
+      (
+        await db.query<{ action: string; target_id: string }>(
+          "select action,target_id from public.moderation_audit where target_type='instance' order by created_at",
+        )
+      ).rows,
+    ).toEqual([
+      { action: 'instance_blocked', target_id: 'remote.example' },
+      { action: 'instance_unblocked', target_id: 'remote.example' },
+    ]);
+    await db.query("delete from public.moderation_audit where target_type='instance'");
+    await db.query('delete from private.admins where user_id=$1', [alice]);
   });
 
   it('protegge la cache delle chiavi remote dai client', async () => {

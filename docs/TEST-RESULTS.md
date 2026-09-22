@@ -87,4 +87,21 @@ Le Note della comunità sono testate nel database contro letture di estranei, pr
 - Il limite di 120 attività l’ora per attore remoto e destinatario locale viene applicato nel database dopo la deduplicazione; i retry della stessa attività restano idempotenti.
 - Le Note remote sono convertite da HTML a testo inerte, ordinate insieme ai post locali e mostrate con origine e limiti delle interazioni. La demo è stata verificata a 1440 × 1000 e 390 × 844 senza overflow o error overlay. Axe non rileva violazioni WCAG A/AA; restano due controlli di contrasto inconcludenti su glifi decorativi. Il detector Impeccable non segnala problemi nei file modificati.
 - Playwright: 47 test su 50 sono passati nel primo giro contro il server di sviluppo. Due test delle notifiche esponevano una corsa nell’apertura di IndexedDB, corretta aspettando il caricamento della piazza. Il test mobile delle Note era coperto dal toolbar di sviluppo di Next; l’invocazione diretta dello stesso pulsante ha confermato il flusso. I percorsi falliti sono poi passati su entrambe le viewport.
-- La build Turbopack non arriva alla compilazione perché l’host vieta la porta interna del loader CSS anche fuori sandbox. Il fallback Webpack si ferma leggendo `tsc --showConfig`; il typecheck diretto passa. Migrazione cloud e interoperabilità con server federati reali non sono state eseguite. Il worker delle consegne resta disattivato.
+
+## 22 settembre 2026 — moderazione dei contenuti federati
+
+- Lint completo superato; build di produzione con webpack superata; 106 test unitari e SQL PGlite e 52 test Playwright desktop/mobile superati.
+- Il test SQL verifica che si possa segnalare soltanto una Nota ricevuta, impedisce i duplicati, limita la decisione ai moderatori e registra chi ha nascosto l’oggetto. Una rimozione locale resta distinta dal `Delete` federato.
+- Restano da eseguire il collaudo tra server, l’applicazione della migrazione sul progetto cloud dedicato e la verifica delle consegne del worker. La build Turbopack non può aprire la porta interna del loader CSS su questo host; la build webpack completa compilazione, TypeScript e generazione delle pagine.
+
+## 22 settembre 2026 — backup degli oggetti Storage
+
+- Lint, TypeScript e build webpack superati; la suite unitaria e SQL conta 109 test superati.
+- Il backup include il bucket privato `media` nello stesso archivio GPG dei dump, con checksum per file, conteggio e dimensione nel manifesto.
+- I test coprono nomi oggetto ostili, codifica degli URL, cartelle, autenticazione delle richieste e scrittura dei file senza credenziali. La prova con un progetto Supabase reale e il primo ripristino trimestrale restano operazioni da eseguire sull’infrastruttura dedicata.
+
+## 22 settembre 2026 — moderazione delle istanze federate
+
+- Lint, TypeScript, 109 test unitari/SQL e build webpack superati. Il flusso browser di federazione e moderazione passa su desktop e mobile senza errori JavaScript.
+- Hostname normalizzato, motivazione obbligatoria, blocco e sblocco sono limitati ai moderatori. Ogni decisione entra nel registro; recupero chiavi e consegne continuano a usare la stessa blocklist privata.
+- Il detector Impeccable non segnala problemi nei file modificati. Restano il collaudo con server federati reali e la valutazione operativa delle regole di blocco prima dell’apertura.

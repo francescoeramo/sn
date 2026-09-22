@@ -156,6 +156,46 @@ test('feed calmo: like senza contatori pubblici e traguardo finale', async ({ pa
   await expect(card.locator('.author-interactions')).toHaveCount(0);
   await expect(page.getByText('Sei in pari.', { exact: false })).toBeVisible();
 });
+
+test('federazione: segnala una Nota e la nasconde dai feed locali', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.goto('/demo');
+  const remote = page.locator('article.remote-post');
+  await expect(remote).toContainText('Il mercato di quartiere chiude alle due.');
+  await remote.getByRole('button', { name: 'Segnala', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Segnala questo contenuto' });
+  await dialog.getByLabel('Cosa dobbiamo controllare?').fill('Contiene un indirizzo personale.');
+  await dialog.getByRole('button', { name: 'Invia segnalazione' }).click();
+  await expect(page.getByRole('status')).toContainText('Segnalazione inviata.');
+  await page
+    .getByRole('button', { name: 'Moderazione', exact: true })
+    .filter({ visible: true })
+    .click();
+  const report = page.locator('.report').filter({ hasText: 'Contiene un indirizzo personale.' });
+  await expect(report).toContainText('Origine: social.example');
+  await report.getByRole('button', { name: 'Nascondi da SN' }).click();
+  await expect(report).toHaveCount(0);
+  await expect(page.getByText('Contenuto federato nascosto')).toBeVisible();
+  await page.getByLabel('Server da bloccare').fill('SOCIAL.EXAMPLE.');
+  await page.getByLabel('Motivo della decisione').fill('Abusi federati ripetuti.');
+  await page.getByRole('button', { name: 'Blocca istanza' }).click();
+  const instance = page.locator('.group-members li').filter({ hasText: 'social.example' });
+  await expect(instance).toContainText('Abusi federati ripetuti.');
+  await expect(
+    page.locator('.audit-list').getByText('istanza federata · social.example'),
+  ).toBeVisible();
+  await instance.getByRole('button', { name: 'Sblocca' }).click();
+  const unblock = page.getByRole('dialog', { name: 'Sbloccare social.example?' });
+  await unblock.getByLabel('Motivo della decisione').fill('Verifica completata: riapertura.');
+  await unblock.getByRole('button', { name: 'Sblocca istanza' }).click();
+  await expect(instance).toHaveCount(0);
+  await page.getByRole('button', { name: 'La tua piazza', exact: true }).click();
+  await expect(page.locator('article.remote-post')).toHaveCount(0);
+  await page.reload();
+  await expect(page.locator('article.remote-post')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
 test('storie: sequenza completa dello stesso autore e segmenti separati', async ({ page }) => {
   await page.goto('/demo');
   const png = Buffer.from(

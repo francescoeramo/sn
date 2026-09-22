@@ -35,6 +35,15 @@ export type RemotePost = {
   created_at: string;
   updated_at: string | null;
 };
+export type RemoteReport = {
+  id: string;
+  reporter_id: string;
+  object_id: string;
+  remote_actor: string;
+  reason: string;
+  status: 'open' | 'dismissed' | 'hidden';
+  created_at: string;
+};
 export type PollOption = { id: string; poll_id: string; position: number; body: string };
 export type Poll = { post_id: string; closes_at: string | null; options: PollOption[] };
 export type PollResult = { poll_id: string; option_id: string; votes: number; selected: boolean };
@@ -85,8 +94,12 @@ export type ModerationAudit = {
     | 'note_approved'
     | 'note_rejected'
     | 'account_suspended'
-    | 'account_restored';
-  target_type: 'report' | 'post' | 'community_note' | 'account';
+    | 'account_restored'
+    | 'remote_report_dismissed'
+    | 'remote_object_hidden'
+    | 'instance_blocked'
+    | 'instance_unblocked';
+  target_type: 'report' | 'post' | 'community_note' | 'account' | 'remote_report' | 'instance';
   target_id: string;
   reason: string;
   created_at: string;
@@ -97,6 +110,12 @@ export type ModerationAccount = {
   display_name: string;
   disabled: boolean;
   is_admin: boolean;
+  created_at: string;
+};
+export type FederationBlock = {
+  hostname: string;
+  reason: string;
+  blocked_by: string | null;
   created_at: string;
 };
 export type CommunityNote = {
@@ -160,6 +179,8 @@ export type Snapshot = {
   reports: Report[];
   moderationAudit?: ModerationAudit[];
   moderationAccounts?: ModerationAccount[];
+  remoteReports?: RemoteReport[];
+  federationBlocks?: FederationBlock[];
   blocks: { blocker_id: string; blocked_id: string }[];
   usage: {
     bytes: number;
@@ -209,7 +230,10 @@ export type Action =
   | { type: 'read-notifications' }
   | { type: 'delete-post'; post_id: string }
   | { type: 'report'; post_id: string; reason: string }
+  | { type: 'report-remote'; object_id: string; reason: string }
   | { type: 'moderate'; report_id: string; remove: boolean }
+  | { type: 'moderate-remote'; report_id: string; hide: boolean }
+  | { type: 'moderate-instance'; hostname: string; blocked: boolean; reason: string }
   | { type: 'moderate-account'; user_id: string; disabled: boolean; reason: string }
   | { type: 'block'; user_id: string };
 

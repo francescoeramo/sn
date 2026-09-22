@@ -114,6 +114,8 @@ export function seed(): Snapshot {
         updated_at: null,
       },
     ],
+    remoteReports: [],
+    federationBlocks: [],
     comments: [
       {
         id: uid(201),
@@ -630,6 +632,29 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
         created_at: now,
       });
       break;
+    case 'report-remote': {
+      const remote = s.remotePosts?.find((post) => post.id === action.object_id);
+      const reason = action.reason.trim();
+      if (!remote) throw new Error('Contenuto federato non disponibile.');
+      if (reason.length < 5 || reason.length > 1000)
+        throw new Error('Descrivi il problema in 5-1000 caratteri.');
+      if (
+        s.remoteReports?.some(
+          (report) => report.object_id === remote.id && report.reporter_id === me,
+        )
+      )
+        throw new Error('Hai già segnalato questo contenuto.');
+      s.remoteReports?.unshift({
+        id,
+        reporter_id: me,
+        object_id: remote.id,
+        remote_actor: remote.actor,
+        reason,
+        status: 'open',
+        created_at: now,
+      });
+      break;
+    }
     case 'moderate': {
       if (!s.isAdmin) throw new Error('Accesso negato.');
       const report = s.reports.find((r) => r.id === action.report_id);
@@ -646,6 +671,61 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
           created_at: now,
         });
       }
+      break;
+    }
+    case 'moderate-remote': {
+      if (!s.isAdmin) throw new Error('Accesso negato.');
+      const report = s.remoteReports?.find((item) => item.id === action.report_id);
+      if (!report || report.status !== 'open')
+        throw new Error('Segnalazione già esaminata o non disponibile.');
+      report.status = action.hide ? 'hidden' : 'dismissed';
+      if (action.hide)
+        s.remotePosts = s.remotePosts?.filter((post) => post.id !== report.object_id);
+      s.moderationAudit?.unshift({
+        id: crypto.randomUUID(),
+        moderator_id: me,
+        action: action.hide ? 'remote_object_hidden' : 'remote_report_dismissed',
+        target_type: 'remote_report',
+        target_id: report.id,
+        reason: '',
+        created_at: now,
+      });
+      break;
+    }
+    case 'moderate-instance': {
+      if (!s.isAdmin) throw new Error('Accesso negato.');
+      const hostname = action.hostname.trim().toLowerCase().replace(/\.$/, '');
+      const reason = action.reason.trim();
+      if (
+        !/^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(
+          hostname,
+        )
+      )
+        throw new Error('Inserisci un hostname valido.');
+      if (reason.length < 10 || reason.length > 500)
+        throw new Error('Motiva la decisione (10-500 caratteri).');
+      const existing = s.federationBlocks?.find((item) => item.hostname === hostname);
+      if (action.blocked) {
+        if (existing) throw new Error('Istanza già bloccata.');
+        s.federationBlocks?.unshift({
+          hostname,
+          reason,
+          blocked_by: me,
+          created_at: now,
+        });
+      } else {
+        if (!existing) throw new Error('Istanza non bloccata.');
+        s.federationBlocks = s.federationBlocks?.filter((item) => item.hostname !== hostname);
+      }
+      s.moderationAudit?.unshift({
+        id: crypto.randomUUID(),
+        moderator_id: me,
+        action: action.blocked ? 'instance_blocked' : 'instance_unblocked',
+        target_type: 'instance',
+        target_id: hostname,
+        reason,
+        created_at: now,
+      });
       break;
     }
     case 'moderate-account': {

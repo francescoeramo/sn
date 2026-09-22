@@ -18,9 +18,11 @@ import { enqueueFederatedActivity, ensureFederationActorKey, publicPostBy } from
 import { activityPubPlainText, createDocument, deleteDocument } from '@/lib/core/federation';
 import type {
   Bookmark,
+  FederationBlock,
   ModerationAccount,
   Post,
   RemotePost,
+  RemoteReport,
   SavedCursor,
   SavedPage,
 } from '@/lib/core/types';
@@ -67,23 +69,31 @@ async function savedPageFor(db: Database, before?: SavedCursor): Promise<SavedPa
 }
 async function remotePostsFor(userId: string): Promise<RemotePost[]> {
   const db = adminDatabase();
-  const objects = checked(
-    await db
+  const [objectResult, hiddenResult] = await Promise.all([
+    db
       .from('federation_remote_objects')
       .select('object_id,remote_actor,content,summary,published_at,received_at,updated_at')
       .eq('local_actor_id', userId)
       .is('deleted_at', null)
+      .is('hidden_at', null)
       .order('received_at', { ascending: false })
       .limit(40),
-  ) as {
-    object_id: string;
-    remote_actor: string;
-    content: string;
-    summary: string | null;
-    published_at: string | null;
-    received_at: string;
-    updated_at: string | null;
-  }[];
+    db.from('federation_remote_reports').select('object_id').eq('status', 'hidden'),
+  ]);
+  const hidden = new Set(
+    (checked(hiddenResult) as { object_id: string }[]).map((item) => item.object_id),
+  );
+  const objects = (
+    checked(objectResult) as {
+      object_id: string;
+      remote_actor: string;
+      content: string;
+      summary: string | null;
+      published_at: string | null;
+      received_at: string;
+      updated_at: string | null;
+    }[]
+  ).filter((item) => !hidden.has(item.object_id));
   const actors = [...new Set(objects.map((item) => item.remote_actor))];
   const keys = actors.length
     ? (checked(
@@ -179,6 +189,19 @@ export async function snapshot() {
   const moderationAccounts = usage.isAdmin
     ? (checked(await db.rpc('moderation_accounts')) as ModerationAccount[])
     : [];
+  const remoteReports = usage.isAdmin
+    ? (checked(
+        await db
+          .from('federation_remote_reports')
+          .select('*')
+          .eq('status', 'open')
+          .order('created_at', { ascending: false })
+          .limit(50),
+      ) as RemoteReport[])
+    : [];
+  const federationBlocks = usage.isAdmin
+    ? (checked(await db.rpc('federation_blocked_instances')) as FederationBlock[])
+    : [];
   return {
     bookmarks,
     saved,
@@ -196,6 +219,8 @@ export async function snapshot() {
     reports,
     moderationAudit,
     moderationAccounts,
+    remoteReports,
+    federationBlocks,
     blocks,
     usage: {
       bytes: usage.bytes,
@@ -452,9 +477,51 @@ export async function mutate(input: unknown) {
       checked(await db.from('reports').insert({ ...v, reporter_id: user.id }));
       break;
     }
+    case 'report-remote': {
+      const v = z
+        .object({
+          object_id: z.string().url().max(2000),
+          reason: z.string().trim().min(5).max(1000),
+        })
+        .parse(obj);
+      checked(
+        await db.rpc('report_federated_object', {
+          target_object: v.object_id,
+          report_reason: v.reason,
+        }),
+      );
+      break;
+    }
     case 'moderate': {
       const v = z.object({ report_id: userId, remove: z.boolean() }).parse(obj);
       checked(await db.rpc('moderate_report', { report_id: v.report_id, remove_post: v.remove }));
+      break;
+    }
+    case 'moderate-remote': {
+      const v = z.object({ report_id: userId, hide: z.boolean() }).parse(obj);
+      checked(
+        await db.rpc('moderate_federated_report', {
+          target_report: v.report_id,
+          hide_object: v.hide,
+        }),
+      );
+      break;
+    }
+    case 'moderate-instance': {
+      const v = z
+        .object({
+          hostname: z.string().trim().min(1).max(253),
+          blocked: z.boolean(),
+          reason: z.string().trim().min(10).max(500),
+        })
+        .parse(obj);
+      checked(
+        await db.rpc('set_federation_instance_blocked', {
+          candidate: v.hostname,
+          next_blocked: v.blocked,
+          decision_reason: v.reason,
+        }),
+      );
       break;
     }
     case 'moderate-account': {

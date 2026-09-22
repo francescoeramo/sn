@@ -71,12 +71,18 @@ const auditLabels = {
   note_rejected: 'Nota respinta',
   account_suspended: 'Account sospeso',
   account_restored: 'Account ripristinato',
+  remote_report_dismissed: 'Segnalazione federata archiviata',
+  remote_object_hidden: 'Contenuto federato nascosto',
+  instance_blocked: 'Istanza federata bloccata',
+  instance_unblocked: 'Istanza federata sbloccata',
 } as const;
 const auditTargetLabels = {
   report: 'segnalazione',
   post: 'post',
   community_note: 'nota',
   account: 'account',
+  remote_report: 'segnalazione federata',
+  instance: 'istanza federata',
 } as const;
 function download(value: unknown, name: string) {
   const url = URL.createObjectURL(
@@ -127,6 +133,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
     id: string;
     disabled: boolean;
   } | null>(null);
+  const [instanceDecision, setInstanceDecision] = useState<string | null>(null);
   const [clock, setClock] = useState(0);
   const locked = useRef(false);
   const refresh = useCallback(async () => {
@@ -230,17 +237,23 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                 ? 'Decisione salvata.'
                 : action.type === 'report'
                   ? 'Segnalazione inviata.'
-                  : action.type === 'moderate-account'
-                    ? action.disabled
-                      ? 'Account sospeso.'
-                      : 'Account ripristinato.'
-                    : action.type === 'profile'
-                      ? 'Profilo aggiornato.'
-                      : action.type === 'federation'
-                        ? action.enabled
-                          ? 'Federazione attivata.'
-                          : 'Federazione disattivata.'
-                        : '',
+                  : action.type === 'report-remote'
+                    ? 'Segnalazione inviata. Il contenuto resta visibile finché non viene esaminato.'
+                    : action.type === 'moderate-instance'
+                      ? action.blocked
+                        ? 'Istanza federata bloccata.'
+                        : 'Istanza federata sbloccata.'
+                      : action.type === 'moderate-account'
+                        ? action.disabled
+                          ? 'Account sospeso.'
+                          : 'Account ripristinato.'
+                        : action.type === 'profile'
+                          ? 'Profilo aggiornato.'
+                          : action.type === 'federation'
+                            ? action.enabled
+                              ? 'Federazione attivata.'
+                              : 'Federazione disattivata.'
+                            : '',
       );
       return true;
     } catch (error) {
@@ -443,6 +456,15 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
           >
             <UserRound size={21} />
           </button>
+          {state.isAdmin && (
+            <button
+              className="mobile-settings icon-button"
+              aria-label="Moderazione"
+              onClick={() => navigate('moderation')}
+            >
+              <ShieldCheck size={21} />
+            </button>
+          )}
           <button
             className="mobile-settings icon-button"
             aria-label="Impostazioni"
@@ -700,7 +722,12 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                       onTag={search}
                     />
                   ) : (
-                    <RemotePostCard key={item.post.id} post={item.post} />
+                    <RemotePostCard
+                      key={item.post.id}
+                      post={item.post}
+                      busy={busy}
+                      onAction={act}
+                    />
                   ),
                 )}
                 {!combinedFeed.length && (
@@ -1274,6 +1301,120 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                     Le segnalazioni dei tuoi amici arriveranno qui.
                   </Empty>
                 )}
+                <section aria-labelledby="remote-reports-title">
+                  <h2 id="remote-reports-title">Contenuti dal Fediverso</h2>
+                  <p className="muted">
+                    Nascondere un contenuto lo rimuove dai feed di SN. Non lo cancella dal server
+                    d’origine.
+                  </p>
+                  {(state.remoteReports ?? [])
+                    .filter((report) => report.status === 'open')
+                    .map((report) => {
+                      const remote = state.remotePosts?.find(
+                        (post) => post.id === report.object_id,
+                      );
+                      let origin = report.remote_actor;
+                      try {
+                        origin = new URL(report.remote_actor).host;
+                      } catch {}
+                      return (
+                        <div className="report" key={report.id}>
+                          <strong>Segnalazione federata · {relativeTime(report.created_at)}</strong>
+                          <p>{report.reason}</p>
+                          <blockquote>
+                            {remote?.body ?? 'Contenuto non presente nel feed caricato.'}
+                          </blockquote>
+                          <p className="fine muted">Origine: {origin}</p>
+                          <div className="button-row">
+                            <button
+                              className="danger"
+                              disabled={busy}
+                              onClick={() =>
+                                act({ type: 'moderate-remote', report_id: report.id, hide: true })
+                              }
+                            >
+                              Nascondi da SN
+                            </button>
+                            <button
+                              className="secondary"
+                              disabled={busy}
+                              onClick={() =>
+                                act({ type: 'moderate-remote', report_id: report.id, hide: false })
+                              }
+                            >
+                              Archivia
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  {!(state.remoteReports ?? []).some((report) => report.status === 'open') && (
+                    <p className="fine muted">Nessun contenuto federato da esaminare.</p>
+                  )}
+                </section>
+                <section
+                  className="instance-moderation"
+                  aria-labelledby="instance-moderation-title"
+                >
+                  <h2 id="instance-moderation-title">Istanze federate</h2>
+                  <p className="muted">
+                    Il blocco interrompe recupero chiavi e nuove consegne verso quel server. I
+                    contenuti già ricevuti restano soggetti alle decisioni prese sopra.
+                  </p>
+                  <form
+                    className="moderation-instance-form"
+                    onSubmit={async (event) => {
+                      event.preventDefault();
+                      const element = event.currentTarget;
+                      const form = new FormData(element);
+                      const ok = await act({
+                        type: 'moderate-instance',
+                        hostname: String(form.get('hostname')),
+                        blocked: true,
+                        reason: String(form.get('reason')),
+                      });
+                      if (ok) element.reset();
+                    }}
+                  >
+                    <label>
+                      Server da bloccare
+                      <input
+                        name="hostname"
+                        placeholder="social.example"
+                        maxLength={253}
+                        required
+                      />
+                    </label>
+                    <label>
+                      Motivo della decisione
+                      <textarea name="reason" minLength={10} maxLength={500} rows={3} required />
+                    </label>
+                    <button className="danger" disabled={busy}>
+                      Blocca istanza
+                    </button>
+                  </form>
+                  {(state.federationBlocks ?? []).length ? (
+                    <ul className="group-members">
+                      {(state.federationBlocks ?? []).map((block) => (
+                        <li key={block.hostname}>
+                          <span>
+                            <strong>{block.hostname}</strong>
+                            <small>{block.reason}</small>
+                          </span>
+                          <button
+                            className="secondary"
+                            disabled={busy}
+                            onClick={() => setInstanceDecision(block.hostname)}
+                          >
+                            Sblocca
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="fine muted">Nessuna istanza bloccata.</p>
+                  )}
+                </section>
                 <section className="moderation-history" aria-labelledby="moderation-history-title">
                   <h2 id="moderation-history-title">Registro delle decisioni</h2>
                   <p className="muted">
@@ -1287,9 +1428,11 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                           <li key={entry.id}>
                             <span>
                               <strong>{auditLabels[entry.action]}</strong>
-                              <small>
+                              <small className="audit-target">
                                 {auditTargetLabels[entry.target_type]} ·{' '}
-                                {entry.target_id.slice(0, 8)}
+                                {entry.target_type === 'instance'
+                                  ? entry.target_id
+                                  : entry.target_id.slice(0, 8)}
                               </small>
                               {entry.reason && <small>{entry.reason}</small>}
                             </span>
@@ -1493,6 +1636,37 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                   : accountDecision.disabled
                     ? 'Sospendi account'
                     : 'Ripristina account'}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+      {instanceDecision && (
+        <Modal title={`Sbloccare ${instanceDecision}?`} onClose={() => setInstanceDecision(null)}>
+          <p>Il server potrà essere contattato di nuovo per chiavi e consegne federate.</p>
+          <form
+            onSubmit={async (event) => {
+              event.preventDefault();
+              const form = new FormData(event.currentTarget);
+              const ok = await act({
+                type: 'moderate-instance',
+                hostname: instanceDecision,
+                blocked: false,
+                reason: String(form.get('reason')),
+              });
+              if (ok) setInstanceDecision(null);
+            }}
+          >
+            <label>
+              Motivo della decisione
+              <textarea name="reason" minLength={10} maxLength={500} rows={4} required autoFocus />
+            </label>
+            <div className="button-row">
+              <button type="button" className="secondary" onClick={() => setInstanceDecision(null)}>
+                Annulla
+              </button>
+              <button className="primary" disabled={busy}>
+                {busy ? 'Salvataggio…' : 'Sblocca istanza'}
               </button>
             </div>
           </form>

@@ -3,9 +3,12 @@ import { execFileSync } from 'node:child_process';
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { isAbsolute, relative, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
+import { downloadStorageObjects } from './backup-storage.mjs';
 
 const usage = `Uso:
-  SUPABASE_DB_URL='postgresql://…' SN_BACKUP_RECIPIENT='chiave-o-email-gpg' npm run backup -- /percorso/esterno
+  SUPABASE_DB_URL='postgresql://…' SUPABASE_URL='https://….supabase.co' \\
+  SUPABASE_SERVICE_ROLE_KEY='…' SN_BACKUP_RECIPIENT='chiave-o-email-gpg' \\
+  npm run backup -- /percorso/esterno
 
 Il comando crea un archivio cifrato .tar.gz.gpg. La destinazione deve essere assoluta e fuori dal repository.`;
 
@@ -16,8 +19,11 @@ if (process.argv.includes('--help')) {
 
 const databaseUrl = process.env.SUPABASE_DB_URL;
 const recipient = process.env.SN_BACKUP_RECIPIENT;
+const projectUrl = process.env.SUPABASE_URL;
+const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const destination = process.argv[2];
-if (!databaseUrl || !recipient || !destination) throw new Error(usage);
+if (!databaseUrl || !projectUrl || !serviceKey || !recipient || !destination)
+  throw new Error(usage);
 if (!isAbsolute(destination))
   throw new Error('La cartella di backup deve avere un percorso assoluto.');
 
@@ -55,20 +61,41 @@ try {
     '--exclude',
     'storage.vector_indexes',
   );
-  const checksums = Object.fromEntries(
-    files.map((file) => [
-      file,
-      createHash('sha256')
-        .update(readFileSync(`${temporary}/${file}`))
-        .digest('hex'),
-    ]),
-  );
+  const storageChecksums = {};
+  const storage = await downloadStorageObjects({
+    projectUrl,
+    serviceKey,
+    bucket: 'media',
+    destination: `${temporary}/storage/media`,
+    onObject(name, body) {
+      storageChecksums[`storage/media/${name}`] = createHash('sha256').update(body).digest('hex');
+    },
+  });
+  const checksums = {
+    ...Object.fromEntries(
+      files.map((file) => [
+        file,
+        createHash('sha256')
+          .update(readFileSync(`${temporary}/${file}`))
+          .digest('hex'),
+      ]),
+    ),
+    ...storageChecksums,
+  };
   writeFileSync(
     `${temporary}/manifest.json`,
-    JSON.stringify({ createdAt: new Date().toISOString(), checksums }, null, 2),
+    JSON.stringify(
+      {
+        createdAt: new Date().toISOString(),
+        storage: { bucket: 'media', objects: storage.objects, bytes: storage.bytes },
+        checksums,
+      },
+      null,
+      2,
+    ),
     { mode: 0o600 },
   );
-  execFileSync('tar', ['-C', temporary, '-czf', archive, ...files, 'manifest.json']);
+  execFileSync('tar', ['-C', temporary, '-czf', archive, ...files, 'storage', 'manifest.json']);
   execFileSync('gpg', [
     '--batch',
     '--yes',
