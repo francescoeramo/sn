@@ -51,13 +51,54 @@ Collaudare le consegne e la moderazione con server dedicati. Gli attori pubblici
 
 Queste funzioni sono requisiti approvati ma non ancora disponibili. Procedere per blocchi completi, senza iniziarle prima del collaudo della beta corrente:
 
-1. Cerchie private su invito, mini-feed cronologico e RLS sulla membership; poi eventi semplici con risposte idempotenti, notifiche sobrie e album post-evento.
-2. Digest giornaliero o settimanale strettamente opt-in, massimo cinque elementi, ordinamento spiegabile e nessuna cronologia di sorveglianza delle aperture.
-3. Post collaborativi e album con inviti accettati, visibilità unica e revoca effettiva dei contributi futuri.
-4. Reazioni private, risposte contestuali, menzioni con consenso e condivisioni interne senza metriche competitive.
-5. Scoperta intenzionale tramite scelte esplicite, accompagnata soltanto da metriche aggregate e minimizzate. Nessun feed «Per te», ranking opaco, streak o scorrimento infinito.
+### 1. Cerchie e spazi condivisi
 
-Ogni blocco deve includere migrazione, API, demo IndexedDB, RLS, export e cancellazione coerenti, test SQL e test browser desktop/mobile.
+- Spazi privati e intenzionali, non community pubbliche: nome, immagine facoltativa, descrizione breve e inviti limitati ai contatti con follow reciproco. L'invito richiede accettazione e ogni membro può uscire.
+- Creatore e amministratori possono rinominare, invitare, rimuovere membri e archiviare. La rimozione revoca l'accesso ancora controllabile da SN, senza promettere la cancellazione di screenshot, esportazioni o copie locali.
+- Un post può essere destinato a una o più cerchie. La visibilità effettiva deve rispettare insieme privacy del profilo, blocchi e membership.
+- Ogni cerchia ha un mini-feed cronologico e finito con post, commenti, sondaggi ed eventi, senza ranking, contatori pubblici, inviti automatici o suggerimenti invasivi.
+- Schema previsto: `circles`, `circle_members`, `circle_posts`. Le RLS devono proteggere membership, ruoli e contenuti e impedire auto-iscrizione o auto-promozione dal client.
+
+### 2. Eventi semplici
+
+- Titolo, descrizione, inizio, fine e luogo testuale facoltativi, visibilità per cerchia o follower approvati e limite partecipanti facoltativo. Nessuna geolocalizzazione, mappa di terze parti, vendita o pagamento.
+- Risposte idempotenti «Partecipo», «Forse» e «Non riesco». Elenchi e conteggi non devono rivelare persone che il lettore non è autorizzato a vedere.
+- Commenti, aggiornamenti dell'organizzatore e album collaborativo disponibile dopo l'inizio. Promemoria locali o email solo su consenso esplicito.
+- Una singola notifica utile per variazioni sostanziali di data, luogo o annullamento. Lo storico delle risposte deve rispettare consenso, blocchi, rimozioni e cancellazione account.
+- Schema previsto: `events`, `event_invites`, `event_updates`, con RLS separate per organizzatore, invitati e contenuti associati.
+
+### 3. Digest scelto dall'utente
+
+- Disattivato per impostazione predefinita; frequenza giornaliera o settimanale, fascia oraria e canale scelti dall'utente. L'email richiede consenso separato.
+- Massimo cinque elementi recenti da cerchie, persone o argomenti scelti e contenuti non ancora visti. Niente sponsorizzazioni, profilazione comportamentale o punteggi opachi.
+- Ordinamento spiegabile: prima cerchie scelte, poi persone preferite, quindi altri post in ordine cronologico. Ogni elemento spiega perché compare e permette di ridurre o interrompere quel tipo di proposta.
+- Generazione lato server nel rispetto di RLS, privacy, blocchi, scadenze e avvisi di contenuto. Conservare preferenze e ultimo invio, non una cronologia delle aperture.
+- Schema previsto: `digest_preferences`, `digest_deliveries`; job idempotente e applicazione pienamente utilizzabile anche se il job non è disponibile.
+
+### 4. Post collaborativi e album condivisi
+
+- Collaboratori scelti tra contatti reciproci, con invito accettato. Rifiuto, uscita e rimozione non producono notifiche pubbliche.
+- I collaboratori possono aggiungere media, didascalie o aggiornamenti entro i permessi scelti dall'autore, che conserva pubblicazione, occultamento, revoca e archiviazione.
+- Ogni album ha una sola visibilità comprensibile. Prima di cambiarla, mostrare chiaramente a chi diventeranno accessibili i contenuti.
+- Gli album evento aprono solo dopo l'inizio e possono essere chiusi dall'organizzatore. Media e quote restano quelli già previsti, senza nuovi servizi esterni.
+- Schema previsto: `collaborative_posts`, `collaborators`, `album_items`; transazioni e RLS devono bloccare contributi dopo rimozione, blocco o scadenza dell'accesso.
+
+### 5. Conversazioni più espressive
+
+- Reazioni leggere e private a post, commenti e messaggi, con un set piccolo e accessibile e senza classifiche o punteggi nel feed.
+- Risposte contestuali con citazione breve e collegamento all'origine; nessun testo deve attraversare un confine di visibilità.
+- Menzioni governate dalle preferenze del destinatario, con una notifica singola e silenziabile; nessuna notifica in presenza di blocchi o contenuti inaccessibili.
+- Condivisione interna con nota personale verso una chat o cerchia autorizzata, senza copia pubblica, contatori o cascata di repost.
+- Schema previsto: `reactions`, `comment_replies`, `mentions`, `shares`, con vincoli univoci e notifiche idempotenti.
+
+### 6. Scoperta intenzionale e salute del prodotto
+
+- Esplora offre soltanto percorsi espliciti e spiegati: hashtag scelti, persone seguite da contatti approvati e profili locali o nuovi cercati volontariamente. Ogni sezione può essere nascosta.
+- Nessun feed «Per te», scorrimento infinito, autoplay generalizzato, classifica, streak, premio di presenza, badge di engagement o notifica senza una novità concreta.
+- Misurare la beta solo con dati aggregati e minimizzati: completamento onboarding, almeno cinque contatti seguiti, risposte ricevute, partecipazione a cerchie o eventi e ritorno volontario a 7/28 giorni. Questi dati non alimentano ranking o profili individuali.
+- Prima di ogni rilascio definire ipotesi e soglia di successo verificabili e raccogliere anche feedback qualitativo. Le impostazioni devono permettere di silenziare notifiche, fermare il digest, lasciare cerchie ed esportare o eliminare i dati associati.
+
+Ogni blocco deve includere migrazione, API, demo IndexedDB, RLS, privacy e blocchi, quote, export e cancellazione coerenti, stati vuoti, test SQL e test browser desktop/mobile. Il feed resta cronologico e finito; queste funzioni non autorizzano pubblicità, sponsorizzazioni o la definizione dell'intera piattaforma come «zero-knowledge».
 
 ## Verifica e pubblicazione
 
