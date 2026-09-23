@@ -14,6 +14,7 @@ export const postInput = z
     kind: z.enum(['post', 'story', 'reel']),
     media_path: z.string().max(200).nullable(),
     alt: z.string().trim().max(300),
+    circle_ids: z.array(userId).max(5).optional(),
     poll: z
       .object({
         options: z.array(z.string().trim().min(1).max(100)).min(2).max(4),
@@ -28,6 +29,14 @@ export const postInput = z
   .refine(
     (v) => !v.poll || (v.kind === 'post' && !v.media_path && v.body.length > 0),
     'Il sondaggio richiede una domanda senza allegati.',
+  )
+  .refine(
+    (v) => !v.circle_ids?.length || (v.kind === 'post' && !v.poll),
+    'Per ora puoi condividere nelle cerchie post senza sondaggio.',
+  )
+  .refine(
+    (v) => !v.circle_ids || new Set(v.circle_ids).size === v.circle_ids.length,
+    'Scegli ogni cerchia una sola volta.',
   )
   .refine(
     (v) =>
@@ -268,6 +277,14 @@ export const noteReviewInput = z.object({
   approve: z.boolean(),
   reason: z.string().trim().min(10).max(500),
 });
+
+export const circleInput = z.object({
+  name: z.string().trim().min(1).max(60),
+  description: z.string().trim().max(240),
+});
+export const circleIdInput = z.object({ circle_id: userId });
+export const circleInviteInput = circleIdInput.extend({ user_id: userId });
+export const circleResponseInput = circleIdInput.extend({ accept: z.boolean() });
 
 export const chatSettingsInput = z.object({
   user_id: userId,

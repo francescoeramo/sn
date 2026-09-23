@@ -134,6 +134,31 @@ export type CommunityNote = {
 export type Bookmark = { user_id: string; post_id: string; created_at: string };
 export type SavedCursor = { created_at: string; post_id: string };
 export type SavedPage = { posts: Post[]; nextCursor: SavedCursor | null };
+export type Circle = {
+  id: string;
+  name: string;
+  description: string;
+  image_path: string | null;
+  created_by: string | null;
+  archived_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+export type CircleMember = {
+  circle_id: string;
+  user_id: string;
+  role: 'admin' | 'member';
+  invited_by: string | null;
+  status: 'invited' | 'active';
+  joined_at: string | null;
+  created_at: string;
+};
+export type CirclePost = {
+  circle_id: string;
+  post_id: string;
+  added_by: string;
+  created_at: string;
+};
 export type ChatSettings = {
   member_a: string;
   member_b: string;
@@ -165,6 +190,9 @@ export type Snapshot = {
   hiddenMessages?: { user_id: string; message_id: string }[];
   bookmarks: Bookmark[];
   saved: SavedPage;
+  circles?: Circle[];
+  circleMembers?: CircleMember[];
+  circlePosts?: CirclePost[];
   notes: CommunityNote[];
   pollResults?: PollResult[];
   me: Profile;
@@ -194,6 +222,11 @@ export type Snapshot = {
 };
 export type Action =
   | { type: 'complete-onboarding' }
+  | { type: 'create-circle'; name: string; description: string }
+  | { type: 'invite-circle'; circle_id: string; user_id: string }
+  | { type: 'respond-circle'; circle_id: string; accept: boolean }
+  | { type: 'leave-circle'; circle_id: string }
+  | { type: 'archive-circle'; circle_id: string }
   | { type: 'chat-settings'; user_id: string; temporary: boolean; duration: number }
   | { type: 'chat-receipt'; message_id: string; revision: number; read: boolean }
   | { type: 'edit-message'; message_id: string; encrypted: Sealed; media_path: string | null }
@@ -208,6 +241,7 @@ export type Action =
       alt: string;
       content_warning?: string;
       poll?: { options: string[]; duration: number | null };
+      circle_ids?: string[];
     }
   | { type: 'vote-poll'; poll_id: string; option_id: string }
   | { type: 'bookmark'; post_id: string; saved: boolean }

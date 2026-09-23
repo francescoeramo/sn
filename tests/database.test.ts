@@ -933,6 +933,48 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
     );
     expect(members).toEqual([{ user_id: bob, role: 'admin' }]);
   });
+  it('isola le cerchie, richiede un invito reciproco e limita i post ai membri', async () => {
+    const created = await asUser<{ create_circle: string }>(
+      alice,
+      "select public.create_circle('Tavolo lungo','Cene e gite')",
+    );
+    const circleId = created[0].create_circle;
+    await expect(
+      asUser(alice, 'select public.invite_circle_member($1,$2)', [circleId, eve]),
+    ).rejects.toThrow('contatti reciproci');
+    await expect(asUser(bob, 'select * from public.circles')).resolves.toHaveLength(0);
+    await asUser(alice, 'select public.invite_circle_member($1,$2)', [circleId, bob]);
+    expect(await asUser(bob, 'select * from public.circles where id=$1', [circleId])).toHaveLength(
+      1,
+    );
+    expect(
+      await asUser<{ status: string }>(
+        bob,
+        'select status from public.circle_members where circle_id=$1 and user_id=$2',
+        [circleId, bob],
+      ),
+    ).toEqual([{ status: 'invited' }]);
+    await asUser(bob, 'select public.respond_circle_invite($1,true)', [circleId]);
+    const posted = await asUser<{ create_circle_post: string }>(
+      alice,
+      "select public.create_circle_post(array[$1]::uuid[],'Solo per noi','',null,'')",
+      [circleId],
+    );
+    const postId = posted[0].create_circle_post;
+    expect(await asUser(bob, 'select * from public.posts where id=$1', [postId])).toHaveLength(1);
+    expect(await asUser(eve, 'select * from public.posts where id=$1', [postId])).toHaveLength(0);
+    await expect(
+      asUser(eve, 'insert into public.circle_members(circle_id,user_id,status) values($1,$2,$3)', [
+        circleId,
+        eve,
+        'active',
+      ]),
+    ).rejects.toThrow('permission denied');
+    await asUser(bob, 'select public.leave_circle($1)', [circleId]);
+    expect(await asUser(bob, 'select * from public.posts where id=$1', [postId])).toHaveLength(0);
+    await db.query('delete from public.posts where id=$1', [postId]);
+    await db.query('delete from public.circles where id=$1', [circleId]);
+  });
   it('salva messaggi di gruppo cifrati solo per membri e dispositivi correnti', async () => {
     const created = await asUser<{ create_chat_group: string }>(
       alice,

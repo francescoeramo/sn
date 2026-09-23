@@ -12,6 +12,10 @@ import {
   receiptInput,
   editMessageInput,
   deleteMessageInput,
+  circleInput,
+  circleInviteInput,
+  circleResponseInput,
+  circleIdInput,
 } from '@/lib/core/rules';
 import { identity, checked, adminDatabase, ApiError } from './supabase';
 import { enqueueFederatedActivity, ensureFederationActorKey, publicPostBy } from './federation';
@@ -165,6 +169,9 @@ export async function snapshot() {
       .select('*, post:posts(body)')
       .order('created_at', { ascending: false })
       .limit(500),
+    db.from('circles').select('*').order('updated_at', { ascending: false }),
+    db.from('circle_members').select('*').order('created_at'),
+    db.from('circle_posts').select('*').order('created_at', { ascending: false }).limit(500),
   ]);
   const [
     profiles,
@@ -179,6 +186,9 @@ export async function snapshot() {
     blocks,
     usage,
     notes,
+    circles,
+    circleMembers,
+    circlePosts,
   ] = results.map((r) => checked(r));
   const [bookmarks, saved, pollResults, remotePosts] = await Promise.all([
     bookmarksFor(db),
@@ -205,6 +215,9 @@ export async function snapshot() {
   return {
     bookmarks,
     saved,
+    circles,
+    circleMembers,
+    circlePosts,
     notes,
     pollResults,
     me: profile,
@@ -247,6 +260,46 @@ export async function mutate(input: unknown) {
           .eq('id', user.id),
       );
       break;
+    case 'create-circle': {
+      const value = circleInput.parse(obj);
+      checked(
+        await db.rpc('create_circle', {
+          circle_name: value.name,
+          circle_description: value.description,
+        }),
+      );
+      break;
+    }
+    case 'invite-circle': {
+      const value = circleInviteInput.parse(obj);
+      checked(
+        await db.rpc('invite_circle_member', {
+          target_circle: value.circle_id,
+          other: value.user_id,
+        }),
+      );
+      break;
+    }
+    case 'respond-circle': {
+      const value = circleResponseInput.parse(obj);
+      checked(
+        await db.rpc('respond_circle_invite', {
+          target_circle: value.circle_id,
+          accept_invite: value.accept,
+        }),
+      );
+      break;
+    }
+    case 'leave-circle': {
+      const value = circleIdInput.parse(obj);
+      checked(await db.rpc('leave_circle', { target_circle: value.circle_id }));
+      break;
+    }
+    case 'archive-circle': {
+      const value = circleIdInput.parse(obj);
+      checked(await db.rpc('archive_circle', { target_circle: value.circle_id }));
+      break;
+    }
     case 'chat-settings': {
       const v = chatSettingsInput.parse(obj);
       checked(
@@ -305,7 +358,17 @@ export async function mutate(input: unknown) {
     }
     case 'post': {
       const v = postInput.parse(obj);
-      if (v.poll)
+      if (v.circle_ids?.length)
+        checked(
+          await db.rpc('create_circle_post', {
+            target_circles: v.circle_ids,
+            post_body: v.body,
+            warning: v.content_warning,
+            media: v.media_path,
+            alternative: v.alt,
+          }),
+        );
+      else if (v.poll)
         checked(
           await db.rpc('create_poll', {
             question: v.body,

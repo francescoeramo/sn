@@ -13,6 +13,10 @@ import {
   sealedInput,
   noteReviewInput,
   localMediaInfo,
+  circleInput,
+  circleInviteInput,
+  circleResponseInput,
+  circleIdInput,
 } from '@/lib/core/rules';
 const uid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const ago = (minutes: number) => new Date(Date.now() - minutes * 60000).toISOString();
@@ -37,6 +41,41 @@ export function seed(): Snapshot {
   }));
   return {
     bookmarks: [],
+    circles: [
+      {
+        id: uid(501),
+        name: 'Tavolo lungo',
+        description: 'Cene improvvisate, gite e cose da fare insieme.',
+        image_path: null,
+        created_by: uid(1),
+        archived_at: null,
+        created_at: ago(900),
+        updated_at: ago(90),
+      },
+    ],
+    circleMembers: [
+      {
+        circle_id: uid(501),
+        user_id: uid(1),
+        role: 'admin',
+        invited_by: null,
+        status: 'active',
+        joined_at: ago(900),
+        created_at: ago(900),
+      },
+      {
+        circle_id: uid(501),
+        user_id: uid(2),
+        role: 'member',
+        invited_by: uid(1),
+        status: 'active',
+        joined_at: ago(800),
+        created_at: ago(810),
+      },
+    ],
+    circlePosts: [
+      { circle_id: uid(501), post_id: uid(101), added_by: uid(2), created_at: ago(12) },
+    ],
     saved: { posts: [], nextCursor: null },
     notes: [],
     pollResults: [
@@ -207,6 +246,9 @@ export async function loadDemo(): Promise<Snapshot> {
           created_at: profile.created_at,
         }));
         state.bookmarks ??= [];
+        state.circles ??= [];
+        state.circleMembers ??= [];
+        state.circlePosts ??= [];
         state.saved ??= { posts: [], nextCursor: null };
         state.messages = state.messages.filter((m) => isActive(m));
         state.posts = state.posts.filter((p) => isActive(p));
@@ -263,6 +305,9 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
   s.pollResults ??= [];
   s.moderationAudit ??= [];
   s.bookmarks ??= [];
+  s.circles ??= [];
+  s.circleMembers ??= [];
+  s.circlePosts ??= [];
   s.saved ??= { posts: [], nextCursor: null };
   const me = s.me.id;
   const now = new Date().toISOString();
@@ -272,6 +317,118 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
       s.me.onboarded_at = now;
       s.profiles = s.profiles.map((profile) => (profile.id === me ? s.me : profile));
       break;
+    case 'create-circle': {
+      const value = circleInput.parse(action);
+      s.circles.unshift({
+        id,
+        name: value.name,
+        description: value.description,
+        image_path: null,
+        created_by: me,
+        archived_at: null,
+        created_at: now,
+        updated_at: now,
+      });
+      s.circleMembers.push({
+        circle_id: id,
+        user_id: me,
+        role: 'admin',
+        invited_by: null,
+        status: 'active',
+        joined_at: now,
+        created_at: now,
+      });
+      break;
+    }
+    case 'invite-circle': {
+      const value = circleInviteInput.parse(action);
+      const admin = s.circleMembers.find(
+        (member) =>
+          member.circle_id === value.circle_id &&
+          member.user_id === me &&
+          member.status === 'active' &&
+          member.role === 'admin',
+      );
+      const mutual =
+        s.follows.some(
+          (f) => f.follower_id === me && f.following_id === value.user_id && f.accepted,
+        ) &&
+        s.follows.some(
+          (f) => f.follower_id === value.user_id && f.following_id === me && f.accepted,
+        );
+      if (!admin || !mutual) throw new Error('Puoi invitare solo contatti reciproci.');
+      if (s.circleMembers.filter((member) => member.circle_id === value.circle_id).length >= 20)
+        throw new Error('La cerchia ha già 20 persone.');
+      const current = s.circleMembers.find(
+        (member) => member.circle_id === value.circle_id && member.user_id === value.user_id,
+      );
+      if (current?.status === 'active') throw new Error('Questa persona è già nella cerchia.');
+      s.circleMembers = s.circleMembers.filter((member) => member !== current);
+      s.circleMembers.push({
+        circle_id: value.circle_id,
+        user_id: value.user_id,
+        role: 'member',
+        invited_by: me,
+        status: 'invited',
+        joined_at: null,
+        created_at: now,
+      });
+      break;
+    }
+    case 'respond-circle': {
+      const value = circleResponseInput.parse(action);
+      const invite = s.circleMembers.find(
+        (member) =>
+          member.circle_id === value.circle_id &&
+          member.user_id === me &&
+          member.status === 'invited',
+      );
+      if (!invite) throw new Error('Invito non disponibile.');
+      if (value.accept) {
+        invite.status = 'active';
+        invite.joined_at = now;
+      } else s.circleMembers = s.circleMembers.filter((member) => member !== invite);
+      break;
+    }
+    case 'leave-circle': {
+      const value = circleIdInput.parse(action);
+      const member = s.circleMembers.find(
+        (item) =>
+          item.circle_id === value.circle_id && item.user_id === me && item.status === 'active',
+      );
+      if (!member) throw new Error('Accesso negato.');
+      const active = s.circleMembers.filter(
+        (item) => item.circle_id === value.circle_id && item.status === 'active',
+      );
+      if (member.role === 'admin' && active.filter((item) => item.role === 'admin').length === 1) {
+        const successor = active.find((item) => item.user_id !== me);
+        if (successor) successor.role = 'admin';
+      }
+      s.circleMembers = s.circleMembers.filter((item) => item !== member);
+      if (
+        !s.circleMembers.some(
+          (item) => item.circle_id === value.circle_id && item.status === 'active',
+        )
+      ) {
+        const circle = s.circles.find((item) => item.id === value.circle_id);
+        if (circle) circle.archived_at = now;
+      }
+      break;
+    }
+    case 'archive-circle': {
+      const value = circleIdInput.parse(action);
+      const admin = s.circleMembers.some(
+        (item) =>
+          item.circle_id === value.circle_id &&
+          item.user_id === me &&
+          item.status === 'active' &&
+          item.role === 'admin',
+      );
+      if (!admin) throw new Error('Accesso negato.');
+      const circle = s.circles.find((item) => item.id === value.circle_id);
+      if (circle) circle.archived_at = now;
+      break;
+    }
     case 'chat-settings': {
       const v = chatSettingsInput.parse(action);
       if (
@@ -449,6 +606,8 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
         created_at: now,
         expires_at: p.kind === 'story' ? new Date(Date.now() + 86400000).toISOString() : null,
       });
+      for (const circle_id of parsed.circle_ids ?? [])
+        s.circlePosts.push({ circle_id, post_id: id, added_by: me, created_at: now });
       break;
     }
     case 'vote-poll': {

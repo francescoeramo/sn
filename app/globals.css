@@ -3467,6 +3467,234 @@ label small {
   line-height: 1.6;
 }
 
+/* Cerchie: spazi privati, leggibili come conversazioni e non come dashboard. */
+.circles-overview,
+.circle-detail {
+  display: grid;
+  gap: 24px;
+}
+.circles-toolbar,
+.circle-hero,
+.circle-invitations article,
+.circle-list > button,
+.circle-compose {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.circles-toolbar {
+  justify-content: space-between;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+}
+.circles-toolbar h2,
+.circle-invitations h2,
+.circle-hero h2 {
+  margin: 0 0 5px;
+  letter-spacing: -0.02em;
+}
+.circles-toolbar p,
+.circle-hero p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+.circle-create,
+.circle-compose {
+  padding: 20px;
+  background: var(--surface-soft);
+  border-radius: 14px;
+}
+.circle-create {
+  display: grid;
+  gap: 16px;
+}
+.circle-create label {
+  display: grid;
+  gap: 7px;
+  font-size: 14px;
+  font-weight: 650;
+}
+.circle-create label small {
+  color: var(--muted);
+  font-weight: 400;
+}
+.circle-create input,
+.circle-create textarea,
+.circle-compose textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--ink);
+  padding: 11px 13px;
+  font: inherit;
+  resize: vertical;
+}
+.circle-list {
+  display: grid;
+  border-top: 1px solid var(--line);
+}
+.circle-list > button {
+  width: 100%;
+  min-height: 88px;
+  text-align: left;
+  padding: 14px 4px;
+  border-bottom: 1px solid var(--line);
+}
+.circle-list > button:hover {
+  background: var(--surface-soft);
+}
+.circle-list > button > span:nth-child(2) {
+  display: grid;
+  gap: 4px;
+  flex: 1;
+}
+.circle-list small,
+.circle-invitations article span {
+  color: var(--muted);
+  font-size: 13px;
+}
+.circle-mark {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  flex: 0 0 54px;
+  border-radius: 50%;
+  background: var(--lilac);
+  color: var(--violet-dark);
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+.circle-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.circle-invitations {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  background: var(--surface-soft);
+  border-radius: 14px;
+}
+.circle-invitations article > div:nth-child(2) {
+  display: grid;
+  gap: 3px;
+  flex: 1;
+}
+.circle-back {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 44px;
+}
+.circle-hero {
+  align-items: flex-start;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--line);
+}
+.circle-hero > div:nth-child(2) {
+  flex: 1;
+}
+.circle-hero > div:nth-child(2) > span {
+  display: block;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.circle-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.circle-compose {
+  align-items: flex-start;
+}
+.circle-compose label {
+  flex: 1;
+}
+.circle-members {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 2px 0 10px;
+  scrollbar-color: var(--line) transparent;
+}
+.circle-members button {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  min-width: 78px;
+  font-size: 12px;
+}
+.circle-members button small {
+  color: var(--muted);
+  font-size: 10px;
+}
+.circle-invite {
+  border-block: 1px solid var(--line);
+  padding: 12px 0;
+}
+.circle-invite summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  cursor: pointer;
+  font-weight: 650;
+}
+.circle-invite > div {
+  display: grid;
+}
+.circle-invite > div > button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 58px;
+  border-top: 1px solid var(--line);
+  text-align: left;
+}
+.circle-invite > div > button span:nth-child(2) {
+  flex: 1;
+}
+.circle-feed {
+  display: grid;
+  gap: 20px;
+}
+@media (max-width: 620px) {
+  .circles-toolbar,
+  .circle-hero {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .circles-toolbar .primary,
+  .circle-actions .primary {
+    flex: 1;
+  }
+  .circle-compose {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+  .circle-compose label {
+    flex-basis: calc(100% - 60px);
+  }
+  .circle-compose > .primary {
+    margin-left: 52px;
+  }
+  .circle-invitations article {
+    flex-wrap: wrap;
+  }
+  .circle-invitations article > div:nth-child(2) {
+    min-width: calc(100% - 72px);
+  }
+}
+
 :root[data-theme='dark'] * {
   border-color: var(--line);
 }

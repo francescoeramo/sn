@@ -27,6 +27,7 @@ import {
   Check,
   Ban,
   Bookmark,
+  CircleUserRound,
 } from 'lucide-react';
 import type { Action, Snapshot, Post } from '@/lib/core/types';
 import { LIMITS, isActive, hashtags, relativeTime } from '@/lib/core/rules';
@@ -46,12 +47,14 @@ import { SecuritySettings } from './security-settings';
 import { WelcomeOnboarding } from './welcome-onboarding';
 import { ThemeSettings } from './theme-settings';
 import { GroupChatPanel } from './group-chat-panel';
+import { CirclePanel } from './circle-panel';
 
 type View =
   | 'home'
   | 'search'
   | 'reels'
   | 'messages'
+  | 'circles'
   | 'notifications'
   | 'profile'
   | 'settings'
@@ -61,6 +64,7 @@ const navigation = [
   { id: 'search', label: 'Esplora', icon: Search },
   { id: 'reels', label: 'Reel', icon: Clapperboard },
   { id: 'messages', label: 'Messaggi', icon: MessageCircle },
+  { id: 'circles', label: 'Cerchie', icon: CircleUserRound },
   { id: 'notifications', label: 'Notifiche', icon: Bell },
   { id: 'profile', label: 'Il tuo profilo', icon: UserRound },
 ] as const;
@@ -295,6 +299,8 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
   const visiblePosts = state.posts.filter(
     (p) => isActive(p, clock) && !state.blocks.some((b) => b.blocked_id === p.author_id),
   );
+  const circlePostIds = new Set((state.circlePosts ?? []).map((link) => link.post_id));
+  const regularPosts = visiblePosts.filter((post) => !circlePostIds.has(post.id));
   const followed = new Set(
     state.follows.filter((f) => f.follower_id === me.id && f.accepted).map((f) => f.following_id),
   );
@@ -327,7 +333,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
     : state.saved.posts.filter((p) => isActive(p, clock) && savedIds.has(p.id));
   const feed = showingSaved
     ? savedPosts.filter((p) => p.kind !== 'story')
-    : visiblePosts.filter(
+    : regularPosts.filter(
         (p) =>
           p.kind !== 'story' &&
           (view === 'reels'
@@ -635,6 +641,17 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                 </div>
                 <h2 className="section-title">Conversazioni {query && <span>· {query}</span>}</h2>
               </>
+            )}
+            {view === 'circles' && (
+              <CirclePanel
+                state={state}
+                demo={demo}
+                busy={busy}
+                now={clock}
+                onAction={act}
+                onProfile={(id) => navigate('profile', id)}
+                onTag={search}
+              />
             )}
             {view === 'profile' && focusProfile && (
               <section className="profile-card">

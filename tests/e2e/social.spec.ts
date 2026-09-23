@@ -1,4 +1,34 @@
 import { test, expect } from '@playwright/test';
+test('cerchie: mini-feed privato persistente e separato dalla piazza', async ({ page }) => {
+  await page.goto('/demo');
+  await page
+    .getByRole('button', { name: 'Cerchie', exact: true })
+    .filter({ visible: true })
+    .click();
+  await expect(page.getByRole('heading', { name: 'Cerchie.' })).toBeVisible();
+  await page.getByRole('button', { name: /Tavolo lungo/ }).click();
+  await expect(page.getByRole('heading', { name: 'Tavolo lungo' })).toBeVisible();
+  await page.getByRole('button', { name: 'Scrivi qui' }).click();
+  await page.getByLabel('Scrivi nella cerchia').fill('Ci vediamo sabato alle undici?');
+  await page.getByRole('button', { name: 'Pubblica', exact: true }).click();
+  await expect(page.locator('article').filter({ hasText: 'Ci vediamo sabato alle undici?' })).toBeVisible();
+  await page.reload();
+  await page
+    .getByRole('button', { name: 'Cerchie', exact: true })
+    .filter({ visible: true })
+    .click();
+  await page.getByRole('button', { name: /Tavolo lungo/ }).click();
+  await expect(page.locator('article').filter({ hasText: 'Ci vediamo sabato alle undici?' })).toBeVisible();
+  await page
+    .getByRole('button', { name: 'La tua piazza', exact: true })
+    .filter({ visible: true })
+    .press('Enter');
+  await expect(page.getByRole('heading', { name: 'La tua piazza.' })).toBeVisible();
+  await expect(
+    page.locator('article:visible').filter({ hasText: 'Ci vediamo sabato alle undici?' }),
+  ).toHaveCount(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
 test('demo: pubblicazione, commento, persistenza e ricerca', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
