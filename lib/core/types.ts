@@ -225,8 +225,12 @@ export type Action =
   | { type: 'create-circle'; name: string; description: string }
   | { type: 'invite-circle'; circle_id: string; user_id: string }
   | { type: 'respond-circle'; circle_id: string; accept: boolean }
+  | { type: 'update-circle'; circle_id: string; name: string; description: string }
+  | { type: 'set-circle-role'; circle_id: string; user_id: string; role: 'admin' | 'member' }
+  | { type: 'remove-circle-member'; circle_id: string; user_id: string }
   | { type: 'leave-circle'; circle_id: string }
   | { type: 'archive-circle'; circle_id: string }
+  | { type: 'delete-circle'; circle_id: string }
   | { type: 'chat-settings'; user_id: string; temporary: boolean; duration: number }
   | { type: 'chat-receipt'; message_id: string; revision: number; read: boolean }
   | { type: 'edit-message'; message_id: string; encrypted: Sealed; media_path: string | null }

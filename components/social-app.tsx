@@ -1600,6 +1600,16 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
           me={me}
           demo={demo}
           initialKind={composer}
+          circles={(state.circles ?? []).filter(
+            (circle) =>
+              !circle.archived_at &&
+              (state.circleMembers ?? []).some(
+                (member) =>
+                  member.circle_id === circle.id &&
+                  member.user_id === me.id &&
+                  member.status === 'active',
+              ),
+          )}
           onClose={() => setComposer(null)}
           onPost={act}
         />

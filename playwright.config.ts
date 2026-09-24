@@ -1,4 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
+const port = process.env.E2E_PORT ?? '3100';
+const baseURL = `http://127.0.0.1:${port}`;
+const webServerCommand = process.env.E2E_DEV_SERVER
+  ? `npm run dev -- --port ${port}`
+  : 'node scripts/prepare-standalone.mjs && node .next/standalone/server.js';
 export default defineConfig({
   testDir: 'tests/e2e',
   fullyParallel: false,
@@ -6,7 +11,7 @@ export default defineConfig({
   retries: 0,
   timeout: 30000,
   use: {
-    baseURL: 'http://127.0.0.1:3100',
+    baseURL,
     trace: 'retain-on-failure',
     launchOptions: process.env.CI ? {} : { executablePath: '/usr/bin/chromium' },
   },
@@ -18,14 +23,14 @@ export default defineConfig({
     { name: 'mobile', use: { ...devices['Pixel 7'] } },
   ],
   webServer: {
-    command: 'node scripts/prepare-standalone.mjs && node .next/standalone/server.js',
-    url: 'http://127.0.0.1:3100',
+    command: webServerCommand,
+    url: baseURL,
     reuseExistingServer: !process.env.CI,
     env: {
       NEXT_TELEMETRY_DISABLED: '1',
-      APP_ORIGIN: 'http://127.0.0.1:3100',
+      APP_ORIGIN: baseURL,
       HOSTNAME: '127.0.0.1',
-      PORT: '3100',
+      PORT: port,
     },
   },
 });

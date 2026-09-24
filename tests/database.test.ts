@@ -955,6 +955,24 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
       ),
     ).toEqual([{ status: 'invited' }]);
     await asUser(bob, 'select public.respond_circle_invite($1,true)', [circleId]);
+    await expect(
+      asUser(bob, "select public.update_circle($1,'Nome negato','')", [circleId]),
+    ).rejects.toThrow('Accesso negato');
+    await asUser(alice, "select public.update_circle($1,'Tavolo grande','Cene, gite e cinema')", [
+      circleId,
+    ]);
+    expect(
+      await asUser<{ name: string; description: string }>(
+        bob,
+        'select name,description from public.circles where id=$1',
+        [circleId],
+      ),
+    ).toEqual([{ name: 'Tavolo grande', description: 'Cene, gite e cinema' }]);
+    await asUser(alice, "select public.set_circle_member_role($1,$2,'admin')", [circleId, bob]);
+    await asUser(alice, "select public.set_circle_member_role($1,$2,'member')", [circleId, bob]);
+    await expect(
+      asUser(alice, "select public.set_circle_member_role($1,$2,'member')", [circleId, alice]),
+    ).rejects.toThrow('Accesso negato');
     const posted = await asUser<{ create_circle_post: string }>(
       alice,
       "select public.create_circle_post(array[$1]::uuid[],'Solo per noi','',null,'')",
@@ -963,6 +981,18 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
     const postId = posted[0].create_circle_post;
     expect(await asUser(bob, 'select * from public.posts where id=$1', [postId])).toHaveLength(1);
     expect(await asUser(eve, 'select * from public.posts where id=$1', [postId])).toHaveLength(0);
+    const polled = await asUser<{ create_circle_poll: string }>(
+      alice,
+      "select public.create_circle_poll(array[$1]::uuid[],'Che cosa portiamo?','',array['Pane','Frutta'],86400)",
+      [circleId],
+    );
+    const pollId = polled[0].create_circle_poll;
+    expect(await asUser(bob, 'select * from public.polls where post_id=$1', [pollId])).toHaveLength(
+      1,
+    );
+    expect(await asUser(eve, 'select * from public.polls where post_id=$1', [pollId])).toHaveLength(
+      0,
+    );
     await expect(
       asUser(eve, 'insert into public.circle_members(circle_id,user_id,status) values($1,$2,$3)', [
         circleId,
@@ -970,10 +1000,18 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
         'active',
       ]),
     ).rejects.toThrow('permission denied');
-    await asUser(bob, 'select public.leave_circle($1)', [circleId]);
+    await asUser(alice, 'select public.remove_circle_member($1,$2)', [circleId, bob]);
     expect(await asUser(bob, 'select * from public.posts where id=$1', [postId])).toHaveLength(0);
-    await db.query('delete from public.posts where id=$1', [postId]);
-    await db.query('delete from public.circles where id=$1', [circleId]);
+    expect(await asUser(bob, 'select * from public.polls where post_id=$1', [pollId])).toHaveLength(
+      0,
+    );
+    await asUser(alice, 'select public.delete_circle($1)', [circleId]);
+    expect(
+      (await db.query('select id from public.posts where id in($1,$2)', [postId, pollId])).rows,
+    ).toEqual([]);
+    expect((await db.query('select id from public.circles where id=$1', [circleId])).rows).toEqual(
+      [],
+    );
   });
   it('salva messaggi di gruppo cifrati solo per membri e dispositivi correnti', async () => {
     const created = await asUser<{ create_chat_group: string }>(

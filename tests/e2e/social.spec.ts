@@ -11,14 +11,18 @@ test('cerchie: mini-feed privato persistente e separato dalla piazza', async ({ 
   await page.getByRole('button', { name: 'Scrivi qui' }).click();
   await page.getByLabel('Scrivi nella cerchia').fill('Ci vediamo sabato alle undici?');
   await page.getByRole('button', { name: 'Pubblica', exact: true }).click();
-  await expect(page.locator('article').filter({ hasText: 'Ci vediamo sabato alle undici?' })).toBeVisible();
+  await expect(
+    page.locator('article').filter({ hasText: 'Ci vediamo sabato alle undici?' }),
+  ).toBeVisible();
   await page.reload();
   await page
     .getByRole('button', { name: 'Cerchie', exact: true })
     .filter({ visible: true })
     .click();
   await page.getByRole('button', { name: /Tavolo lungo/ }).click();
-  await expect(page.locator('article').filter({ hasText: 'Ci vediamo sabato alle undici?' })).toBeVisible();
+  await expect(
+    page.locator('article').filter({ hasText: 'Ci vediamo sabato alle undici?' }),
+  ).toBeVisible();
   await page
     .getByRole('button', { name: 'La tua piazza', exact: true })
     .filter({ visible: true })
@@ -28,6 +32,52 @@ test('cerchie: mini-feed privato persistente e separato dalla piazza', async ({ 
     page.locator('article:visible').filter({ hasText: 'Ci vediamo sabato alle undici?' }),
   ).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+test('cerchie: un admin rinomina lo spazio e gestisce i membri', async ({ page }) => {
+  await page.goto('/demo');
+  await page
+    .getByRole('button', { name: 'Cerchie', exact: true })
+    .filter({ visible: true })
+    .click();
+  await page.getByRole('button', { name: /Tavolo lungo/ }).click();
+  await page.getByRole('button', { name: 'Modifica cerchia' }).click();
+  await page.getByLabel('Nome').fill('Tavolo del sabato');
+  await page.getByLabel(/Descrizione/).fill('Cene e gite decise insieme.');
+  await page.getByRole('button', { name: 'Salva', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Tavolo del sabato' })).toBeVisible();
+  await page.getByRole('button', { name: 'Nomina Giulia Rossi admin' }).click();
+  await expect(
+    page.getByRole('button', { name: 'Rimuovi Giulia Rossi dagli admin' }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Rimuovi Giulia Rossi dalla cerchia' }).click();
+  await expect(page.getByRole('button', { name: 'Nomina Giulia Rossi admin' })).toHaveCount(0);
+  await page.reload();
+  await page
+    .getByRole('button', { name: 'Cerchie', exact: true })
+    .filter({ visible: true })
+    .click();
+  await page.getByRole('button', { name: /Tavolo del sabato/ }).click();
+  await expect(page.getByText('Cene e gite decise insieme.')).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+test('cerchie: il composer pubblica nella destinazione scelta', async ({ page }) => {
+  await page.goto('/demo');
+  await page.getByRole('button', { name: 'Che cosa vuoi raccontare?' }).click();
+  await page.getByLabel('Testo del post').fill('Una proposta soltanto per il gruppo.');
+  await page.getByLabel('Tavolo lungo').check();
+  await expect(page.getByText('Solo nella cerchia scelta')).toBeVisible();
+  await page.getByRole('button', { name: 'Pubblica', exact: true }).click();
+  await expect(
+    page.locator('article:visible').filter({ hasText: 'Una proposta soltanto per il gruppo.' }),
+  ).toHaveCount(0);
+  await page
+    .getByRole('button', { name: 'Cerchie', exact: true })
+    .filter({ visible: true })
+    .click();
+  await page.getByRole('button', { name: /Tavolo lungo/ }).click();
+  await expect(
+    page.locator('article').filter({ hasText: 'Una proposta soltanto per il gruppo.' }),
+  ).toBeVisible();
 });
 test('demo: pubblicazione, commento, persistenza e ricerca', async ({ page }) => {
   const errors: string[] = [];

@@ -17,6 +17,9 @@ import {
   circleInviteInput,
   circleResponseInput,
   circleIdInput,
+  circleMemberInput,
+  circleRoleInput,
+  circleUpdateInput,
 } from '@/lib/core/rules';
 const uid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const ago = (minutes: number) => new Date(Date.now() - minutes * 60000).toISOString();
@@ -390,6 +393,76 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
       } else s.circleMembers = s.circleMembers.filter((member) => member !== invite);
       break;
     }
+    case 'update-circle': {
+      const value = circleUpdateInput.parse(action);
+      const admin = s.circleMembers.some(
+        (member) =>
+          member.circle_id === value.circle_id &&
+          member.user_id === me &&
+          member.status === 'active' &&
+          member.role === 'admin',
+      );
+      if (!admin) throw new Error('Accesso negato.');
+      const circle = s.circles.find((item) => item.id === value.circle_id && !item.archived_at);
+      if (!circle) throw new Error('Cerchia non disponibile.');
+      circle.name = value.name;
+      circle.description = value.description;
+      circle.updated_at = now;
+      break;
+    }
+    case 'set-circle-role': {
+      const value = circleRoleInput.parse(action);
+      const admin = s.circleMembers.some(
+        (member) =>
+          member.circle_id === value.circle_id &&
+          member.user_id === me &&
+          member.status === 'active' &&
+          member.role === 'admin',
+      );
+      const member = s.circleMembers.find(
+        (item) =>
+          item.circle_id === value.circle_id &&
+          item.user_id === value.user_id &&
+          item.status === 'active',
+      );
+      if (!admin || !member || value.user_id === me) throw new Error('Accesso negato.');
+      if (
+        member.role === 'admin' &&
+        value.role === 'member' &&
+        s.circleMembers.filter(
+          (item) =>
+            item.circle_id === value.circle_id && item.status === 'active' && item.role === 'admin',
+        ).length === 1
+      )
+        throw new Error('La cerchia deve avere almeno un admin.');
+      member.role = value.role;
+      break;
+    }
+    case 'remove-circle-member': {
+      const value = circleMemberInput.parse(action);
+      const admin = s.circleMembers.some(
+        (member) =>
+          member.circle_id === value.circle_id &&
+          member.user_id === me &&
+          member.status === 'active' &&
+          member.role === 'admin',
+      );
+      const member = s.circleMembers.find(
+        (item) => item.circle_id === value.circle_id && item.user_id === value.user_id,
+      );
+      if (!admin || !member || value.user_id === me) throw new Error('Accesso negato.');
+      if (
+        member.status === 'active' &&
+        member.role === 'admin' &&
+        s.circleMembers.filter(
+          (item) =>
+            item.circle_id === value.circle_id && item.status === 'active' && item.role === 'admin',
+        ).length === 1
+      )
+        throw new Error('La cerchia deve avere almeno un admin.');
+      s.circleMembers = s.circleMembers.filter((item) => item !== member);
+      break;
+    }
     case 'leave-circle': {
       const value = circleIdInput.parse(action);
       const member = s.circleMembers.find(
@@ -427,6 +500,38 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
       if (!admin) throw new Error('Accesso negato.');
       const circle = s.circles.find((item) => item.id === value.circle_id);
       if (circle) circle.archived_at = now;
+      break;
+    }
+    case 'delete-circle': {
+      const value = circleIdInput.parse(action);
+      const admin = s.circleMembers.some(
+        (item) =>
+          item.circle_id === value.circle_id &&
+          item.user_id === me &&
+          item.status === 'active' &&
+          item.role === 'admin',
+      );
+      if (!admin) throw new Error('Accesso negato.');
+      const circlePosts = s.circlePosts;
+      const exclusivePostIds = new Set(
+        circlePosts
+          .filter(
+            (link) =>
+              link.circle_id === value.circle_id &&
+              !circlePosts.some(
+                (other) => other.post_id === link.post_id && other.circle_id !== value.circle_id,
+              ),
+          )
+          .map((link) => link.post_id),
+      );
+      s.posts = s.posts.filter((post) => !exclusivePostIds.has(post.id));
+      s.comments = s.comments.filter((comment) => !exclusivePostIds.has(comment.post_id));
+      s.likes = s.likes.filter((like) => !exclusivePostIds.has(like.post_id));
+      s.bookmarks = s.bookmarks.filter((bookmark) => !exclusivePostIds.has(bookmark.post_id));
+      s.pollResults = s.pollResults.filter((result) => !exclusivePostIds.has(result.poll_id));
+      s.circlePosts = s.circlePosts.filter((link) => link.circle_id !== value.circle_id);
+      s.circleMembers = s.circleMembers.filter((member) => member.circle_id !== value.circle_id);
+      s.circles = s.circles.filter((circle) => circle.id !== value.circle_id);
       break;
     }
     case 'chat-settings': {

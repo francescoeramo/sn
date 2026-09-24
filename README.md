@@ -23,6 +23,19 @@ Apri **http://127.0.0.1:3000/demo**. Non servono chiavi API. Le modifiche della 
 | Storie e reel       | Storie con scadenza nel DB e nell’interfaccia, reel con player nativo, compressione immagini e tentativo di ricodifica video nel browser      |
 | Messaggi            | 1:1 tra contatti reciproci, nuovi messaggi e allegati cifrati con chiavi locali; storico precedente in chiaro; limiti in docs/CRITTOGRAFIA.md |
 | Account e controllo | Supabase Auth, inviti monouso, recupero account, TOTP facoltativa, esportazione JSON, eliminazione e moderazione                              |
+| Cerchie             | Spazi privati locali con inviti, ruoli, mini-feed, destinazioni multiple e sondaggi; manca l’immagine e il collaudo cloud                     |
+
+## Sviluppo successivo approvato
+
+Le sezioni 5–9 del brief sono nella roadmap ma non sono ancora disponibili:
+
+1. Eventi semplici per cerchie o follower approvati, senza ticketing o geolocalizzazione obbligatoria.
+2. Digest giornaliero o settimanale, disattivato per impostazione predefinita e limitato a cinque elementi.
+3. Post collaborativi e album condivisi con inviti, permessi revocabili e visibilità unica.
+4. Reazioni private, risposte contestuali, menzioni con consenso e condivisioni interne senza contatori pubblici.
+5. Scoperta intenzionale e spiegabile, senza feed «Per te», ranking opaco, streak o scorrimento infinito.
+
+Ogni blocco richiede migrazione, API, demo IndexedDB, RLS, export, cancellazione e test browser. Lo stato dettagliato e l’ordine di lavoro sono in [ROADMAP.md](docs/ROADMAP.md).
 
 Le API reali richiedono un progetto Supabase con la migrazione applicata. I test locali verificano le policy SQL; non sostituiscono il collaudo di Auth, Storage e invio email su un progetto completo. Vedi [stato delle verifiche](docs/VERIFICA.md) e [limiti della prima versione](docs/ARCHITETTURA.md).
 

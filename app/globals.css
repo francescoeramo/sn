@@ -2159,6 +2159,7 @@ label small {
   color: var(--ink);
   padding: 0;
   box-shadow: 0 25px 100px #20102a25;
+  overflow-y: auto;
   overscroll-behavior: contain;
 }
 .modal::backdrop {
@@ -2301,6 +2302,63 @@ label small {
 }
 .poll-editor > .text-button {
   margin: 8px 0 2px;
+}
+.destination-picker {
+  display: grid;
+  gap: 10px;
+  margin: 4px 0 16px;
+  padding: 0;
+  border: 0;
+}
+.destination-picker legend {
+  font-weight: 700;
+}
+.destination-picker > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.destination-public,
+.destination-circles label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  cursor: pointer;
+}
+.destination-public:has(input:checked),
+.destination-circles label:has(input:checked) {
+  border-color: var(--violet);
+  background: var(--surface-soft);
+}
+.destination-public > span,
+.destination-circles label > span:last-child {
+  display: grid;
+  min-width: 0;
+}
+.destination-picker small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.destination-circles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.destination-circles .circle-mark {
+  width: 34px;
+  height: 34px;
+  flex-basis: 34px;
+  font-size: 11px;
+}
+@media (max-width: 520px) {
+  .destination-circles {
+    grid-template-columns: 1fr;
+  }
 }
 .file-picker {
   position: relative;
@@ -3500,6 +3558,7 @@ label small {
   line-height: 1.55;
 }
 .circle-create,
+.circle-edit,
 .circle-compose {
   padding: 20px;
   background: var(--surface-soft);
@@ -3509,18 +3568,43 @@ label small {
   display: grid;
   gap: 16px;
 }
-.circle-create label {
+.circle-edit {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  background: var(--surface-soft);
+  border-radius: 14px;
+}
+.circle-create label,
+.circle-edit label {
   display: grid;
   gap: 7px;
   font-size: 14px;
   font-weight: 650;
 }
-.circle-create label small {
+.circle-create label small,
+.circle-edit label small {
   color: var(--muted);
   font-weight: 400;
 }
+.circle-delete {
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.circle-delete [role='alert'] {
+  display: grid;
+  gap: 12px;
+}
+.circle-delete p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
 .circle-create input,
 .circle-create textarea,
+.circle-edit input,
+.circle-edit textarea,
 .circle-compose textarea {
   width: 100%;
   border: 1px solid var(--line);
@@ -3620,22 +3704,60 @@ label small {
   flex: 1;
 }
 .circle-members {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  padding: 2px 0 10px;
-  scrollbar-color: var(--line) transparent;
-}
-.circle-members button {
   display: grid;
-  justify-items: center;
-  gap: 5px;
-  min-width: 78px;
+  gap: 8px;
+  padding: 2px 0 10px;
+}
+.circle-member {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 52px;
+}
+.circle-member-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  text-align: left;
+}
+.circle-member-profile > span {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+.circle-member-profile strong,
+.circle-member-profile small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.circle-member-profile small {
+  color: var(--muted);
   font-size: 12px;
 }
-.circle-members button small {
-  color: var(--muted);
-  font-size: 10px;
+.circle-member-actions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+.danger-button {
+  color: var(--danger);
+}
+.circle-pending {
+  display: grid;
+  gap: 8px;
+  padding-block: 16px;
+  border-top: 1px solid var(--line);
+}
+.circle-pending h3 {
+  margin: 0 0 4px;
+  font-size: 14px;
+}
+.circle-pending .text-button {
+  margin-left: auto;
+  white-space: nowrap;
 }
 .circle-invite {
   border-block: 1px solid var(--line);

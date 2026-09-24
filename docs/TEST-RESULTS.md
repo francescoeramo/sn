@@ -105,3 +105,12 @@ Le Note della comunità sono testate nel database contro letture di estranei, pr
 - Lint, TypeScript, 109 test unitari/SQL e build webpack superati. Il flusso browser di federazione e moderazione passa su desktop e mobile senza errori JavaScript.
 - Hostname normalizzato, motivazione obbligatoria, blocco e sblocco sono limitati ai moderatori. Ogni decisione entra nel registro; recupero chiavi e consegne continuano a usare la stessa blocklist privata.
 - Il detector Impeccable non segnala problemi nei file modificati. Restano il collaudo con server federati reali e la valutazione operativa delle regole di blocco prima dell’apertura.
+
+## 24 settembre 2026 — gestione delle cerchie
+
+- Lint e TypeScript superati; 77 test mirati di regole e database superati.
+- Le prove SQL coprono rinomina, promozione e revoca del ruolo admin, rimozione di un membro, sondaggi privati, revoca immediata dell’accesso e cancellazione senza rendere pubblici i post della cerchia.
+- Sei test Playwright superati su desktop e mobile: mini-feed separato dalla piazza, gestione dei membri, rinomina persistente e pubblicazione dal composer verso la cerchia scelta.
+- L’export personale include cerchie, membership e collegamenti ai post. La cancellazione rimuove inviti e contenuti esclusivi; un post destinato anche ad altre cerchie resta visibile soltanto in quelle cerchie.
+- Il detector Impeccable non segnala problemi nei quattro file UI modificati. Il controllo visivo a 1440 × 960 e 390 × 844 non mostra overflow; il composer lungo scorre all’interno del dialogo.
+- La migrazione non è stata applicata al progetto Supabase cloud. La build resta bloccata su questo host dai limiti già documentati di Turbopack e dal parsing di `tsc --showConfig` nel percorso Webpack.

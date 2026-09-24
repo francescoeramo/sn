@@ -45,3 +45,11 @@ Questa decisione sostituisce la scadenza predefinita di 24 ore descritta sopra. 
 ## Gestione degli account
 
 I moderatori possono sospendere e ripristinare gli account ordinari con una motivazione di 10–500 caratteri. La sospensione blocca immediatamente l’accesso ai dati tramite i controlli applicativi e le RLS, senza attendere la scadenza del token. Un moderatore non può sospendere sé stesso o un altro moderatore; sospensioni, ripristini e motivazioni entrano nel registro append-only.
+
+## Aggiornamento del 24 settembre 2026 — sezioni 5–9
+
+Il proprietario approva come sviluppo successivo eventi semplici, digest opt-in, post collaborativi e album condivisi, conversazioni più espressive e scoperta intenzionale. Queste sezioni sono requisiti confermati, non funzioni disponibili.
+
+Gli eventi seguono il completamento delle cerchie e il collaudo cloud. Non includono ticketing, pagamenti, mappe esterne o geolocalizzazione obbligatoria. Il digest parte disattivato, contiene al massimo cinque elementi e non registra le aperture. Album e collaborazioni usano inviti accettati, permessi revocabili e una sola visibilità comprensibile. Reazioni, risposte, menzioni e condivisioni interne non introducono classifiche o copie pubbliche. Esplora resta intenzionale e spiegabile; sono esclusi feed «Per te», scorrimento infinito, streak e ranking opaco.
+
+Ogni sezione deve arrivare come blocco completo con schema, API, demo IndexedDB, RLS, privacy, blocchi, quote, export, cancellazione e test desktop/mobile. Il lavoro non autorizza pubblicità, sponsorizzazioni o profilazione individuale.

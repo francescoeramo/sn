@@ -1,7 +1,21 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Archive, ArrowLeft, Check, DoorOpen, Plus, UserPlus, Users, X } from 'lucide-react';
+import {
+  Archive,
+  ArrowLeft,
+  Check,
+  DoorOpen,
+  Pencil,
+  Plus,
+  Shield,
+  ShieldOff,
+  Trash2,
+  UserMinus,
+  UserPlus,
+  Users,
+  X,
+} from 'lucide-react';
 import type { Action, Circle, Post, Snapshot } from '@/lib/core/types';
 import { Avatar, Empty } from './primitives';
 import { PostCard } from './post-card';
@@ -20,8 +34,12 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [posting, setPosting] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
   const [body, setBody] = useState('');
   const memberships = state.circleMembers ?? [];
   const circles = state.circles ?? [];
@@ -36,6 +54,11 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
   const selected = mine.find((circle) => circle.id === selectedId) ?? null;
   const members = selected
     ? memberships.filter((member) => member.circle_id === selected.id && member.status === 'active')
+    : [];
+  const pendingMembers = selected
+    ? memberships.filter(
+        (member) => member.circle_id === selected.id && member.status === 'invited',
+      )
     : [];
   const myMembership = selected ? members.find((member) => member.user_id === state.me.id) : null;
   const memberIds = new Set(members.map((member) => member.user_id));
@@ -94,6 +117,36 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
     }
   }
 
+  function openEditor() {
+    if (!selected) return;
+    setEditName(selected.name);
+    setEditDescription(selected.description);
+    setEditing(true);
+  }
+
+  async function updateCircle(event: React.FormEvent) {
+    event.preventDefault();
+    if (!selected) return;
+    if (
+      await onAction({
+        type: 'update-circle',
+        circle_id: selected.id,
+        name: editName,
+        description: editDescription,
+      })
+    )
+      setEditing(false);
+  }
+
+  async function deleteCircle() {
+    if (!selected) return;
+    if (await onAction({ type: 'delete-circle', circle_id: selected.id })) {
+      setConfirmingDelete(false);
+      setEditing(false);
+      setSelectedId(null);
+    }
+  }
+
   if (selected)
     return (
       <section className="circle-detail" aria-labelledby="circle-title">
@@ -116,14 +169,19 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
               <Plus size={17} /> Scrivi qui
             </button>
             {myMembership?.role === 'admin' ? (
-              <button
-                className="icon-button"
-                aria-label="Archivia cerchia"
-                disabled={busy}
-                onClick={() => onAction({ type: 'archive-circle', circle_id: selected.id })}
-              >
-                <Archive size={18} />
-              </button>
+              <>
+                <button className="icon-button" aria-label="Modifica cerchia" onClick={openEditor}>
+                  <Pencil size={18} />
+                </button>
+                <button
+                  className="icon-button"
+                  aria-label="Archivia cerchia"
+                  disabled={busy}
+                  onClick={() => onAction({ type: 'archive-circle', circle_id: selected.id })}
+                >
+                  <Archive size={18} />
+                </button>
+              </>
             ) : (
               <button
                 className="icon-button"
@@ -136,6 +194,67 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
             )}
           </div>
         </header>
+        {editing && (
+          <form className="circle-edit" onSubmit={updateCircle}>
+            <label>
+              Nome
+              <input
+                autoFocus
+                required
+                maxLength={60}
+                value={editName}
+                onChange={(event) => setEditName(event.target.value)}
+              />
+            </label>
+            <label>
+              Descrizione <small>facoltativa</small>
+              <textarea
+                maxLength={240}
+                rows={2}
+                value={editDescription}
+                onChange={(event) => setEditDescription(event.target.value)}
+              />
+            </label>
+            <div className="button-row">
+              <button className="primary" disabled={busy || !editName.trim()}>
+                Salva
+              </button>
+              <button type="button" className="secondary" onClick={() => setEditing(false)}>
+                Annulla
+              </button>
+            </div>
+            <div className="circle-delete">
+              {!confirmingDelete ? (
+                <button
+                  type="button"
+                  className="text-button danger-text"
+                  onClick={() => setConfirmingDelete(true)}
+                >
+                  <Trash2 size={16} /> Elimina cerchia
+                </button>
+              ) : (
+                <div role="alert">
+                  <p>
+                    La cerchia, gli inviti e i post pubblicati soltanto qui verranno eliminati. I
+                    post condivisi anche in altre cerchie resteranno disponibili lì.
+                  </p>
+                  <div className="button-row">
+                    <button type="button" className="danger" disabled={busy} onClick={deleteCircle}>
+                      Elimina definitivamente
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary"
+                      onClick={() => setConfirmingDelete(false)}
+                    >
+                      Torna indietro
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </form>
+        )}
         {posting && (
           <form className="circle-compose" onSubmit={publish}>
             <Avatar person={state.me} />
@@ -159,14 +278,87 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
           {members.map((member) => {
             const profile = state.profiles.find((person) => person.id === member.user_id);
             return profile ? (
-              <button key={member.user_id} onClick={() => onProfile(profile.id)}>
-                <Avatar person={profile} />
-                <span>{profile.display_name}</span>
-                {member.role === 'admin' && <small>Admin</small>}
-              </button>
+              <div className="circle-member" key={member.user_id}>
+                <button className="circle-member-profile" onClick={() => onProfile(profile.id)}>
+                  <Avatar person={profile} />
+                  <span>
+                    <strong>{profile.display_name}</strong>
+                    <small>{member.role === 'admin' ? 'Admin' : `@${profile.username}`}</small>
+                  </span>
+                </button>
+                {myMembership?.role === 'admin' && member.user_id !== state.me.id && (
+                  <div className="circle-member-actions">
+                    <button
+                      className="icon-button"
+                      aria-label={
+                        member.role === 'admin'
+                          ? `Rimuovi ${profile.display_name} dagli admin`
+                          : `Nomina ${profile.display_name} admin`
+                      }
+                      disabled={busy}
+                      onClick={() =>
+                        onAction({
+                          type: 'set-circle-role',
+                          circle_id: selected.id,
+                          user_id: profile.id,
+                          role: member.role === 'admin' ? 'member' : 'admin',
+                        })
+                      }
+                    >
+                      {member.role === 'admin' ? <ShieldOff size={17} /> : <Shield size={17} />}
+                    </button>
+                    <button
+                      className="icon-button danger-button"
+                      aria-label={`Rimuovi ${profile.display_name} dalla cerchia`}
+                      disabled={busy}
+                      onClick={() =>
+                        onAction({
+                          type: 'remove-circle-member',
+                          circle_id: selected.id,
+                          user_id: profile.id,
+                        })
+                      }
+                    >
+                      <UserMinus size={17} />
+                    </button>
+                  </div>
+                )}
+              </div>
             ) : null;
           })}
         </div>
+        {myMembership?.role === 'admin' && pendingMembers.length > 0 && (
+          <div className="circle-pending" aria-label="Inviti in attesa">
+            <h3>Inviti in attesa</h3>
+            {pendingMembers.map((member) => {
+              const profile = state.profiles.find((person) => person.id === member.user_id);
+              return profile ? (
+                <div className="circle-member" key={member.user_id}>
+                  <div className="circle-member-profile">
+                    <Avatar person={profile} />
+                    <span>
+                      <strong>{profile.display_name}</strong>
+                      <small>Non ha ancora risposto</small>
+                    </span>
+                  </div>
+                  <button
+                    className="text-button"
+                    disabled={busy}
+                    onClick={() =>
+                      onAction({
+                        type: 'remove-circle-member',
+                        circle_id: selected.id,
+                        user_id: profile.id,
+                      })
+                    }
+                  >
+                    Revoca invito
+                  </button>
+                </div>
+              ) : null;
+            })}
+          </div>
+        )}
         {myMembership?.role === 'admin' && inviteable.length > 0 && (
           <details className="circle-invite">
             <summary>

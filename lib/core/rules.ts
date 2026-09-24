@@ -31,8 +31,8 @@ export const postInput = z
     'Il sondaggio richiede una domanda senza allegati.',
   )
   .refine(
-    (v) => !v.circle_ids?.length || (v.kind === 'post' && !v.poll),
-    'Per ora puoi condividere nelle cerchie post senza sondaggio.',
+    (v) => !v.circle_ids?.length || v.kind === 'post',
+    'Nelle cerchie puoi condividere post e sondaggi.',
   )
   .refine(
     (v) => !v.circle_ids || new Set(v.circle_ids).size === v.circle_ids.length,
@@ -285,6 +285,12 @@ export const circleInput = z.object({
 export const circleIdInput = z.object({ circle_id: userId });
 export const circleInviteInput = circleIdInput.extend({ user_id: userId });
 export const circleResponseInput = circleIdInput.extend({ accept: z.boolean() });
+export const circleUpdateInput = circleIdInput.extend({
+  name: z.string().trim().min(1).max(60),
+  description: z.string().trim().max(240),
+});
+export const circleMemberInput = circleIdInput.extend({ user_id: userId });
+export const circleRoleInput = circleMemberInput.extend({ role: z.enum(['admin', 'member']) });
 
 export const chatSettingsInput = z.object({
   user_id: userId,

@@ -16,6 +16,9 @@ import {
   circleInviteInput,
   circleResponseInput,
   circleIdInput,
+  circleMemberInput,
+  circleRoleInput,
+  circleUpdateInput,
 } from '@/lib/core/rules';
 import { identity, checked, adminDatabase, ApiError } from './supabase';
 import { enqueueFederatedActivity, ensureFederationActorKey, publicPostBy } from './federation';
@@ -290,6 +293,38 @@ export async function mutate(input: unknown) {
       );
       break;
     }
+    case 'update-circle': {
+      const value = circleUpdateInput.parse(obj);
+      checked(
+        await db.rpc('update_circle', {
+          target_circle: value.circle_id,
+          circle_name: value.name,
+          circle_description: value.description,
+        }),
+      );
+      break;
+    }
+    case 'set-circle-role': {
+      const value = circleRoleInput.parse(obj);
+      checked(
+        await db.rpc('set_circle_member_role', {
+          target_circle: value.circle_id,
+          other: value.user_id,
+          new_role: value.role,
+        }),
+      );
+      break;
+    }
+    case 'remove-circle-member': {
+      const value = circleMemberInput.parse(obj);
+      checked(
+        await db.rpc('remove_circle_member', {
+          target_circle: value.circle_id,
+          other: value.user_id,
+        }),
+      );
+      break;
+    }
     case 'leave-circle': {
       const value = circleIdInput.parse(obj);
       checked(await db.rpc('leave_circle', { target_circle: value.circle_id }));
@@ -298,6 +333,11 @@ export async function mutate(input: unknown) {
     case 'archive-circle': {
       const value = circleIdInput.parse(obj);
       checked(await db.rpc('archive_circle', { target_circle: value.circle_id }));
+      break;
+    }
+    case 'delete-circle': {
+      const value = circleIdInput.parse(obj);
+      checked(await db.rpc('delete_circle', { target_circle: value.circle_id }));
       break;
     }
     case 'chat-settings': {
@@ -358,7 +398,17 @@ export async function mutate(input: unknown) {
     }
     case 'post': {
       const v = postInput.parse(obj);
-      if (v.circle_ids?.length)
+      if (v.circle_ids?.length && v.poll)
+        checked(
+          await db.rpc('create_circle_poll', {
+            target_circles: v.circle_ids,
+            question: v.body,
+            warning: v.content_warning,
+            options: v.poll.options,
+            duration_seconds: v.poll.duration,
+          }),
+        );
+      else if (v.circle_ids?.length)
         checked(
           await db.rpc('create_circle_post', {
             target_circles: v.circle_ids,
@@ -642,6 +692,9 @@ export async function exportData() {
     ['messages', ''],
     ['chat_devices', 'user_id'],
     ['community_notes', 'author_id'],
+    ['circles', ''],
+    ['circle_members', ''],
+    ['circle_posts', ''],
   ]) {
     const rows: unknown[] = [];
     for (let offset = 0; ; offset += 500) {
@@ -658,7 +711,9 @@ export async function exportData() {
                   ? 'path'
                   : table === 'blocks'
                     ? 'blocked_id'
-                    : 'id',
+                    : table === 'circle_members' || table === 'circle_posts'
+                      ? 'circle_id'
+                      : 'id',
           )
           .range(offset, offset + 499),
       );

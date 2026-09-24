@@ -1,19 +1,21 @@
 'use client';
 import { useState } from 'react';
 import { ImagePlus, Film, Send, X, LockKeyhole, Plus, Trash2 } from 'lucide-react';
-import type { Action, Profile, Post } from '@/lib/core/types';
+import type { Action, Circle, Profile, Post } from '@/lib/core/types';
 import { prepareMedia, asDataURL } from '@/lib/client/media';
 import { Avatar, Modal } from './primitives';
 export function Composer({
   me,
   demo,
   initialKind = 'post',
+  circles = [],
   onClose,
   onPost,
 }: {
   me: Profile;
   demo: boolean;
   initialKind?: Post['kind'];
+  circles?: Circle[];
   onClose: () => void;
   onPost: (action: Action) => Promise<boolean>;
 }) {
@@ -24,6 +26,7 @@ export function Composer({
   const [warning, setWarning] = useState('');
   const [pollOptions, setPollOptions] = useState(['', '']);
   const [pollDuration, setPollDuration] = useState<number | null>(null);
+  const [circleIds, setCircleIds] = useState<string[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
@@ -40,7 +43,13 @@ export function Composer({
           <strong>{me.display_name}</strong>
           <small>
             <LockKeyhole size={12} />
-            {me.is_private ? 'Solo i follower approvati' : 'Visibile nella community'}
+            {circleIds.length
+              ? circleIds.length === 1
+                ? 'Solo nella cerchia scelta'
+                : `Solo in ${circleIds.length} cerchie`
+              : me.is_private
+                ? 'Solo i follower approvati'
+                : 'Visibile nella community'}
           </small>
         </div>
       </div>
@@ -53,6 +62,7 @@ export function Composer({
             onClick={() => {
               setMode(k);
               if (k === 'poll') setFile(null);
+              if (k === 'story' || k === 'reel') setCircleIds([]);
             }}
           >
             {k === 'post'
@@ -93,6 +103,7 @@ export function Composer({
               alt,
               content_warning: warning,
               poll: mode === 'poll' ? { options: pollOptions, duration: pollDuration } : undefined,
+              circle_ids: circleIds.length ? circleIds : undefined,
             });
             if (ok) onClose();
             else setStatus('Il post non è stato pubblicato. La bozza è ancora qui.');
@@ -118,6 +129,53 @@ export function Composer({
           rows={5}
         />
         <small className="counter">{body.length} / 2200</small>
+        {(mode === 'post' || mode === 'poll') && circles.length > 0 && (
+          <fieldset className="destination-picker">
+            <legend>Destinazione</legend>
+            <p>
+              {circleIds.length
+                ? 'Il post sarà visibile soltanto ai membri delle cerchie selezionate, fino a cinque.'
+                : 'Il post comparirà nella tua piazza con la privacy del profilo.'}
+            </p>
+            <label className="destination-public">
+              <input
+                type="checkbox"
+                checked={!circleIds.length}
+                onChange={() => setCircleIds([])}
+                disabled={busy}
+              />
+              <span>
+                <strong>La tua piazza</strong>
+                <small>{me.is_private ? 'Follower approvati' : 'Community SN'}</small>
+              </span>
+            </label>
+            <div className="destination-circles">
+              {circles.map((circle) => (
+                <label key={circle.id}>
+                  <input
+                    type="checkbox"
+                    checked={circleIds.includes(circle.id)}
+                    onChange={(event) =>
+                      setCircleIds((current) =>
+                        event.target.checked
+                          ? [...current, circle.id]
+                          : current.filter((id) => id !== circle.id),
+                      )
+                    }
+                    disabled={busy || (!circleIds.includes(circle.id) && circleIds.length >= 5)}
+                  />
+                  <span className="circle-mark" aria-hidden="true">
+                    {circle.name.slice(0, 2).toLocaleUpperCase('it')}
+                  </span>
+                  <span>
+                    <strong>{circle.name}</strong>
+                    <small>Solo membri</small>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        )}
         {mode === 'poll' && (
           <fieldset className="poll-editor">
             <legend>Opzioni</legend>
