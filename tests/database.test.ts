@@ -936,9 +936,20 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
   it('isola le cerchie, richiede un invito reciproco e limita i post ai membri', async () => {
     const created = await asUser<{ create_circle: string }>(
       alice,
-      "select public.create_circle('Tavolo lungo','Cene e gite')",
+      "select public.create_circle('Tavolo lungo','Cene e gite',null)",
     );
     const circleId = created[0].create_circle;
+    const circleImage = `${alice}/${crypto.randomUUID()}`;
+    await asUser(
+      alice,
+      "insert into public.media_assets(path,owner_id,bytes,mime) values($1,$2,100,'image/webp')",
+      [circleImage, alice],
+    );
+    await asUser(
+      alice,
+      `insert into storage.objects(bucket_id,name,metadata) values('media',$1,'{"size":100,"mimetype":"image/webp"}')`,
+      [circleImage],
+    );
     await expect(
       asUser(alice, 'select public.invite_circle_member($1,$2)', [circleId, eve]),
     ).rejects.toThrow('contatti reciproci');
@@ -956,18 +967,28 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
     ).toEqual([{ status: 'invited' }]);
     await asUser(bob, 'select public.respond_circle_invite($1,true)', [circleId]);
     await expect(
-      asUser(bob, "select public.update_circle($1,'Nome negato','')", [circleId]),
+      asUser(bob, "select public.update_circle($1,'Nome negato','',null)", [circleId]),
     ).rejects.toThrow('Accesso negato');
-    await asUser(alice, "select public.update_circle($1,'Tavolo grande','Cene, gite e cinema')", [
-      circleId,
-    ]);
+    await asUser(
+      alice,
+      "select public.update_circle($1,'Tavolo grande','Cene, gite e cinema',$2)",
+      [circleId, circleImage],
+    );
     expect(
-      await asUser<{ name: string; description: string }>(
+      await asUser<{ name: string; description: string; image_path: string }>(
         bob,
-        'select name,description from public.circles where id=$1',
+        'select name,description,image_path from public.circles where id=$1',
         [circleId],
       ),
-    ).toEqual([{ name: 'Tavolo grande', description: 'Cene, gite e cinema' }]);
+    ).toEqual([
+      { name: 'Tavolo grande', description: 'Cene, gite e cinema', image_path: circleImage },
+    ]);
+    expect(
+      await asUser(bob, 'select name from storage.objects where name=$1', [circleImage]),
+    ).toEqual([{ name: circleImage }]);
+    expect(
+      await asUser(eve, 'select name from storage.objects where name=$1', [circleImage]),
+    ).toEqual([]);
     await asUser(alice, "select public.set_circle_member_role($1,$2,'admin')", [circleId, bob]);
     await asUser(alice, "select public.set_circle_member_role($1,$2,'member')", [circleId, bob]);
     await expect(

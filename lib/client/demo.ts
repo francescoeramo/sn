@@ -326,7 +326,7 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
         id,
         name: value.name,
         description: value.description,
-        image_path: null,
+        image_path: value.image_path,
         created_by: me,
         archived_at: null,
         created_at: now,
@@ -407,6 +407,7 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
       if (!circle) throw new Error('Cerchia non disponibile.');
       circle.name = value.name;
       circle.description = value.description;
+      circle.image_path = value.image_path;
       circle.updated_at = now;
       break;
     }

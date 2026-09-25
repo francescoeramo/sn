@@ -43,8 +43,17 @@ test('cerchie: un admin rinomina lo spazio e gestisce i membri', async ({ page }
   await page.getByRole('button', { name: 'Modifica cerchia' }).click();
   await page.getByLabel('Nome').fill('Tavolo del sabato');
   await page.getByLabel(/Descrizione/).fill('Cene e gite decise insieme.');
+  await page.getByLabel(/Immagine/).setInputFiles({
+    name: 'cerchia.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+      'base64',
+    ),
+  });
   await page.getByRole('button', { name: 'Salva', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Tavolo del sabato' })).toBeVisible();
+  await expect(page.locator('.circle-hero .circle-mark img')).toBeVisible();
   await page.getByRole('button', { name: 'Nomina Giulia Rossi admin' }).click();
   await expect(
     page.getByRole('button', { name: 'Rimuovi Giulia Rossi dagli admin' }),

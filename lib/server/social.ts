@@ -269,6 +269,7 @@ export async function mutate(input: unknown) {
         await db.rpc('create_circle', {
           circle_name: value.name,
           circle_description: value.description,
+          circle_image: value.image_path,
         }),
       );
       break;
@@ -300,6 +301,7 @@ export async function mutate(input: unknown) {
           target_circle: value.circle_id,
           circle_name: value.name,
           circle_description: value.description,
+          circle_image: value.image_path,
         }),
       );
       break;

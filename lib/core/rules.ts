@@ -281,6 +281,7 @@ export const noteReviewInput = z.object({
 export const circleInput = z.object({
   name: z.string().trim().min(1).max(60),
   description: z.string().trim().max(240),
+  image_path: z.string().max(4_200_000).nullable(),
 });
 export const circleIdInput = z.object({ circle_id: userId });
 export const circleInviteInput = circleIdInput.extend({ user_id: userId });
@@ -288,6 +289,7 @@ export const circleResponseInput = circleIdInput.extend({ accept: z.boolean() })
 export const circleUpdateInput = circleIdInput.extend({
   name: z.string().trim().min(1).max(60),
   description: z.string().trim().max(240),
+  image_path: z.string().max(4_200_000).nullable(),
 });
 export const circleMemberInput = circleIdInput.extend({ user_id: userId });
 export const circleRoleInput = circleMemberInput.extend({ role: z.enum(['admin', 'member']) });

@@ -222,10 +222,16 @@ export type Snapshot = {
 };
 export type Action =
   | { type: 'complete-onboarding' }
-  | { type: 'create-circle'; name: string; description: string }
+  | { type: 'create-circle'; name: string; description: string; image_path: string | null }
   | { type: 'invite-circle'; circle_id: string; user_id: string }
   | { type: 'respond-circle'; circle_id: string; accept: boolean }
-  | { type: 'update-circle'; circle_id: string; name: string; description: string }
+  | {
+      type: 'update-circle';
+      circle_id: string;
+      name: string;
+      description: string;
+      image_path: string | null;
+    }
   | { type: 'set-circle-role'; circle_id: string; user_id: string; role: 'admin' | 'member' }
   | { type: 'remove-circle-member'; circle_id: string; user_id: string }
   | { type: 'leave-circle'; circle_id: string }

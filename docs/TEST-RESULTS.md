@@ -114,3 +114,10 @@ Le Note della comunità sono testate nel database contro letture di estranei, pr
 - L’export personale include cerchie, membership e collegamenti ai post. La cancellazione rimuove inviti e contenuti esclusivi; un post destinato anche ad altre cerchie resta visibile soltanto in quelle cerchie.
 - Il detector Impeccable non segnala problemi nei quattro file UI modificati. Il controllo visivo a 1440 × 960 e 390 × 844 non mostra overflow; il composer lungo scorre all’interno del dialogo.
 - La migrazione non è stata applicata al progetto Supabase cloud. La build resta bloccata su questo host dai limiti già documentati di Turbopack e dal parsing di `tsc --showConfig` nel percorso Webpack.
+
+## 25 settembre 2026 — immagini delle cerchie
+
+- Le immagini facoltative sono disponibili nella creazione e modifica delle cerchie, con fallback alle iniziali.
+- L’accesso Storage segue l’appartenenza alla cerchia; i file in uso sono esclusi dalla pulizia automatica.
+- TypeScript, lint, 110 test unitari/SQL e build Webpack superati. Il flusso browser di modifica e persistenza passa su desktop e mobile.
+- Il detector Impeccable non segnala problemi nei file UI modificati. Resta da applicare e collaudare la migrazione sul progetto Supabase dedicato.

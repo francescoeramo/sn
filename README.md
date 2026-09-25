@@ -23,7 +23,7 @@ Apri **http://127.0.0.1:3000/demo**. Non servono chiavi API. Le modifiche della 
 | Storie e reel       | Storie con scadenza nel DB e nell’interfaccia, reel con player nativo, compressione immagini e tentativo di ricodifica video nel browser      |
 | Messaggi            | 1:1 tra contatti reciproci, nuovi messaggi e allegati cifrati con chiavi locali; storico precedente in chiaro; limiti in docs/CRITTOGRAFIA.md |
 | Account e controllo | Supabase Auth, inviti monouso, recupero account, TOTP facoltativa, esportazione JSON, eliminazione e moderazione                              |
-| Cerchie             | Spazi privati locali con inviti, ruoli, mini-feed, destinazioni multiple e sondaggi; manca l’immagine e il collaudo cloud                     |
+| Cerchie             | Spazi privati locali con immagine facoltativa, inviti, ruoli, mini-feed, destinazioni multiple e sondaggi; manca il collaudo cloud            |
 
 ## Sviluppo successivo approvato
 

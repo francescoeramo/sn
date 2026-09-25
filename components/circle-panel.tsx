@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Image from 'next/image';
 import {
   Archive,
   ArrowLeft,
@@ -17,6 +18,7 @@ import {
   X,
 } from 'lucide-react';
 import type { Action, Circle, Post, Snapshot } from '@/lib/core/types';
+import { asDataURL, prepareMedia } from '@/lib/client/media';
 import { Avatar, Empty } from './primitives';
 import { PostCard } from './post-card';
 
@@ -30,6 +32,21 @@ type Props = {
   onTag: (tag: string) => void;
 };
 
+function CircleMark({ circle, demo }: { circle: Circle; demo: boolean }) {
+  if (!circle.image_path)
+    return (
+      <span className="circle-mark" aria-hidden="true">
+        {circle.name.slice(0, 2).toLocaleUpperCase('it')}
+      </span>
+    );
+  const src = demo ? circle.image_path : `/api/media?path=${encodeURIComponent(circle.image_path)}`;
+  return (
+    <span className="circle-mark circle-mark-image">
+      <Image src={src} alt="" fill sizes="54px" unoptimized />
+    </span>
+  );
+}
+
 export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -40,6 +57,10 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
   const [description, setDescription] = useState('');
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
+  const [image, setImage] = useState<File | null>(null);
+  const [editImage, setEditImage] = useState<File | null>(null);
+  const [removeImage, setRemoveImage] = useState(false);
+  const [imageStatus, setImageStatus] = useState('');
   const [body, setBody] = useState('');
   const memberships = state.circleMembers ?? [];
   const circles = state.circles ?? [];
@@ -93,10 +114,16 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
 
   async function createCircle(event: React.FormEvent) {
     event.preventDefault();
-    if (await onAction({ type: 'create-circle', name, description })) {
-      setName('');
-      setDescription('');
-      setCreating(false);
+    try {
+      const image_path = await uploadCircleImage(image);
+      if (await onAction({ type: 'create-circle', name, description, image_path })) {
+        setName('');
+        setDescription('');
+        setImage(null);
+        setCreating(false);
+      }
+    } catch (error) {
+      setImageStatus(error instanceof Error ? error.message : 'Caricamento non riuscito.');
     }
   }
 
@@ -121,21 +148,48 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
     if (!selected) return;
     setEditName(selected.name);
     setEditDescription(selected.description);
+    setEditImage(null);
+    setRemoveImage(false);
+    setImageStatus('');
     setEditing(true);
   }
 
   async function updateCircle(event: React.FormEvent) {
     event.preventDefault();
     if (!selected) return;
-    if (
-      await onAction({
-        type: 'update-circle',
-        circle_id: selected.id,
-        name: editName,
-        description: editDescription,
-      })
-    )
-      setEditing(false);
+    try {
+      const image_path = removeImage
+        ? null
+        : editImage
+          ? await uploadCircleImage(editImage)
+          : selected.image_path;
+      if (
+        await onAction({
+          type: 'update-circle',
+          circle_id: selected.id,
+          name: editName,
+          description: editDescription,
+          image_path,
+        })
+      )
+        setEditing(false);
+    } catch (error) {
+      setImageStatus(error instanceof Error ? error.message : 'Caricamento non riuscito.');
+    }
+  }
+
+  async function uploadCircleImage(file: File | null) {
+    if (!file) return null;
+    if (!file.type.startsWith('image/')) throw new Error('Scegli un’immagine JPEG, PNG o WebP.');
+    const prepared = await prepareMedia(file, setImageStatus);
+    if (demo) return asDataURL(prepared);
+    setImageStatus('Caricamento…');
+    const form = new FormData();
+    form.append('file', prepared);
+    const response = await fetch('/api/upload', { method: 'POST', body: form });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error);
+    return result.path as string;
   }
 
   async function deleteCircle() {
@@ -154,9 +208,7 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
           <ArrowLeft size={17} /> Tutte le cerchie
         </button>
         <header className="circle-hero">
-          <div className="circle-mark" aria-hidden="true">
-            {selected.name.slice(0, 2).toLocaleUpperCase('it')}
-          </div>
+          <CircleMark circle={selected} demo={demo} />
           <div>
             <h2 id="circle-title">{selected.name}</h2>
             <p>{selected.description || 'Uno spazio privato tra persone che si conoscono.'}</p>
@@ -215,6 +267,32 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
                 onChange={(event) => setEditDescription(event.target.value)}
               />
             </label>
+            <label>
+              Immagine <small>facoltativa, JPEG, PNG o WebP</small>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(event) => {
+                  setEditImage(event.target.files?.[0] ?? null);
+                  setRemoveImage(false);
+                }}
+              />
+            </label>
+            {selected.image_path && (
+              <label className="circle-remove-image">
+                <input
+                  type="checkbox"
+                  checked={removeImage}
+                  onChange={(event) => setRemoveImage(event.target.checked)}
+                />
+                Rimuovi l’immagine attuale
+              </label>
+            )}
+            {imageStatus && (
+              <p className="fine" role="status">
+                {imageStatus}
+              </p>
+            )}
             <div className="button-row">
               <button className="primary" disabled={busy || !editName.trim()}>
                 Salva
@@ -414,9 +492,7 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
             const inviter = state.profiles.find((person) => person.id === invite.invited_by);
             return circle ? (
               <article key={circle.id}>
-                <div className="circle-mark" aria-hidden="true">
-                  {circle.name.slice(0, 2).toLocaleUpperCase('it')}
-                </div>
+                <CircleMark circle={circle} demo={demo} />
                 <div>
                   <strong>{circle.name}</strong>
                   <span>
@@ -479,6 +555,19 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
               placeholder="Di cosa parlate qui?"
             />
           </label>
+          <label>
+            Immagine <small>facoltativa, JPEG, PNG o WebP</small>
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={(event) => setImage(event.target.files?.[0] ?? null)}
+            />
+          </label>
+          {imageStatus && (
+            <p className="fine" role="status">
+              {imageStatus}
+            </p>
+          )}
           <div className="button-row">
             <button className="primary" disabled={busy || !name.trim()}>
               Crea la cerchia
@@ -496,9 +585,7 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
           ).length;
           return (
             <button key={circle.id} onClick={() => setSelectedId(circle.id)}>
-              <span className="circle-mark" aria-hidden="true">
-                {circle.name.slice(0, 2).toLocaleUpperCase('it')}
-              </span>
+              <CircleMark circle={circle} demo={demo} />
               <span>
                 <strong>{circle.name}</strong>
                 <small>{circle.description || 'Uno spazio privato tra voi.'}</small>
