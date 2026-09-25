@@ -659,7 +659,9 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                 onTag={search}
               />
             )}
-            {view === 'events' && <EventsPanel state={state} busy={busy} onAction={act} />}
+            {view === 'events' && (
+              <EventsPanel state={state} demo={demo} busy={busy} now={clock} onAction={act} />
+            )}
             {view === 'profile' && focusProfile && (
               <section className="profile-card">
                 <div className={`profile-cover ${focusProfile.color}`}>

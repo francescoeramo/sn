@@ -188,6 +188,14 @@ export type EventUpdate = {
   body: string;
   created_at: string;
 };
+export type EventPhoto = {
+  id: string;
+  event_id: string;
+  author_id: string;
+  media_path: string;
+  caption: string;
+  created_at: string;
+};
 export type ChatSettings = {
   member_a: string;
   member_b: string;
@@ -225,6 +233,7 @@ export type Snapshot = {
   events?: Event[];
   eventResponses?: EventResponse[];
   eventUpdates?: EventUpdate[];
+  eventPhotos?: EventPhoto[];
   notes: CommunityNote[];
   pollResults?: PollResult[];
   me: Profile;
@@ -281,6 +290,19 @@ export type Action =
     }
   | { type: 'respond-event'; event_id: string; response: EventResponse['response'] }
   | { type: 'cancel-event'; event_id: string }
+  | {
+      type: 'update-event';
+      event_id: string;
+      circle_id: string | null;
+      title: string;
+      description: string;
+      location: string;
+      starts_at: string;
+      ends_at: string | null;
+      capacity: number | null;
+    }
+  | { type: 'add-event-photo'; event_id: string; media_path: string; caption: string }
+  | { type: 'remove-event-photo'; photo_id: string }
   | { type: 'event-update'; event_id: string; kind: EventUpdate['kind']; body: string }
   | { type: 'chat-settings'; user_id: string; temporary: boolean; duration: number }
   | { type: 'chat-receipt'; message_id: string; revision: number; read: boolean }

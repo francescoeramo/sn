@@ -24,13 +24,13 @@ Apri **http://127.0.0.1:3000/demo**. Non servono chiavi API. Le modifiche della 
 | Messaggi            | 1:1 tra contatti reciproci, nuovi messaggi e allegati cifrati con chiavi locali; storico precedente in chiaro; limiti in docs/CRITTOGRAFIA.md |
 | Account e controllo | Supabase Auth, inviti monouso, recupero account, TOTP facoltativa, esportazione JSON, eliminazione e moderazione                              |
 | Cerchie             | Spazi privati locali con immagine facoltativa, inviti, ruoli, mini-feed, destinazioni multiple e sondaggi; manca il collaudo cloud            |
-| Eventi              | Incontri locali per follower o cerchie, risposte, aggiornamenti e annullamento; album e modifica dei dettagli restano da completare           |
+| Eventi              | Incontri locali per follower o cerchie: risposte, commenti e aggiornamenti, annullamento, modifica dei dettagli e album collaborativo dopo l’inizio; manca il collaudo cloud          |
 
 ## Sviluppo successivo approvato
 
-Le sezioni 5–9 del brief sono nella roadmap. Gli Eventi hanno una prima versione locale; gli altri blocchi non sono ancora disponibili:
+Le sezioni 5–9 del brief sono nella roadmap. Cerchie ed eventi sono completi localmente; gli altri blocchi non sono ancora disponibili:
 
-1. Completare gli Eventi con modifica dei dettagli e album dopo l’inizio.
+1. Collaudare sul progetto cloud dedicato cerchie ed eventi (modifica dei dettagli e album dopo l’inizio inclusi); le migrazioni non sono ancora applicate.
 2. Digest giornaliero o settimanale, disattivato per impostazione predefinita e limitato a cinque elementi.
 3. Post collaborativi e album condivisi con inviti, permessi revocabili e visibilità unica.
 4. Reazioni private, risposte contestuali, menzioni con consenso e condivisioni interne senza contatori pubblici.

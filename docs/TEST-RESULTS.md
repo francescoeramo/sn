@@ -128,3 +128,11 @@ Le Note della comunità sono testate nel database contro letture di estranei, pr
 - Commenti, aggiornamenti dell’organizzatore, annullamento e relative notifiche rispettano la visibilità dell’evento.
 - I test SQL coprono isolamento, capienza, risposte ripetute, ruoli e notifiche. Il percorso browser passa su desktop e mobile con persistenza IndexedDB.
 - Restano modifica dei dettagli, album collaborativo dopo l’inizio e collaudo cloud.
+
+## 25 settembre 2026 — dettagli degli eventi e album collaborativo
+
+- La modifica dei dettagli è riservata all’organizzatore; le variazioni sostanziali di data, fine o luogo generano una sola notifica per chi ha risposto «Partecipo» o «Forse». La capienza non può scendere sotto i partecipanti confermati e non è possibile spostare l’inizio nel passato.
+- L’album (`event_photos`) si apre solo dopo l’inizio: possono aggiungere foto l’organizzatore e chi ha confermato la partecipazione; autore e organizzatore possono rimuoverle. I media seguono le stesse quote e la stessa pulizia di post, messaggi e immagini delle cerchie.
+- L’export personale include `event_photos`; la cancellazione resta gestita dalle catene esistenti su `events` e `media_assets`.
+- TypeScript, lint mirato, 112 test unitari/SQL e build Webpack superati. Il nuovo test SQL verifica permessi, album chiuso prima dell’inizio e dopo la mancata conferma, isolamento tra utenti e pulizia Storage. Il percorso browser passa su desktop e mobile con persistenza IndexedDB.
+- La migrazione `20260925180000_event_details_and_album.sql` non è stata applicata al progetto Supabase cloud.

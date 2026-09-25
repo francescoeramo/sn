@@ -20,6 +20,9 @@ import {
   circleRoleInput,
   circleUpdateInput,
   eventInput,
+  eventDetailsInput,
+  eventPhotoIdInput,
+  eventPhotoInput,
   eventResponseInput,
   eventUpdateInput,
 } from '@/lib/core/rules';
@@ -181,6 +184,7 @@ export async function snapshot() {
     db.from('events').select('*').order('starts_at', { ascending: true }).limit(200),
     db.from('event_responses').select('*').order('updated_at', { ascending: false }).limit(2000),
     db.from('event_updates').select('*').order('created_at', { ascending: true }).limit(1000),
+    db.from('event_photos').select('*').order('created_at', { ascending: true }).limit(1000),
   ]);
   const [
     profiles,
@@ -201,6 +205,7 @@ export async function snapshot() {
     events,
     eventResponses,
     eventUpdates,
+    eventPhotos,
   ] = results.map((r) => checked(r));
   const [bookmarks, saved, pollResults, remotePosts] = await Promise.all([
     bookmarksFor(db),
@@ -233,6 +238,7 @@ export async function snapshot() {
     events,
     eventResponses,
     eventUpdates,
+    eventPhotos,
     notes,
     pollResults,
     me: profile,
@@ -378,6 +384,38 @@ export async function mutate(input: unknown) {
           update_body: value.body,
         }),
       );
+      break;
+    }
+    case 'update-event': {
+      const value = eventDetailsInput.parse(obj);
+      checked(
+        await db.rpc('update_event', {
+          target_event: value.event_id,
+          event_title: value.title,
+          event_description: value.description,
+          event_location: value.location,
+          event_starts_at: value.starts_at,
+          event_ends_at: value.ends_at,
+          event_circle: value.circle_id,
+          event_capacity: value.capacity,
+        }),
+      );
+      break;
+    }
+    case 'add-event-photo': {
+      const value = eventPhotoInput.parse(obj);
+      checked(
+        await db.rpc('add_event_photo', {
+          target_event: value.event_id,
+          photo_path: value.media_path,
+          photo_caption: value.caption,
+        }),
+      );
+      break;
+    }
+    case 'remove-event-photo': {
+      const value = eventPhotoIdInput.parse(obj);
+      checked(await db.rpc('remove_event_photo', { target_photo: value.photo_id }));
       break;
     }
     case 'leave-circle': {
@@ -753,6 +791,7 @@ export async function exportData() {
     ['events', ''],
     ['event_responses', ''],
     ['event_updates', ''],
+    ['event_photos', ''],
   ]) {
     const rows: unknown[] = [];
     for (let offset = 0; ; offset += 500) {

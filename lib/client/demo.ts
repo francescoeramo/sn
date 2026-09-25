@@ -21,6 +21,9 @@ import {
   circleRoleInput,
   circleUpdateInput,
   eventInput,
+  eventDetailsInput,
+  eventPhotoIdInput,
+  eventPhotoInput,
   eventResponseInput,
   eventUpdateInput,
 } from '@/lib/core/rules';
@@ -279,6 +282,7 @@ export async function loadDemo(): Promise<Snapshot> {
         state.events ??= [];
         state.eventResponses ??= [];
         state.eventUpdates ??= [];
+        state.eventPhotos ??= [];
         state.saved ??= { posts: [], nextCursor: null };
         state.messages = state.messages.filter((m) => isActive(m));
         state.posts = state.posts.filter((p) => isActive(p));
@@ -341,6 +345,7 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
   s.events ??= [];
   s.eventResponses ??= [];
   s.eventUpdates ??= [];
+  s.eventPhotos ??= [];
   s.saved ??= { posts: [], nextCursor: null };
   const me = s.me.id;
   const now = new Date().toISOString();
@@ -639,6 +644,84 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
             read: false,
             created_at: now,
           });
+      break;
+    }
+    case 'update-event': {
+      const value = eventDetailsInput.parse(action);
+      const event = s.events.find((item) => item.id === value.event_id);
+      if (!event || event.organizer_id !== me || event.cancelled_at)
+        throw new Error('Accesso negato.');
+      if (
+        value.circle_id &&
+        !s.circleMembers.some(
+          (member) =>
+            member.circle_id === value.circle_id &&
+            member.user_id === me &&
+            member.status === 'active',
+        )
+      )
+        throw new Error('Cerchia non disponibile.');
+      const substantial =
+        value.starts_at !== event.starts_at ||
+        value.ends_at !== event.ends_at ||
+        value.location !== event.location;
+      event.title = value.title;
+      event.description = value.description;
+      event.location = value.location;
+      event.starts_at = value.starts_at;
+      event.ends_at = value.ends_at;
+      event.capacity = value.capacity;
+      event.circle_id = value.circle_id;
+      event.updated_at = now;
+      if (substantial)
+        for (const response of s.eventResponses.filter(
+          (item) =>
+            item.event_id === event.id &&
+            item.user_id !== me &&
+            item.response !== 'declined',
+        ))
+          s.notifications.push({
+            id: crypto.randomUUID(),
+            user_id: response.user_id,
+            actor_id: me,
+            kind: 'event_update',
+            post_id: null,
+            event_id: event.id,
+            read: false,
+            created_at: now,
+          });
+      break;
+    }
+    case 'add-event-photo': {
+      const value = eventPhotoInput.parse(action);
+      const event = s.events.find((item) => item.id === value.event_id);
+      const started = event ? new Date(event.starts_at).getTime() <= Date.now() : false;
+      const contributes =
+        event &&
+        (event.organizer_id === me ||
+          s.eventResponses.some(
+            (item) =>
+              item.event_id === event.id && item.user_id === me && item.response === 'going',
+          ));
+      if (!event || event.cancelled_at || !started || !contributes)
+        throw new Error('Album non disponibile.');
+      s.eventPhotos.push({
+        id,
+        event_id: event.id,
+        author_id: me,
+        media_path: value.media_path,
+        caption: value.caption,
+        created_at: now,
+      });
+      break;
+    }
+    case 'remove-event-photo': {
+      const value = eventPhotoIdInput.parse(action);
+      const photo = s.eventPhotos.find((item) => item.id === value.photo_id);
+      const event = photo ? s.events.find((item) => item.id === photo.event_id) : undefined;
+      if (!photo || !event || (photo.author_id !== me && event.organizer_id !== me))
+        throw new Error('Accesso negato.');
+      s.eventPhotos = s.eventPhotos.filter((item) => item !== photo);
       break;
     }
     case 'chat-settings': {

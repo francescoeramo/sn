@@ -1094,6 +1094,139 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
       'risposte sono chiuse',
     );
   });
+  it('modifica i dettagli solo all’organizzatore e apre l’album dopo l’inizio', async () => {
+    await asUser(bob, 'insert into public.follows(follower_id,following_id) values($1,$2) on conflict do nothing', [bob, alice]);
+    await asUser(alice, 'update public.follows set accepted=true where follower_id=$1', [bob]);
+    await asUser(alice, 'insert into public.follows(follower_id,following_id) values($1,$2) on conflict do nothing', [alice, bob]);
+    await asUser(bob, 'update public.follows set accepted=true where follower_id=$1', [alice]);
+
+    const circle = await asUser<{ create_circle: string }>(
+      alice,
+      "select public.create_circle('Album','Foto condivise',null)",
+    );
+    const circleId = circle[0].create_circle;
+    await asUser(alice, 'select public.invite_circle_member($1,$2)', [circleId, bob]);
+    await asUser(bob, 'select public.respond_circle_invite($1,true)', [circleId]);
+
+    const started = new Date(Date.now() - 3600000).toISOString();
+    const eventId = crypto.randomUUID();
+    await db.query(
+      "insert into public.events(id,organizer_id,circle_id,title,description,location,starts_at) values($1,$2,$3,'Gita','Panini','Pratino',$4)",
+      [eventId, alice, circleId, started],
+    );
+
+    const aliceShot = `${alice}/${crypto.randomUUID()}`;
+    const bobShot = `${bob}/${crypto.randomUUID()}`;
+    for (const [owner, path] of [
+      [alice, aliceShot],
+      [bob, bobShot],
+    ] as const) {
+      await asUser(
+        owner,
+        "insert into public.media_assets(path,owner_id,bytes,mime) values($1,$2,100,'image/webp')",
+        [path, owner],
+      );
+      await asUser(
+        owner,
+        `insert into storage.objects(bucket_id,name,metadata) values('media',$1,'{"size":100,"mimetype":"image/webp"}')`,
+        [path],
+      );
+    }
+
+    // L'album resta chiuso finché non si conferma la partecipazione.
+    await expect(
+      asUser(bob, 'select public.add_event_photo($1,$2,null)', [eventId, bobShot]),
+    ).rejects.toThrow('Album non disponibile');
+    await asUser(bob, "select public.respond_event($1,'going')", [eventId]);
+    const bobPhoto = await asUser<{ add_event_photo: string }>(
+      bob,
+      'select public.add_event_photo($1,$2,$3)',
+      [eventId, bobShot, 'Il pratino'],
+    );
+    const bobPhotoId = bobPhoto[0].add_event_photo;
+    const alicePhoto = await asUser<{ add_event_photo: string }>(
+      alice,
+      'select public.add_event_photo($1,$2,null)',
+      [eventId, aliceShot],
+    );
+    const alicePhotoId = alicePhoto[0].add_event_photo;
+
+    // Fuori dalla cerchia l'album non è visibile né modificabile.
+    await expect(
+      asUser(eve, 'select public.add_event_photo($1,$2,null)', [eventId, bobShot]),
+    ).rejects.toThrow('Album non disponibile');
+    expect(
+      await asUser(bob, 'select id from public.event_photos where event_id=$1', [eventId]),
+    ).toHaveLength(2);
+    expect(
+      await asUser(eve, 'select id from public.event_photos where event_id=$1', [eventId]),
+    ).toHaveLength(0);
+    expect(await asUser(bob, 'select name from storage.objects where name=$1', [bobShot])).toEqual([
+      { name: bobShot },
+    ]);
+    expect(await asUser(eve, 'select name from storage.objects where name=$1', [bobShot])).toEqual(
+      [],
+    );
+
+    // Solo l'autore o l'organizzatore possono rimuovere una foto.
+    await expect(asUser(bob, 'select public.remove_event_photo($1)', [alicePhotoId])).rejects.toThrow(
+      'Accesso negato',
+    );
+    await asUser(bob, 'select public.remove_event_photo($1)', [bobPhotoId]);
+    expect(
+      await asUser(bob, 'select id from public.event_photos where event_id=$1', [eventId]),
+    ).toHaveLength(1);
+
+    // Modifica dei dettagli: riservata all'organizzatore, senza notifica per i soli testi.
+    await expect(
+      asUser(bob, "select public.update_event($1,'Gita','Panini','Pratino',$2,null,$3,null)", [
+        eventId,
+        started,
+        circleId,
+      ]),
+    ).rejects.toThrow('Accesso negato');
+    await asUser(
+      alice,
+      "select public.update_event($1,'Gita','Panini e acqua','Pratino',$2,null,$3,null)",
+      [eventId, started, circleId],
+    );
+    expect(
+      await asUser<{ description: string }>(
+        bob,
+        'select description from public.events where id=$1',
+        [eventId],
+      ),
+    ).toEqual([{ description: 'Panini e acqua' }]);
+    expect(
+      await asUser(bob, 'select kind from public.notifications where event_id=$1', [eventId]),
+    ).toHaveLength(0);
+
+    // Una variazione sostanziale di data produce una sola notifica per i partecipanti.
+    const future = new Date(Date.now() + 86400000).toISOString();
+    const later = new Date(Date.now() + 90000000).toISOString();
+    const futureEvent = await asUser<{ create_event: string }>(
+      alice,
+      "select public.create_event('Pranzo','Tavolata','Casa',$1,null,$2,null)",
+      [future, circleId],
+    );
+    const futureId = futureEvent[0].create_event;
+    await asUser(bob, "select public.respond_event($1,'going')", [futureId]);
+    await expect(
+      asUser(alice, 'select public.add_event_photo($1,$2,null)', [futureId, aliceShot]),
+    ).rejects.toThrow('Album non disponibile');
+    await asUser(alice, "select public.update_event($1,'Pranzo','Tavolata','Casa',$2,null,$3,null)", [
+      futureId,
+      later,
+      circleId,
+    ]);
+    expect(
+      await asUser<{ kind: string }>(
+        bob,
+        'select kind from public.notifications where event_id=$1',
+        [futureId],
+      ),
+    ).toEqual([{ kind: 'event_update' }]);
+  });
   it('salva messaggi di gruppo cifrati solo per membri e dispositivi correnti', async () => {
     const created = await asUser<{ create_chat_group: string }>(
       alice,

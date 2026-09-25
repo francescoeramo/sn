@@ -29,6 +29,43 @@ test('eventi: crea un incontro privato e conserva la risposta', async ({ page })
   );
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
+test('eventi: modifica i dettagli e apre l’album dopo l’inizio', async ({ page }) => {
+  const started = new Date(Date.now() - 3600000);
+  const pad = (part: number) => String(part).padStart(2, '0');
+  const startedInput = `${started.getFullYear()}-${pad(started.getMonth() + 1)}-${pad(started.getDate())}T${pad(started.getHours())}:${pad(started.getMinutes())}`;
+  await page.goto('/demo');
+  await page.getByRole('button', { name: 'Eventi', exact: true }).filter({ visible: true }).click();
+  await page.getByRole('button', { name: 'Nuovo evento' }).click();
+  await page.getByLabel('Titolo').fill('Biciclettata');
+  await page.getByLabel('Inizio').fill(startedInput);
+  await page.getByRole('button', { name: 'Crea evento' }).click();
+  const event = page.locator('article').filter({ hasText: 'Biciclettata' });
+  await expect(event).toBeVisible();
+  await expect(event.getByRole('heading', { name: 'Album dopo l’inizio' })).toBeVisible();
+  await event.locator('input[type="file"]').setInputFiles({
+    name: 'album.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+      'base64',
+    ),
+  });
+  await event.getByLabel('Didascalia facoltativa').fill('Sul ponte');
+  await event.getByRole('button', { name: 'Aggiungi', exact: true }).click();
+  await expect(event.locator('.event-album-grid img')).toBeVisible();
+  await expect(event.getByText('Sul ponte')).toBeVisible();
+  await event.getByRole('button', { name: 'Modifica Biciclettata' }).click();
+  await page.getByLabel(/Luogo/).fill('Parco nord');
+  await page.getByRole('button', { name: 'Salva modifiche' }).click();
+  await expect(event).toContainText('Parco nord');
+  await event.getByRole('button', { name: 'Rimuovi foto dall’album' }).click();
+  await expect(event.locator('.event-album-grid img')).toHaveCount(0);
+  await page.reload();
+  await page.getByRole('button', { name: 'Eventi', exact: true }).filter({ visible: true }).click();
+  const reloaded = page.locator('article').filter({ hasText: 'Biciclettata' });
+  await expect(reloaded).toContainText('Parco nord');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
 test('cerchie: mini-feed privato persistente e separato dalla piazza', async ({ page }) => {
   await page.goto('/demo');
   await page

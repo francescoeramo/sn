@@ -1,13 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { Clock3, MapPin, Plus, Users, X } from 'lucide-react';
+import Image from 'next/image';
+import { Clock3, ImagePlus, MapPin, Pencil, Plus, Users, X } from 'lucide-react';
 import type { Action, Event, Snapshot } from '@/lib/core/types';
+import { asDataURL, prepareMedia } from '@/lib/client/media';
 import { Empty } from './primitives';
 
 type Props = {
   state: Snapshot;
+  demo: boolean;
   busy: boolean;
+  now: number;
   onAction: (action: Action) => Promise<boolean>;
 };
 
@@ -19,8 +23,15 @@ const dateTime = new Intl.DateTimeFormat('it-IT', {
   minute: '2-digit',
 });
 
-export function EventsPanel({ state, busy, onAction }: Props) {
+function toLocalInput(value: string) {
+  const date = new Date(value);
+  const pad = (part: number) => String(part).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+export function EventsPanel({ state, demo, busy, now, onAction }: Props) {
   const [creating, setCreating] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
@@ -37,10 +48,31 @@ export function EventsPanel({ state, busy, onAction }: Props) {
     (circle) => activeCircleIds.has(circle.id) && !circle.archived_at,
   );
   const events = [...(state.events ?? [])].sort((a, b) => a.starts_at.localeCompare(b.starts_at));
-  async function createEvent(event: React.FormEvent) {
+  function resetForm() {
+    setCreating(false);
+    setEditingId(null);
+    setTitle('');
+    setDescription('');
+    setLocation('');
+    setStartsAt('');
+    setEndsAt('');
+    setCapacity('');
+    setCircleId('');
+  }
+  function startEdit(event: Event) {
+    setEditingId(event.id);
+    setCreating(true);
+    setTitle(event.title);
+    setDescription(event.description);
+    setLocation(event.location);
+    setStartsAt(toLocalInput(event.starts_at));
+    setEndsAt(event.ends_at ? toLocalInput(event.ends_at) : '');
+    setCapacity(event.capacity ? String(event.capacity) : '');
+    setCircleId(event.circle_id ?? '');
+  }
+  async function submitEvent(event: React.FormEvent) {
     event.preventDefault();
-    const ok = await onAction({
-      type: 'create-event',
+    const fields = {
       circle_id: circleId || null,
       title,
       description,
@@ -48,19 +80,12 @@ export function EventsPanel({ state, busy, onAction }: Props) {
       starts_at: new Date(startsAt).toISOString(),
       ends_at: endsAt ? new Date(endsAt).toISOString() : null,
       capacity: capacity ? Number(capacity) : null,
-    });
-    if (ok) {
-      setCreating(false);
-      setTitle('');
-      setDescription('');
-      setLocation('');
-      setStartsAt('');
-      setEndsAt('');
-      setCapacity('');
-      setCircleId('');
-    }
+    };
+    const ok = await onAction(
+      editingId ? { type: 'update-event', event_id: editingId, ...fields } : { type: 'create-event', ...fields },
+    );
+    if (ok) resetForm();
   }
-
   return (
     <section className="events-panel" aria-labelledby="events-title">
       <header className="events-toolbar">
@@ -68,14 +93,14 @@ export function EventsPanel({ state, busy, onAction }: Props) {
           <h2 id="events-title">Prossimi incontri</h2>
           <p>Un posto e un’ora, senza biglietti né mappe esterne.</p>
         </div>
-        <button className="primary" onClick={() => setCreating((value) => !value)}>
+        <button className="primary" onClick={() => (creating ? resetForm() : setCreating(true))}>
           {creating ? <X size={17} /> : <Plus size={17} />}
           {creating ? 'Chiudi' : 'Nuovo evento'}
         </button>
       </header>
 
       {creating && (
-        <form className="event-create" onSubmit={createEvent}>
+        <form className="event-create" onSubmit={submitEvent}>
           <label>
             Titolo
             <input
@@ -147,14 +172,23 @@ export function EventsPanel({ state, busy, onAction }: Props) {
             </select>
           </label>
           <button className="primary" disabled={busy || !title.trim() || !startsAt}>
-            Crea evento
+            {editingId ? 'Salva modifiche' : 'Crea evento'}
           </button>
         </form>
       )}
 
       <div className="event-list">
         {events.map((event) => (
-          <EventRow key={event.id} event={event} state={state} busy={busy} onAction={onAction} />
+          <EventRow
+            key={event.id}
+            event={event}
+            state={state}
+            demo={demo}
+            busy={busy}
+            now={now}
+            onAction={onAction}
+            onEdit={startEdit}
+          />
         ))}
       </div>
       {!events.length && !creating && (
@@ -166,15 +200,29 @@ export function EventsPanel({ state, busy, onAction }: Props) {
   );
 }
 
-function EventRow({ event, state, busy, onAction }: Props & { event: Event }) {
+function EventRow({
+  event,
+  state,
+  demo,
+  busy,
+  now,
+  onAction,
+  onEdit,
+}: Props & { event: Event; onEdit: (event: Event) => void }) {
   const [message, setMessage] = useState('');
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoCaption, setPhotoCaption] = useState('');
+  const [photoStatus, setPhotoStatus] = useState('');
   const responses = (state.eventResponses ?? []).filter((item) => item.event_id === event.id);
   const mine = responses.find((item) => item.user_id === state.me.id)?.response;
   const going = responses.filter((item) => item.response === 'going').length;
   const circle = (state.circles ?? []).find((item) => item.id === event.circle_id);
   const organizer = state.profiles.find((profile) => profile.id === event.organizer_id);
   const updates = (state.eventUpdates ?? []).filter((item) => item.event_id === event.id);
+  const photos = (state.eventPhotos ?? []).filter((item) => item.event_id === event.id);
   const isOrganizer = event.organizer_id === state.me.id;
+  const started = new Date(event.starts_at).getTime() <= now;
+  const canContribute = isOrganizer || mine === 'going';
   async function publishUpdate(submit: React.FormEvent) {
     submit.preventDefault();
     if (
@@ -186,6 +234,40 @@ function EventRow({ event, state, busy, onAction }: Props & { event: Event }) {
       })
     )
       setMessage('');
+  }
+  async function addPhoto(submit: React.FormEvent) {
+    submit.preventDefault();
+    if (!photoFile) return;
+    try {
+      if (!photoFile.type.startsWith('image/')) throw new Error('Scegli un’immagine JPEG, PNG o WebP.');
+      const prepared = await prepareMedia(photoFile, setPhotoStatus);
+      let media_path: string;
+      if (demo) {
+        media_path = await asDataURL(prepared);
+      } else {
+        setPhotoStatus('Caricamento…');
+        const form = new FormData();
+        form.append('file', prepared);
+        const response = await fetch('/api/upload', { method: 'POST', body: form });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error);
+        media_path = result.path as string;
+      }
+      if (
+        await onAction({
+          type: 'add-event-photo',
+          event_id: event.id,
+          media_path,
+          caption: photoCaption,
+        })
+      ) {
+        setPhotoFile(null);
+        setPhotoCaption('');
+        setPhotoStatus('');
+      }
+    } catch (error) {
+      setPhotoStatus(error instanceof Error ? error.message : 'Caricamento non riuscito.');
+    }
   }
   return (
     <article className={`event-row${event.cancelled_at ? ' cancelled' : ''}`}>
@@ -206,6 +288,16 @@ function EventRow({ event, state, busy, onAction }: Props & { event: Event }) {
             </p>
           </div>
           {event.cancelled_at && <span className="event-cancelled">Annullato</span>}
+          {isOrganizer && !event.cancelled_at && (
+            <button
+              className="icon-button"
+              aria-label={`Modifica ${event.title}`}
+              disabled={busy}
+              onClick={() => onEdit(event)}
+            >
+              <Pencil size={16} />
+            </button>
+          )}
         </div>
         {event.description && <p className="event-copy">{event.description}</p>}
         <div className="event-facts">
@@ -288,6 +380,79 @@ function EventRow({ event, state, busy, onAction }: Props & { event: Event }) {
               {isOrganizer ? 'Pubblica aggiornamento' : 'Invia'}
             </button>
           </form>
+        )}
+        {started && !event.cancelled_at && (
+          <section className="event-album" aria-label={`Album di ${event.title}`}>
+            <h4>Album dopo l’inizio</h4>
+            {photos.length > 0 && (
+              <div className="event-album-grid">
+                {photos.map((photo) => {
+                  const author = state.profiles.find((profile) => profile.id === photo.author_id);
+                  const removable = photo.author_id === state.me.id || isOrganizer;
+                  return (
+                    <figure key={photo.id}>
+                      <Image
+                        src={
+                          demo
+                            ? photo.media_path
+                            : `/api/media?path=${encodeURIComponent(photo.media_path)}`
+                        }
+                        alt={photo.caption || `Foto condivisa da ${author?.display_name ?? 'una persona'}`}
+                        width={320}
+                        height={320}
+                        unoptimized
+                      />
+                      <figcaption>
+                        <span>{author?.display_name ?? 'Persona'}</span>
+                        {photo.caption && <p>{photo.caption}</p>}
+                        {removable && (
+                          <button
+                            className="text-button danger-text"
+                            aria-label="Rimuovi foto dall’album"
+                            disabled={busy}
+                            onClick={() =>
+                              onAction({ type: 'remove-event-photo', photo_id: photo.id })
+                            }
+                          >
+                            Rimuovi
+                          </button>
+                        )}
+                      </figcaption>
+                    </figure>
+                  );
+                })}
+              </div>
+            )}
+            {canContribute ? (
+              <form className="event-album-add" onSubmit={addPhoto}>
+                <label>
+                  <span className="sr-only">Aggiungi una foto all’album</span>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={(input) => setPhotoFile(input.target.files?.[0] ?? null)}
+                  />
+                </label>
+                <label>
+                  <span className="sr-only">Didascalia facoltativa</span>
+                  <input
+                    value={photoCaption}
+                    maxLength={240}
+                    onChange={(input) => setPhotoCaption(input.target.value)}
+                    placeholder="Didascalia facoltativa"
+                  />
+                </label>
+                <button className="secondary" disabled={busy || !photoFile}>
+                  <ImagePlus size={16} /> Aggiungi
+                </button>
+              </form>
+            ) : (
+              <p className="event-album-hint">
+                Conferma «Partecipo» per aggiungere le tue foto.
+              </p>
+            )}
+            {photoStatus && <p className="event-album-status">{photoStatus}</p>}
+          </section>
         )}
       </div>
     </article>
