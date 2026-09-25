@@ -19,6 +19,9 @@ import {
   circleMemberInput,
   circleRoleInput,
   circleUpdateInput,
+  eventInput,
+  eventResponseInput,
+  eventUpdateInput,
 } from '@/lib/core/rules';
 import { identity, checked, adminDatabase, ApiError } from './supabase';
 import { enqueueFederatedActivity, ensureFederationActorKey, publicPostBy } from './federation';
@@ -175,6 +178,9 @@ export async function snapshot() {
     db.from('circles').select('*').order('updated_at', { ascending: false }),
     db.from('circle_members').select('*').order('created_at'),
     db.from('circle_posts').select('*').order('created_at', { ascending: false }).limit(500),
+    db.from('events').select('*').order('starts_at', { ascending: true }).limit(200),
+    db.from('event_responses').select('*').order('updated_at', { ascending: false }).limit(2000),
+    db.from('event_updates').select('*').order('created_at', { ascending: true }).limit(1000),
   ]);
   const [
     profiles,
@@ -192,6 +198,9 @@ export async function snapshot() {
     circles,
     circleMembers,
     circlePosts,
+    events,
+    eventResponses,
+    eventUpdates,
   ] = results.map((r) => checked(r));
   const [bookmarks, saved, pollResults, remotePosts] = await Promise.all([
     bookmarksFor(db),
@@ -221,6 +230,9 @@ export async function snapshot() {
     circles,
     circleMembers,
     circlePosts,
+    events,
+    eventResponses,
+    eventUpdates,
     notes,
     pollResults,
     me: profile,
@@ -323,6 +335,47 @@ export async function mutate(input: unknown) {
         await db.rpc('remove_circle_member', {
           target_circle: value.circle_id,
           other: value.user_id,
+        }),
+      );
+      break;
+    }
+    case 'create-event': {
+      const value = eventInput.parse(obj);
+      checked(
+        await db.rpc('create_event', {
+          event_title: value.title,
+          event_description: value.description,
+          event_location: value.location,
+          event_starts_at: value.starts_at,
+          event_ends_at: value.ends_at,
+          event_circle: value.circle_id,
+          event_capacity: value.capacity,
+        }),
+      );
+      break;
+    }
+    case 'respond-event': {
+      const value = eventResponseInput.parse(obj);
+      checked(
+        await db.rpc('respond_event', {
+          target_event: value.event_id,
+          next_response: value.response,
+        }),
+      );
+      break;
+    }
+    case 'cancel-event': {
+      const eventId = userId.parse(obj.event_id);
+      checked(await db.rpc('cancel_event', { target_event: eventId }));
+      break;
+    }
+    case 'event-update': {
+      const value = eventUpdateInput.parse(obj);
+      checked(
+        await db.rpc('create_event_update', {
+          target_event: value.event_id,
+          update_kind: value.kind,
+          update_body: value.body,
         }),
       );
       break;
@@ -697,6 +750,9 @@ export async function exportData() {
     ['circles', ''],
     ['circle_members', ''],
     ['circle_posts', ''],
+    ['events', ''],
+    ['event_responses', ''],
+    ['event_updates', ''],
   ]) {
     const rows: unknown[] = [];
     for (let offset = 0; ; offset += 500) {

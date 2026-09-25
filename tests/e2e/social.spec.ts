@@ -1,4 +1,34 @@
 import { test, expect } from '@playwright/test';
+test('eventi: crea un incontro privato e conserva la risposta', async ({ page }) => {
+  await page.goto('/demo');
+  await page.getByRole('button', { name: 'Eventi', exact: true }).filter({ visible: true }).click();
+  await expect(page.getByRole('heading', { name: 'Eventi.' })).toBeVisible();
+  await page.getByRole('button', { name: 'Nuovo evento' }).click();
+  await page.getByLabel('Titolo').fill('Cinema in cortile');
+  await page.getByLabel('Inizio').fill('2099-06-12T20:30');
+  await page.getByLabel(/Luogo/).fill('Cortile di Marco');
+  await page.getByLabel('Chi può vederlo').selectOption({ label: 'Cerchia · Tavolo lungo' });
+  await page.getByRole('button', { name: 'Crea evento' }).click();
+  const event = page.locator('article').filter({ hasText: 'Cinema in cortile' });
+  await expect(event).toBeVisible();
+  await event.getByRole('button', { name: 'Forse' }).click();
+  await expect(event.getByRole('button', { name: 'Forse' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await event.getByLabel('Aggiornamento per i partecipanti').fill('Portate una sedia pieghevole.');
+  await event.getByRole('button', { name: 'Pubblica aggiornamento' }).click();
+  await expect(event.getByText('Portate una sedia pieghevole.')).toBeVisible();
+  await page.reload();
+  await page.getByRole('button', { name: 'Eventi', exact: true }).filter({ visible: true }).click();
+  await expect(page.locator('article').filter({ hasText: 'Cinema in cortile' })).toContainText(
+    'Cortile di Marco',
+  );
+  await expect(page.locator('article').filter({ hasText: 'Cinema in cortile' })).toContainText(
+    'Portate una sedia pieghevole.',
+  );
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
 test('cerchie: mini-feed privato persistente e separato dalla piazza', async ({ page }) => {
   await page.goto('/demo');
   await page

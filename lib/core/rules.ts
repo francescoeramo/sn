@@ -293,6 +293,29 @@ export const circleUpdateInput = circleIdInput.extend({
 });
 export const circleMemberInput = circleIdInput.extend({ user_id: userId });
 export const circleRoleInput = circleMemberInput.extend({ role: z.enum(['admin', 'member']) });
+export const eventInput = z
+  .object({
+    circle_id: userId.nullable(),
+    title: z.string().trim().min(1).max(100),
+    description: z.string().trim().max(1200),
+    location: z.string().trim().max(160),
+    starts_at: z.iso.datetime({ offset: true }),
+    ends_at: z.iso.datetime({ offset: true }).nullable(),
+    capacity: z.number().int().min(2).max(100).nullable(),
+  })
+  .refine((value) => !value.ends_at || value.ends_at > value.starts_at, {
+    message: 'La fine deve essere successiva all’inizio.',
+    path: ['ends_at'],
+  });
+export const eventResponseInput = z.object({
+  event_id: userId,
+  response: z.enum(['going', 'maybe', 'declined']),
+});
+export const eventUpdateInput = z.object({
+  event_id: userId,
+  kind: z.enum(['comment', 'update']),
+  body: z.string().trim().min(1).max(1200),
+});
 
 export const chatSettingsInput = z.object({
   user_id: userId,

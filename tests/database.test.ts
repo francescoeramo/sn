@@ -1034,6 +1034,66 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
       [],
     );
   });
+  it('isola gli eventi delle cerchie e rende idempotenti le risposte', async () => {
+    const circle = await asUser<{ create_circle: string }>(
+      alice,
+      "select public.create_circle('Cinema','Proiezioni',null)",
+    );
+    const circleId = circle[0].create_circle;
+    await asUser(alice, 'select public.invite_circle_member($1,$2)', [circleId, bob]);
+    await asUser(bob, 'select public.respond_circle_invite($1,true)', [circleId]);
+    const start = new Date(Date.now() + 86400000).toISOString();
+    const finish = new Date(Date.now() + 90000000).toISOString();
+    const created = await asUser<{ create_event: string }>(
+      alice,
+      "select public.create_event('Film insieme','Portate una coperta','Cortile',$1,$2,$3,2)",
+      [start, finish, circleId],
+    );
+    const eventId = created[0].create_event;
+    expect(await asUser(bob, 'select title from public.events where id=$1', [eventId])).toEqual([
+      { title: 'Film insieme' },
+    ]);
+    expect(await asUser(eve, 'select title from public.events where id=$1', [eventId])).toEqual([]);
+    await asUser(bob, "select public.respond_event($1,'going')", [eventId]);
+    await asUser(bob, "select public.respond_event($1,'going')", [eventId]);
+    await asUser(bob, "select public.create_event_update($1,'comment','Porto le sedie')", [
+      eventId,
+    ]);
+    await expect(
+      asUser(bob, "select public.create_event_update($1,'update','Cambio programma')", [eventId]),
+    ).rejects.toThrow('Aggiornamento non disponibile');
+    await asUser(alice, "select public.create_event_update($1,'update','Iniziamo alle nove')", [
+      eventId,
+    ]);
+    expect(
+      await asUser<{ body: string }>(
+        bob,
+        'select body from public.event_updates where event_id=$1 order by created_at,id',
+        [eventId],
+      ),
+    ).toEqual([{ body: 'Porto le sedie' }, { body: 'Iniziamo alle nove' }]);
+    expect(
+      await asUser<{ kind: string }>(
+        bob,
+        'select kind from public.notifications where event_id=$1',
+        [eventId],
+      ),
+    ).toEqual([{ kind: 'event_update' }]);
+    expect(
+      await asUser<{ response: string }>(
+        alice,
+        'select response from public.event_responses where event_id=$1 order by user_id',
+        [eventId],
+      ),
+    ).toEqual([{ response: 'going' }, { response: 'going' }]);
+    await expect(asUser(eve, "select public.respond_event($1,'maybe')", [eventId])).rejects.toThrow(
+      'Evento non disponibile',
+    );
+    await asUser(alice, 'select public.cancel_event($1)', [eventId]);
+    await expect(asUser(bob, "select public.respond_event($1,'maybe')", [eventId])).rejects.toThrow(
+      'risposte sono chiuse',
+    );
+  });
   it('salva messaggi di gruppo cifrati solo per membri e dispositivi correnti', async () => {
     const created = await asUser<{ create_chat_group: string }>(
       alice,

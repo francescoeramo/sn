@@ -121,3 +121,10 @@ Le Note della comunità sono testate nel database contro letture di estranei, pr
 - L’accesso Storage segue l’appartenenza alla cerchia; i file in uso sono esclusi dalla pulizia automatica.
 - TypeScript, lint, 110 test unitari/SQL e build Webpack superati. Il flusso browser di modifica e persistenza passa su desktop e mobile.
 - Il detector Impeccable non segnala problemi nei file UI modificati. Resta da applicare e collaudare la migrazione sul progetto Supabase dedicato.
+
+## 25 settembre 2026 — prima versione degli eventi
+
+- Creazione per follower approvati o cerchia, luogo testuale, intervallo, capienza e risposte idempotenti implementati in demo, API e migrazione locale.
+- Commenti, aggiornamenti dell’organizzatore, annullamento e relative notifiche rispettano la visibilità dell’evento.
+- I test SQL coprono isolamento, capienza, risposte ripetute, ruoli e notifiche. Il percorso browser passa su desktop e mobile con persistenza IndexedDB.
+- Restano modifica dei dettagli, album collaborativo dopo l’inizio e collaudo cloud.

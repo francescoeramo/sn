@@ -20,6 +20,9 @@ import {
   circleMemberInput,
   circleRoleInput,
   circleUpdateInput,
+  eventInput,
+  eventResponseInput,
+  eventUpdateInput,
 } from '@/lib/core/rules';
 const uid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const ago = (minutes: number) => new Date(Date.now() - minutes * 60000).toISOString();
@@ -79,6 +82,27 @@ export function seed(): Snapshot {
     circlePosts: [
       { circle_id: uid(501), post_id: uid(101), added_by: uid(2), created_at: ago(12) },
     ],
+    events: [
+      {
+        id: uid(601),
+        organizer_id: uid(1),
+        circle_id: uid(501),
+        title: 'Pranzo della domenica',
+        description: 'Ognuno porta qualcosa. Decidiamo il menu nella cerchia.',
+        location: 'Casa di Francesco',
+        starts_at: new Date(Date.now() + 3 * 86400000).toISOString(),
+        ends_at: new Date(Date.now() + 3 * 86400000 + 3 * 3600000).toISOString(),
+        capacity: 8,
+        cancelled_at: null,
+        created_at: ago(60),
+        updated_at: ago(60),
+      },
+    ],
+    eventResponses: [
+      { event_id: uid(601), user_id: uid(1), response: 'going', updated_at: ago(60) },
+      { event_id: uid(601), user_id: uid(2), response: 'maybe', updated_at: ago(20) },
+    ],
+    eventUpdates: [],
     saved: { posts: [], nextCursor: null },
     notes: [],
     pollResults: [
@@ -252,6 +276,9 @@ export async function loadDemo(): Promise<Snapshot> {
         state.circles ??= [];
         state.circleMembers ??= [];
         state.circlePosts ??= [];
+        state.events ??= [];
+        state.eventResponses ??= [];
+        state.eventUpdates ??= [];
         state.saved ??= { posts: [], nextCursor: null };
         state.messages = state.messages.filter((m) => isActive(m));
         state.posts = state.posts.filter((p) => isActive(p));
@@ -311,6 +338,9 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
   s.circles ??= [];
   s.circleMembers ??= [];
   s.circlePosts ??= [];
+  s.events ??= [];
+  s.eventResponses ??= [];
+  s.eventUpdates ??= [];
   s.saved ??= { posts: [], nextCursor: null };
   const me = s.me.id;
   const now = new Date().toISOString();
@@ -533,6 +563,82 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
       s.circlePosts = s.circlePosts.filter((link) => link.circle_id !== value.circle_id);
       s.circleMembers = s.circleMembers.filter((member) => member.circle_id !== value.circle_id);
       s.circles = s.circles.filter((circle) => circle.id !== value.circle_id);
+      break;
+    }
+    case 'create-event': {
+      const value = eventInput.parse(action);
+      if (
+        value.circle_id &&
+        !s.circleMembers.some(
+          (member) =>
+            member.circle_id === value.circle_id &&
+            member.user_id === me &&
+            member.status === 'active',
+        )
+      )
+        throw new Error('Cerchia non disponibile.');
+      s.events.push({
+        id,
+        organizer_id: me,
+        ...value,
+        cancelled_at: null,
+        created_at: now,
+        updated_at: now,
+      });
+      s.eventResponses.push({ event_id: id, user_id: me, response: 'going', updated_at: now });
+      break;
+    }
+    case 'respond-event': {
+      const value = eventResponseInput.parse(action);
+      const event = s.events.find((item) => item.id === value.event_id && !item.cancelled_at);
+      if (!event) throw new Error('Evento non disponibile.');
+      s.eventResponses = s.eventResponses.filter(
+        (response) => !(response.event_id === event.id && response.user_id === me),
+      );
+      s.eventResponses.push({ ...value, user_id: me, updated_at: now });
+      break;
+    }
+    case 'cancel-event': {
+      const event = s.events.find((item) => item.id === action.event_id);
+      if (!event || event.organizer_id !== me) throw new Error('Accesso negato.');
+      event.cancelled_at = now;
+      event.updated_at = now;
+      for (const response of s.eventResponses.filter(
+        (item) => item.event_id === event.id && item.user_id !== me && item.response !== 'declined',
+      ))
+        s.notifications.push({
+          id: crypto.randomUUID(),
+          user_id: response.user_id,
+          actor_id: me,
+          kind: 'event_cancelled',
+          post_id: null,
+          event_id: event.id,
+          read: false,
+          created_at: now,
+        });
+      break;
+    }
+    case 'event-update': {
+      const value = eventUpdateInput.parse(action);
+      const event = s.events.find((item) => item.id === value.event_id);
+      if (!event) throw new Error('Evento non disponibile.');
+      if (value.kind === 'update' && event.organizer_id !== me) throw new Error('Accesso negato.');
+      s.eventUpdates.push({ id, author_id: me, created_at: now, ...value });
+      if (value.kind === 'update')
+        for (const response of s.eventResponses.filter(
+          (item) =>
+            item.event_id === event.id && item.user_id !== me && item.response !== 'declined',
+        ))
+          s.notifications.push({
+            id: crypto.randomUUID(),
+            user_id: response.user_id,
+            actor_id: me,
+            kind: 'event_update',
+            post_id: null,
+            event_id: event.id,
+            read: false,
+            created_at: now,
+          });
       break;
     }
     case 'chat-settings': {

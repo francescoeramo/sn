@@ -73,6 +73,7 @@ export type Notice = {
   actor_id: string;
   kind: string;
   post_id: string | null;
+  event_id?: string | null;
   group_id?: string | null;
   read: boolean;
   created_at: string;
@@ -159,6 +160,34 @@ export type CirclePost = {
   added_by: string;
   created_at: string;
 };
+export type Event = {
+  id: string;
+  organizer_id: string;
+  circle_id: string | null;
+  title: string;
+  description: string;
+  location: string;
+  starts_at: string;
+  ends_at: string | null;
+  capacity: number | null;
+  cancelled_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+export type EventResponse = {
+  event_id: string;
+  user_id: string;
+  response: 'going' | 'maybe' | 'declined';
+  updated_at: string;
+};
+export type EventUpdate = {
+  id: string;
+  event_id: string;
+  author_id: string;
+  kind: 'comment' | 'update';
+  body: string;
+  created_at: string;
+};
 export type ChatSettings = {
   member_a: string;
   member_b: string;
@@ -193,6 +222,9 @@ export type Snapshot = {
   circles?: Circle[];
   circleMembers?: CircleMember[];
   circlePosts?: CirclePost[];
+  events?: Event[];
+  eventResponses?: EventResponse[];
+  eventUpdates?: EventUpdate[];
   notes: CommunityNote[];
   pollResults?: PollResult[];
   me: Profile;
@@ -237,6 +269,19 @@ export type Action =
   | { type: 'leave-circle'; circle_id: string }
   | { type: 'archive-circle'; circle_id: string }
   | { type: 'delete-circle'; circle_id: string }
+  | {
+      type: 'create-event';
+      circle_id: string | null;
+      title: string;
+      description: string;
+      location: string;
+      starts_at: string;
+      ends_at: string | null;
+      capacity: number | null;
+    }
+  | { type: 'respond-event'; event_id: string; response: EventResponse['response'] }
+  | { type: 'cancel-event'; event_id: string }
+  | { type: 'event-update'; event_id: string; kind: EventUpdate['kind']; body: string }
   | { type: 'chat-settings'; user_id: string; temporary: boolean; duration: number }
   | { type: 'chat-receipt'; message_id: string; revision: number; read: boolean }
   | { type: 'edit-message'; message_id: string; encrypted: Sealed; media_path: string | null }

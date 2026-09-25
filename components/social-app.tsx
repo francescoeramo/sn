@@ -28,6 +28,7 @@ import {
   Ban,
   Bookmark,
   CircleUserRound,
+  CalendarDays,
 } from 'lucide-react';
 import type { Action, Snapshot, Post } from '@/lib/core/types';
 import { LIMITS, isActive, hashtags, relativeTime } from '@/lib/core/rules';
@@ -48,6 +49,7 @@ import { WelcomeOnboarding } from './welcome-onboarding';
 import { ThemeSettings } from './theme-settings';
 import { GroupChatPanel } from './group-chat-panel';
 import { CirclePanel } from './circle-panel';
+import { EventsPanel } from './events-panel';
 
 type View =
   | 'home'
@@ -55,6 +57,7 @@ type View =
   | 'reels'
   | 'messages'
   | 'circles'
+  | 'events'
   | 'notifications'
   | 'profile'
   | 'settings'
@@ -65,6 +68,7 @@ const navigation = [
   { id: 'reels', label: 'Reel', icon: Clapperboard },
   { id: 'messages', label: 'Messaggi', icon: MessageCircle },
   { id: 'circles', label: 'Cerchie', icon: CircleUserRound },
+  { id: 'events', label: 'Eventi', icon: CalendarDays },
   { id: 'notifications', label: 'Notifiche', icon: Bell },
   { id: 'profile', label: 'Il tuo profilo', icon: UserRound },
 ] as const;
@@ -490,7 +494,9 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                       ? 'DENTRO LA COMMUNITY'
                       : view === 'messages'
                         ? 'DUE PAROLE, TRA VOI'
-                        : 'IL TUO SPAZIO'}
+                        : view === 'events'
+                          ? 'CI VEDIAMO LÌ'
+                          : 'IL TUO SPAZIO'}
                 </span>
                 <h1>
                   {title}
@@ -653,6 +659,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                 onTag={search}
               />
             )}
+            {view === 'events' && <EventsPanel state={state} busy={busy} onAction={act} />}
             {view === 'profile' && focusProfile && (
               <section className="profile-card">
                 <div className={`profile-cover ${focusProfile.color}`}>
@@ -1036,9 +1043,13 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                                     ? 'ti ha scritto.'
                                     : n.kind === 'group_message'
                                       ? 'ha scritto in un gruppo.'
-                                      : n.kind === 'request'
-                                        ? 'ha chiesto di seguirti.'
-                                        : 'ha iniziato a seguirti.'}
+                                      : n.kind === 'event_update'
+                                        ? 'ha pubblicato un aggiornamento per un evento.'
+                                        : n.kind === 'event_cancelled'
+                                          ? 'ha annullato un evento.'
+                                          : n.kind === 'request'
+                                            ? 'ha chiesto di seguirti.'
+                                            : 'ha iniziato a seguirti.'}
                         </p>
                         <small>{relativeTime(n.created_at)}</small>
                         {n.kind === 'group_message' && (
@@ -1050,6 +1061,11 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                             }}
                           >
                             Apri i gruppi
+                          </button>
+                        )}
+                        {(n.kind === 'event_update' || n.kind === 'event_cancelled') && (
+                          <button className="text-button" onClick={() => navigate('events')}>
+                            Apri gli eventi
                           </button>
                         )}
                         {pending && (
