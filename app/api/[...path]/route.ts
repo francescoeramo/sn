@@ -482,6 +482,7 @@ export async function POST(request: NextRequest, { params }: Context) {
         checked(await admin.auth.admin.deleteUser(profile.id));
       }
       const federation = await processFederationQueue();
+      checked(await admin.rpc('refresh_product_metrics'));
       return json({ removed, federation });
     }
     return json({ error: 'Endpoint non trovato.' }, 404);

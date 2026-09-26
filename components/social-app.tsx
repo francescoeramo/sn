@@ -29,6 +29,7 @@ import {
   Bookmark,
   CircleUserRound,
   CalendarDays,
+  Handshake,
 } from 'lucide-react';
 import type { Action, Snapshot, Post } from '@/lib/core/types';
 import { LIMITS, isActive, hashtags, relativeTime } from '@/lib/core/rules';
@@ -50,6 +51,8 @@ import { ThemeSettings } from './theme-settings';
 import { GroupChatPanel } from './group-chat-panel';
 import { CirclePanel } from './circle-panel';
 import { EventsPanel } from './events-panel';
+import { DigestPanel } from './digest-panel';
+import { CollaborationPanel } from './collaboration-panel';
 
 type View =
   | 'home'
@@ -58,6 +61,7 @@ type View =
   | 'messages'
   | 'circles'
   | 'events'
+  | 'collaborations'
   | 'notifications'
   | 'profile'
   | 'settings'
@@ -69,6 +73,7 @@ const navigation = [
   { id: 'messages', label: 'Messaggi', icon: MessageCircle },
   { id: 'circles', label: 'Cerchie', icon: CircleUserRound },
   { id: 'events', label: 'Eventi', icon: CalendarDays },
+  { id: 'collaborations', label: 'Collaborazioni', icon: Handshake },
   { id: 'notifications', label: 'Notifiche', icon: Bell },
   { id: 'profile', label: 'Il tuo profilo', icon: UserRound },
 ] as const;
@@ -315,6 +320,50 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
   const focusProfile = profiles.find((p) => p.id === (profileId ?? me.id));
   const terms = query.trim().toLocaleLowerCase('it');
   const showingSaved = view === 'profile' && focusProfile?.id === me.id && profileTab === 'saved';
+  const hiddenSections = new Set(
+    (state.explorePreferences ?? [])
+      .filter((item) => item.user_id === me.id && item.hidden)
+      .map((item) => item.section),
+  );
+  const followingIds = new Set(
+    state.follows
+      .filter((follow) => follow.follower_id === me.id && follow.accepted)
+      .map((follow) => follow.following_id),
+  );
+  const myMutuals = new Set(
+    state.follows
+      .filter(
+        (follow) =>
+          follow.follower_id === me.id &&
+          follow.accepted &&
+          state.follows.some(
+            (back) =>
+              back.follower_id === follow.following_id &&
+              back.following_id === me.id &&
+              back.accepted,
+          ),
+      )
+      .map((follow) => follow.following_id),
+  );
+  const contactSuggestions = profiles
+    .filter((profile) => profile.id !== me.id && !followingIds.has(profile.id))
+    .flatMap((profile) => {
+      const via = state.follows.find(
+        (follow) =>
+          follow.accepted &&
+          follow.following_id === profile.id &&
+          myMutuals.has(follow.follower_id),
+      );
+      return via ? [{ profile, via: profiles.find((m) => m.id === via.follower_id) }] : [];
+    })
+    .slice(0, 5);
+  const tagCounts = new Map<string, number>();
+  for (const post of state.posts)
+    for (const tag of hashtags(post.body)) tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1);
+  const trendingTags = [...tagCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6)
+    .map(([tag]) => tag);
   const savedIds = new Set(
     state.bookmarks.filter((b) => b.user_id === me.id).map((b) => b.post_id),
   );
@@ -616,35 +665,108 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                     </button>
                   )}
                 </form>
-                <h2 className="section-title">Persone</h2>
-                <div className="people-results">
-                  {profiles
-                    .filter((p) =>
-                      `${p.display_name} ${p.username}`
-                        .toLowerCase()
-                        .includes(terms.replace(/^@/, '')),
-                    )
-                    .map((p) => (
-                      <div className="person-row" key={p.id}>
-                        <button className="person-button" onClick={() => navigate('profile', p.id)}>
-                          <Avatar person={p} />
-                          <span>
-                            <strong>{p.display_name}</strong>
-                            <small>@{p.username}</small>
-                          </span>
-                        </button>
-                        {p.id !== me.id && (
+                {!hiddenSections.has('contacts') && contactSuggestions.length > 0 && (
+                  <section className="panel explore-section" aria-labelledby="explore-contacts">
+                    <div className="explore-head">
+                      <h2 id="explore-contacts">Chi seguono i tuoi contatti</h2>
+                      <button
+                        className="text-button"
+                        onClick={() =>
+                          act({ type: 'explore-preference', section: 'contacts', hidden: true })
+                        }
+                      >
+                        Nascondi
+                      </button>
+                    </div>
+                    <p className="muted fine">
+                      Persone seguite da chi seguite a vicenda. Nessun punteggio o ranking.
+                    </p>
+                    <div className="people-results">
+                      {contactSuggestions.map(({ profile, via }) => (
+                        <div className="person-row" key={profile.id}>
+                          <button
+                            className="person-button"
+                            onClick={() => navigate('profile', profile.id)}
+                          >
+                            <Avatar person={profile} />
+                            <span>
+                              <strong>{profile.display_name}</strong>
+                              <small>
+                                @{profile.username} · seguito da {via?.display_name ?? 'un contatto'}
+                              </small>
+                            </span>
+                          </button>
                           <button
                             className="follow-button"
                             disabled={busy}
-                            onClick={() => act({ type: 'follow', user_id: p.id })}
+                            onClick={() => act({ type: 'follow', user_id: profile.id })}
                           >
-                            {followLabel(p.id)}
+                            Segui
                           </button>
-                        )}
-                      </div>
-                    ))}
-                </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
+                {!hiddenSections.has('hashtags') && trendingTags.length > 0 && (
+                  <section className="panel explore-section" aria-labelledby="explore-hashtags">
+                    <div className="explore-head">
+                      <h2 id="explore-hashtags">Argomenti scelti</h2>
+                      <button
+                        className="text-button"
+                        onClick={() =>
+                          act({ type: 'explore-preference', section: 'hashtags', hidden: true })
+                        }
+                      >
+                        Nascondi
+                      </button>
+                    </div>
+                    <p className="muted fine">Hashtag presenti nella piazza, in ordine di uso.</p>
+                    <div className="button-row">
+                      {trendingTags.map((tag) => (
+                        <button key={tag} className="secondary" onClick={() => search(`#${tag}`)}>
+                          #{tag}
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                )}
+                {!hiddenSections.has('people') && (
+                  <>
+                    <h2 className="section-title">Persone</h2>
+                    <div className="people-results">
+                      {profiles
+                        .filter((p) =>
+                          `${p.display_name} ${p.username}`
+                            .toLowerCase()
+                            .includes(terms.replace(/^@/, '')),
+                        )
+                        .map((p) => (
+                          <div className="person-row" key={p.id}>
+                            <button
+                              className="person-button"
+                              onClick={() => navigate('profile', p.id)}
+                            >
+                              <Avatar person={p} />
+                              <span>
+                                <strong>{p.display_name}</strong>
+                                <small>@{p.username}</small>
+                              </span>
+                            </button>
+                            {p.id !== me.id && (
+                              <button
+                                className="follow-button"
+                                disabled={busy}
+                                onClick={() => act({ type: 'follow', user_id: p.id })}
+                              >
+                                {followLabel(p.id)}
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                    </div>
+                  </>
+                )}
                 <h2 className="section-title">Conversazioni {query && <span>· {query}</span>}</h2>
               </>
             )}
@@ -661,6 +783,9 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
             )}
             {view === 'events' && (
               <EventsPanel state={state} demo={demo} busy={busy} now={clock} onAction={act} />
+            )}
+            {view === 'collaborations' && (
+              <CollaborationPanel state={state} demo={demo} busy={busy} onAction={act} />
             )}
             {view === 'profile' && focusProfile && (
               <section className="profile-card">
@@ -1047,11 +1172,13 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                                       ? 'ha scritto in un gruppo.'
                                       : n.kind === 'event_update'
                                         ? 'ha pubblicato un aggiornamento per un evento.'
-                                        : n.kind === 'event_cancelled'
-                                          ? 'ha annullato un evento.'
-                                          : n.kind === 'request'
-                                            ? 'ha chiesto di seguirti.'
-                                            : 'ha iniziato a seguirti.'}
+                                          : n.kind === 'event_cancelled'
+                                            ? 'ha annullato un evento.'
+                                            : n.kind === 'mention'
+                                              ? 'ti ha menzionato in un post.'
+                                              : n.kind === 'request'
+                                                ? 'ha chiesto di seguirti.'
+                                                : 'ha iniziato a seguirti.'}
                         </p>
                         <small>{relativeTime(n.created_at)}</small>
                         {n.kind === 'group_message' && (
@@ -1183,6 +1310,62 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                 </section>
                 <SecuritySettings demo={demo} />
                 <ThemeSettings />
+                <DigestPanel state={state} busy={busy} onAction={act} />
+                <section className="panel">
+                  <h2>Menzioni</h2>
+                  <p className="muted">
+                    Chi ti menziona genera una sola notifica, che puoi silenziare. Nessuna notifica
+                    arriva da persone bloccate o da contenuti che non puoi vedere.
+                  </p>
+                  <button
+                    className={
+                      (state.mentionPreferences?.[0]?.mentions_enabled ?? true)
+                        ? 'secondary'
+                        : 'primary'
+                    }
+                    disabled={busy}
+                    onClick={() =>
+                      act({
+                        type: 'mention-preference',
+                        enabled: !(state.mentionPreferences?.[0]?.mentions_enabled ?? true),
+                      })
+                    }
+                  >
+                    {(state.mentionPreferences?.[0]?.mentions_enabled ?? true)
+                      ? 'Silenzia le menzioni'
+                      : 'Riattiva le menzioni'}
+                  </button>
+                </section>
+                <section className="panel">
+                  <h2>Scoperta</h2>
+                  <p className="muted">
+                    Esplora mostra solo percorsi espliciti. Puoi nascondere ogni sezione e
+                    riattivarla qui. Nessun feed «Per te» e nessuna classifica.
+                  </p>
+                  {(
+                    [
+                      ['contacts', 'Chi seguono i tuoi contatti'],
+                      ['hashtags', 'Argomenti scelti'],
+                      ['people', 'Ricerca persone'],
+                    ] as const
+                  ).map(([section, label]) => {
+                    const hidden = hiddenSections.has(section);
+                    return (
+                      <div className="person-row" key={section}>
+                        <span>{label}</span>
+                        <button
+                          className="text-button"
+                          disabled={busy}
+                          onClick={() =>
+                            act({ type: 'explore-preference', section, hidden: !hidden })
+                          }
+                        >
+                          {hidden ? 'Mostra' : 'Nascondi'}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </section>
                 <section className="panel">
                   <h2>I tuoi dati, le tue scelte</h2>
                   <p className="muted">

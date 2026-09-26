@@ -53,6 +53,53 @@ export type Comment = {
   author_id: string;
   body: string;
   created_at: string;
+  parent_id?: string | null;
+  quote?: string;
+};
+export type Reaction = {
+  id: string;
+  user_id: string;
+  target_type: 'post' | 'comment' | 'message';
+  target_id: string;
+  emoji: string;
+  created_at: string;
+};
+export type MentionPreference = {
+  user_id: string;
+  mentions_enabled: boolean;
+  updated_at: string;
+};
+export type Mention = {
+  id: string;
+  author_id: string;
+  mentioned_id: string;
+  source_type: 'post' | 'comment';
+  source_id: string;
+  post_id: string;
+  created_at: string;
+};
+export type Share = {
+  id: string;
+  user_id: string;
+  target_type: 'post' | 'comment';
+  target_id: string;
+  destination_type: 'chat' | 'circle';
+  destination_id: string;
+  note: string;
+  created_at: string;
+};
+export type ExplorePreference = {
+  user_id: string;
+  section: 'contacts' | 'hashtags' | 'people';
+  hidden: boolean;
+  updated_at: string;
+};
+export type ProductMetric = {
+  day: string;
+  metric: string;
+  bucket: string;
+  count: number;
+  computed_at: string;
 };
 export type Follow = { follower_id: string; following_id: string; accepted: boolean };
 export type Message = {
@@ -196,6 +243,58 @@ export type EventPhoto = {
   caption: string;
   created_at: string;
 };
+export type CollaborativePost = {
+  post_id: string;
+  owner_id: string;
+  album_closed_at: string | null;
+  created_at: string;
+};
+export type Collaborator = {
+  post_id: string;
+  user_id: string;
+  invited_by: string | null;
+  status: 'invited' | 'active';
+  can_media: boolean;
+  can_caption: boolean;
+  can_update: boolean;
+  created_at: string;
+};
+export type AlbumItem = {
+  id: string;
+  post_id: string;
+  media_path: string;
+  caption: string;
+  added_by: string;
+  created_at: string;
+};
+export type DigestItem = { post_id: string; reason: string; priority: number };
+export type DigestPreferences = {
+  user_id: string;
+  enabled: boolean;
+  frequency: 'daily' | 'weekly';
+  time_slot: number;
+  timezone: 'Europe/Rome' | 'UTC';
+  channel: 'in_app' | 'email';
+  email_consent: boolean;
+  email_consent_at: string | null;
+  updated_at: string;
+};
+export type DigestSource = {
+  user_id: string;
+  source_type: 'circle' | 'person' | 'topic';
+  source_id: string;
+  enabled: boolean;
+  created_at: string;
+};
+export type DigestDelivery = {
+  id: string;
+  user_id: string;
+  period_key: string;
+  items: DigestItem[];
+  status: 'generated' | 'delivered' | 'failed';
+  generated_at: string;
+  delivered_at: string | null;
+};
 export type ChatSettings = {
   member_a: string;
   member_b: string;
@@ -234,6 +333,18 @@ export type Snapshot = {
   eventResponses?: EventResponse[];
   eventUpdates?: EventUpdate[];
   eventPhotos?: EventPhoto[];
+  digestPreferences?: DigestPreferences[];
+  digestSources?: DigestSource[];
+  digestDeliveries?: DigestDelivery[];
+  collaborativePosts?: CollaborativePost[];
+  collaborators?: Collaborator[];
+  albumItems?: AlbumItem[];
+  reactions?: Reaction[];
+  mentionPreferences?: MentionPreference[];
+  mentions?: Mention[];
+  shares?: Share[];
+  explorePreferences?: ExplorePreference[];
+  productMetrics?: ProductMetric[];
   notes: CommunityNote[];
   pollResults?: PollResult[];
   me: Profile;
@@ -304,6 +415,48 @@ export type Action =
   | { type: 'add-event-photo'; event_id: string; media_path: string; caption: string }
   | { type: 'remove-event-photo'; photo_id: string }
   | { type: 'event-update'; event_id: string; kind: EventUpdate['kind']; body: string }
+  | {
+      type: 'digest-preferences';
+      enabled: boolean;
+      frequency: DigestPreferences['frequency'];
+      time_slot: number;
+      timezone: DigestPreferences['timezone'];
+      channel: DigestPreferences['channel'];
+      email_consent: boolean;
+    }
+  | { type: 'digest-source'; source_type: DigestSource['source_type']; source_id: string; enabled: boolean }
+  | { type: 'digest-refresh' }
+  | { type: 'open-collaboration'; post_id: string }
+  | { type: 'invite-collaborator'; post_id: string; user_id: string }
+  | { type: 'respond-collaboration'; post_id: string; accept: boolean }
+  | { type: 'remove-collaborator'; post_id: string; user_id: string }
+  | {
+      type: 'set-collaborator-permission';
+      post_id: string;
+      user_id: string;
+      can_media: boolean;
+      can_caption: boolean;
+      can_update: boolean;
+    }
+  | { type: 'close-album'; post_id: string }
+  | { type: 'add-album-item'; post_id: string; media_path: string; caption: string }
+  | { type: 'remove-album-item'; item_id: string }
+  | {
+      type: 'react';
+      target_type: Reaction['target_type'];
+      target_id: string;
+      emoji: string | null;
+    }
+  | { type: 'mention-preference'; enabled: boolean }
+  | { type: 'explore-preference'; section: ExplorePreference['section']; hidden: boolean }
+  | {
+      type: 'share';
+      target_type: Share['target_type'];
+      target_id: string;
+      destination_type: Share['destination_type'];
+      destination_id: string;
+      note: string;
+    }
   | { type: 'chat-settings'; user_id: string; temporary: boolean; duration: number }
   | { type: 'chat-receipt'; message_id: string; revision: number; read: boolean }
   | { type: 'edit-message'; message_id: string; encrypted: Sealed; media_path: string | null }
@@ -323,7 +476,7 @@ export type Action =
   | { type: 'vote-poll'; poll_id: string; option_id: string }
   | { type: 'bookmark'; post_id: string; saved: boolean }
   | { type: 'like'; post_id: string }
-  | { type: 'comment'; post_id: string; body: string }
+  | { type: 'comment'; post_id: string; body: string; parent_id?: string | null; quote?: string }
   | { type: 'follow'; user_id: string }
   | { type: 'accept'; user_id: string; accept: boolean }
   | {

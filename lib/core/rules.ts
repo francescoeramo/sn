@@ -332,6 +332,65 @@ export const eventPhotoInput = z.object({
 });
 export const eventPhotoIdInput = z.object({ photo_id: userId });
 
+export const digestPreferenceInput = z
+  .object({
+    enabled: z.boolean(),
+    frequency: z.enum(['daily', 'weekly']),
+    time_slot: z.number().int().min(0).max(23),
+    timezone: z.enum(['Europe/Rome', 'UTC']),
+    channel: z.enum(['in_app', 'email']),
+    email_consent: z.boolean(),
+  })
+  .refine((value) => value.channel !== 'email' || value.email_consent, {
+    message: 'L’email richiede un consenso separato.',
+    path: ['email_consent'],
+  });
+export const digestSourceInput = z.object({
+  source_type: z.enum(['circle', 'person', 'topic']),
+  source_id: z.string().trim().min(1).max(120),
+  enabled: z.boolean(),
+});
+
+export const postIdInput = z.object({ post_id: userId });
+export const collaboratorInput = z.object({ post_id: userId, user_id: userId });
+export const collaborationResponseInput = z.object({ post_id: userId, accept: z.boolean() });
+export const collaboratorPermissionInput = collaboratorInput.extend({
+  can_media: z.boolean(),
+  can_caption: z.boolean(),
+  can_update: z.boolean(),
+});
+export const albumItemInput = z.object({
+  post_id: userId,
+  media_path: z.string().min(1).max(4_200_000),
+  caption: z.string().trim().max(240),
+});
+export const albumItemIdInput = z.object({ item_id: userId });
+
+export const REACTIONS = ['❤️', '😂', '👍', '🎉', '😮', '🙏'] as const;
+export const reactionInput = z.object({
+  target_type: z.enum(['post', 'comment', 'message']),
+  target_id: userId,
+  emoji: z.enum(REACTIONS).nullable(),
+});
+export const commentInput = z.object({
+  post_id: userId,
+  body: z.string().trim().min(1).max(1000),
+  parent_id: userId.nullable().optional(),
+  quote: z.string().trim().max(180).optional(),
+});
+export const mentionPreferenceInput = z.object({ enabled: z.boolean() });
+export const explorePreferenceInput = z.object({
+  section: z.enum(['contacts', 'hashtags', 'people']),
+  hidden: z.boolean(),
+});
+export const shareInput = z.object({
+  target_type: z.enum(['post', 'comment']),
+  target_id: userId,
+  destination_type: z.enum(['chat', 'circle']),
+  destination_id: userId,
+  note: z.string().trim().max(280),
+});
+
 export const chatSettingsInput = z.object({
   user_id: userId,
   temporary: z.boolean(),

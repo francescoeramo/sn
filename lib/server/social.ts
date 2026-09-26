@@ -25,6 +25,19 @@ import {
   eventPhotoInput,
   eventResponseInput,
   eventUpdateInput,
+  digestPreferenceInput,
+  digestSourceInput,
+  postIdInput,
+  collaboratorInput,
+  collaborationResponseInput,
+  collaboratorPermissionInput,
+  albumItemInput,
+  albumItemIdInput,
+  reactionInput,
+  commentInput,
+  mentionPreferenceInput,
+  shareInput,
+  explorePreferenceInput,
 } from '@/lib/core/rules';
 import { identity, checked, adminDatabase, ApiError } from './supabase';
 import { enqueueFederatedActivity, ensureFederationActorKey, publicPostBy } from './federation';
@@ -34,6 +47,7 @@ import type {
   FederationBlock,
   ModerationAccount,
   Post,
+  ProductMetric,
   RemotePost,
   RemoteReport,
   SavedCursor,
@@ -185,6 +199,21 @@ export async function snapshot() {
     db.from('event_responses').select('*').order('updated_at', { ascending: false }).limit(2000),
     db.from('event_updates').select('*').order('created_at', { ascending: true }).limit(1000),
     db.from('event_photos').select('*').order('created_at', { ascending: true }).limit(1000),
+    db.from('digest_preferences').select('*').limit(1),
+    db.from('digest_sources').select('*').order('created_at', { ascending: true }).limit(200),
+    db
+      .from('digest_deliveries')
+      .select('*')
+      .order('generated_at', { ascending: false })
+      .limit(10),
+    db.from('collaborative_posts').select('*').order('created_at', { ascending: false }).limit(200),
+    db.from('collaborators').select('*').order('created_at', { ascending: true }).limit(1000),
+    db.from('album_items').select('*').order('created_at', { ascending: true }).limit(1000),
+    db.from('reactions').select('*').eq('user_id', user.id).limit(3000),
+    db.from('mention_preferences').select('*').eq('user_id', user.id).limit(1),
+    db.from('mentions').select('*').limit(500),
+    db.from('shares').select('*').order('created_at', { ascending: false }).limit(500),
+    db.from('explore_preferences').select('*').eq('user_id', user.id).limit(10),
   ]);
   const [
     profiles,
@@ -206,6 +235,17 @@ export async function snapshot() {
     eventResponses,
     eventUpdates,
     eventPhotos,
+    digestPreferences,
+    digestSources,
+    digestDeliveries,
+    collaborativePosts,
+    collaborators,
+    albumItems,
+    reactions,
+    mentionPreferences,
+    mentions,
+    shares,
+    explorePreferences,
   ] = results.map((r) => checked(r));
   const [bookmarks, saved, pollResults, remotePosts] = await Promise.all([
     bookmarksFor(db),
@@ -229,6 +269,15 @@ export async function snapshot() {
   const federationBlocks = usage.isAdmin
     ? (checked(await db.rpc('federation_blocked_instances')) as FederationBlock[])
     : [];
+  const productMetrics = usage.isAdmin
+    ? (checked(
+        await db
+          .from('product_metrics_daily')
+          .select('*')
+          .order('day', { ascending: false })
+          .limit(300),
+      ) as ProductMetric[])
+    : [];
   return {
     bookmarks,
     saved,
@@ -239,6 +288,18 @@ export async function snapshot() {
     eventResponses,
     eventUpdates,
     eventPhotos,
+    digestPreferences,
+    digestSources,
+    digestDeliveries,
+    collaborativePosts,
+    collaborators,
+    albumItems,
+    reactions,
+    mentionPreferences,
+    mentions,
+    shares,
+    explorePreferences,
+    productMetrics,
     notes,
     pollResults,
     me: profile,
@@ -418,6 +479,116 @@ export async function mutate(input: unknown) {
       checked(await db.rpc('remove_event_photo', { target_photo: value.photo_id }));
       break;
     }
+    case 'digest-preferences': {
+      const value = digestPreferenceInput.parse(obj);
+      checked(
+        await db.from('digest_preferences').upsert(
+          {
+            user_id: user.id,
+            enabled: value.enabled,
+            frequency: value.frequency,
+            time_slot: value.time_slot,
+            timezone: value.timezone,
+            channel: value.channel,
+            email_consent: value.email_consent,
+            email_consent_at: value.email_consent ? new Date().toISOString() : null,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'user_id' },
+        ),
+      );
+      break;
+    }
+    case 'digest-source': {
+      const value = digestSourceInput.parse(obj);
+      if (value.source_type === 'person' || value.source_type === 'circle')
+        userId.parse(value.source_id);
+      checked(
+        await db.from('digest_sources').upsert(
+          {
+            user_id: user.id,
+            source_type: value.source_type,
+            source_id: value.source_id,
+            enabled: value.enabled,
+          },
+          { onConflict: 'user_id,source_type,source_id' },
+        ),
+      );
+      break;
+    }
+    case 'digest-refresh': {
+      checked(await db.rpc('digest_refresh'));
+      break;
+    }
+    case 'open-collaboration': {
+      const value = postIdInput.parse(obj);
+      checked(await db.rpc('open_collaboration', { target_post: value.post_id }));
+      break;
+    }
+    case 'invite-collaborator': {
+      const value = collaboratorInput.parse(obj);
+      checked(
+        await db.rpc('invite_collaborator', {
+          target_post: value.post_id,
+          other: value.user_id,
+        }),
+      );
+      break;
+    }
+    case 'respond-collaboration': {
+      const value = collaborationResponseInput.parse(obj);
+      checked(
+        await db.rpc('respond_collaboration', {
+          target_post: value.post_id,
+          accept_invite: value.accept,
+        }),
+      );
+      break;
+    }
+    case 'remove-collaborator': {
+      const value = collaboratorInput.parse(obj);
+      checked(
+        await db.rpc('remove_collaborator', {
+          target_post: value.post_id,
+          other: value.user_id,
+        }),
+      );
+      break;
+    }
+    case 'set-collaborator-permission': {
+      const value = collaboratorPermissionInput.parse(obj);
+      checked(
+        await db.rpc('set_collaborator_permission', {
+          target_post: value.post_id,
+          other: value.user_id,
+          allow_media: value.can_media,
+          allow_caption: value.can_caption,
+          allow_update: value.can_update,
+        }),
+      );
+      break;
+    }
+    case 'close-album': {
+      const value = postIdInput.parse(obj);
+      checked(await db.rpc('close_album', { target_post: value.post_id }));
+      break;
+    }
+    case 'add-album-item': {
+      const value = albumItemInput.parse(obj);
+      checked(
+        await db.rpc('add_album_item', {
+          target_post: value.post_id,
+          item_path: value.media_path,
+          item_caption: value.caption,
+        }),
+      );
+      break;
+    }
+    case 'remove-album-item': {
+      const value = albumItemIdInput.parse(obj);
+      checked(await db.rpc('remove_album_item', { target_item: value.item_id }));
+      break;
+    }
     case 'leave-circle': {
       const value = circleIdInput.parse(obj);
       checked(await db.rpc('leave_circle', { target_circle: value.circle_id }));
@@ -580,8 +751,85 @@ export async function mutate(input: unknown) {
       break;
     }
     case 'comment': {
-      const v = z.object({ post_id: userId, body: z.string().trim().min(1).max(1000) }).parse(obj);
-      checked(await db.from('comments').insert({ ...v, author_id: user.id }));
+      const v = commentInput.parse(obj);
+      checked(
+        await db.from('comments').insert({
+          post_id: v.post_id,
+          body: v.body,
+          parent_id: v.parent_id ?? null,
+          quote: v.quote ?? '',
+          author_id: user.id,
+        }),
+      );
+      break;
+    }
+    case 'react': {
+      const v = reactionInput.parse(obj);
+      if (v.emoji === null) {
+        checked(
+          await db
+            .from('reactions')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('target_type', v.target_type)
+            .eq('target_id', v.target_id),
+        );
+      } else {
+        checked(
+          await db.from('reactions').upsert(
+            {
+              user_id: user.id,
+              target_type: v.target_type,
+              target_id: v.target_id,
+              emoji: v.emoji,
+            },
+            { onConflict: 'user_id,target_type,target_id' },
+          ),
+        );
+      }
+      break;
+    }
+    case 'mention-preference': {
+      const v = mentionPreferenceInput.parse(obj);
+      checked(
+        await db.from('mention_preferences').upsert(
+          {
+            user_id: user.id,
+            mentions_enabled: v.enabled,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'user_id' },
+        ),
+      );
+      break;
+    }
+    case 'explore-preference': {
+      const v = explorePreferenceInput.parse(obj);
+      checked(
+        await db.from('explore_preferences').upsert(
+          {
+            user_id: user.id,
+            section: v.section,
+            hidden: v.hidden,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'user_id,section' },
+        ),
+      );
+      break;
+    }
+    case 'share': {
+      const v = shareInput.parse(obj);
+      checked(
+        await db.from('shares').insert({
+          user_id: user.id,
+          target_type: v.target_type,
+          target_id: v.target_id,
+          destination_type: v.destination_type,
+          destination_id: v.destination_id,
+          note: v.note,
+        }),
+      );
       break;
     }
     case 'follow': {
@@ -792,6 +1040,17 @@ export async function exportData() {
     ['event_responses', ''],
     ['event_updates', ''],
     ['event_photos', ''],
+    ['digest_preferences', 'user_id'],
+    ['digest_sources', 'user_id'],
+    ['digest_deliveries', 'user_id'],
+    ['collaborative_posts', ''],
+    ['collaborators', ''],
+    ['album_items', ''],
+    ['reactions', 'user_id'],
+    ['mention_preferences', 'user_id'],
+    ['mentions', ''],
+    ['shares', 'user_id'],
+    ['explore_preferences', 'user_id'],
   ]) {
     const rows: unknown[] = [];
     for (let offset = 0; ; offset += 500) {
@@ -810,7 +1069,15 @@ export async function exportData() {
                     ? 'blocked_id'
                     : table === 'circle_members' || table === 'circle_posts'
                       ? 'circle_id'
-                      : 'id',
+                      : table === 'digest_preferences' || table === 'digest_sources'
+                        ? 'user_id'
+                        : table === 'collaborative_posts' || table === 'collaborators'
+                          ? 'post_id'
+                          : table === 'mention_preferences'
+                            ? 'user_id'
+                            : table === 'explore_preferences'
+                              ? 'user_id'
+                              : 'id',
           )
           .range(offset, offset + 499),
       );

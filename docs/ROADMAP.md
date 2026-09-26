@@ -56,7 +56,7 @@ Collaudare le consegne e la moderazione con server dedicati. Gli attori pubblici
 
 ## Funzioni sociali successive al collaudo cloud
 
-Queste funzioni sono requisiti approvati. La prima tranche delle cerchie è disponibile solo localmente; gli altri punti non sono ancora completi. Procedere per blocchi completi e non applicare migrazioni al cloud senza una richiesta esplicita:
+Queste funzioni sono requisiti approvati. La prima tranche delle cerchie è disponibile solo localmente; gli altri punti non sono ancora completi. Procedere per blocchi completi e non applicare migrazioni al cloud senza una richiesta esplicita. Le sezioni 6–9 sono ora implementate in locale (migrazioni del 26 settembre 2026), in attesa di collaudo cloud:
 
 ### 4. Cerchie e spazi condivisi
 
@@ -74,7 +74,7 @@ Queste funzioni sono requisiti approvati. La prima tranche delle cerchie è disp
 - Una singola notifica utile per variazioni sostanziali di data, luogo o annullamento. Lo storico delle risposte deve rispettare consenso, blocchi, rimozioni e cancellazione account.
 - Schema: `events`, `event_responses`, `event_updates`, `event_photos`, con RLS separate per organizzatore, invitati e contenuti associati.
 
-### 6. Digest scelto dall'utente
+### 6. Digest scelto dall'utente — implementato in locale
 
 - Disattivato per impostazione predefinita; frequenza giornaliera o settimanale, fascia oraria e canale scelti dall'utente. L'email richiede consenso separato.
 - Massimo cinque elementi recenti da cerchie, persone o argomenti scelti e contenuti non ancora visti. Niente sponsorizzazioni, profilazione comportamentale o punteggi opachi.
@@ -82,7 +82,7 @@ Queste funzioni sono requisiti approvati. La prima tranche delle cerchie è disp
 - Generazione lato server nel rispetto di RLS, privacy, blocchi, scadenze e avvisi di contenuto. Conservare preferenze e ultimo invio, non una cronologia delle aperture.
 - Schema previsto: `digest_preferences`, `digest_deliveries`; job idempotente e applicazione pienamente utilizzabile anche se il job non è disponibile.
 
-### 7. Post collaborativi e album condivisi
+### 7. Post collaborativi e album condivisi — implementati in locale
 
 - Collaboratori scelti tra contatti reciproci, con invito accettato. Rifiuto, uscita e rimozione non producono notifiche pubbliche.
 - I collaboratori possono aggiungere media, didascalie o aggiornamenti entro i permessi scelti dall'autore, che conserva pubblicazione, occultamento, revoca e archiviazione.
@@ -90,7 +90,7 @@ Queste funzioni sono requisiti approvati. La prima tranche delle cerchie è disp
 - Gli album evento aprono solo dopo l'inizio e possono essere chiusi dall'organizzatore. Media e quote restano quelli già previsti, senza nuovi servizi esterni.
 - Schema previsto: `collaborative_posts`, `collaborators`, `album_items`; transazioni e RLS devono bloccare contributi dopo rimozione, blocco o scadenza dell'accesso.
 
-### 8. Conversazioni più espressive
+### 8. Conversazioni più espressive — implementate in locale
 
 - Reazioni leggere e private a post, commenti e messaggi, con un set piccolo e accessibile e senza classifiche o punteggi nel feed.
 - Risposte contestuali con citazione breve e collegamento all'origine; nessun testo deve attraversare un confine di visibilità.
@@ -98,7 +98,7 @@ Queste funzioni sono requisiti approvati. La prima tranche delle cerchie è disp
 - Condivisione interna con nota personale verso una chat o cerchia autorizzata, senza copia pubblica, contatori o cascata di repost.
 - Schema previsto: `reactions`, `comment_replies`, `mentions`, `shares`, con vincoli univoci e notifiche idempotenti.
 
-### 9. Scoperta intenzionale e salute del prodotto
+### 9. Scoperta intenzionale e salute del prodotto — implementata in locale
 
 - Esplora offre soltanto percorsi espliciti e spiegati: hashtag scelti, persone seguite da contatti approvati e profili locali o nuovi cercati volontariamente. Ogni sezione può essere nascosta.
 - Nessun feed «Per te», scorrimento infinito, autoplay generalizzato, classifica, streak, premio di presenza, badge di engagement o notifica senza una novità concreta.

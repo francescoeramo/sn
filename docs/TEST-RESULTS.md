@@ -136,3 +136,14 @@ Le Note della comunità sono testate nel database contro letture di estranei, pr
 - L’export personale include `event_photos`; la cancellazione resta gestita dalle catene esistenti su `events` e `media_assets`.
 - TypeScript, lint mirato, 112 test unitari/SQL e build Webpack superati. Il nuovo test SQL verifica permessi, album chiuso prima dell’inizio e dopo la mancata conferma, isolamento tra utenti e pulizia Storage. Il percorso browser passa su desktop e mobile con persistenza IndexedDB.
 - La migrazione `20260925180000_event_details_and_album.sql` non è stata applicata al progetto Supabase cloud.
+
+## 26 settembre 2026 — sezioni 6–9 in locale
+
+- **Digest scelto dall’utente** (`digest_preferences`, `digest_sources`, `digest_deliveries`): spento di default, frequenza, fascia, fuso e canale scelti, email con consenso separato, massimo cinque elementi con motivo spiegabile e rigenerazione idempotente per periodo. Le reazioni sono private e non esiste alcuna cronologia delle aperture.
+- **Post collaborativi e album condivisi** (`collaborative_posts`, `collaborators`, `album_items`): inviti tra contatti reciproci con accettazione, permessi revocabili dall’autore, chiusura dell’album e contributi bloccati dopo rimozione o chiusura. Le funzioni di disponibilità e pulizia dei media includono ora `album_items`, quindi un file in uso non viene ripulito.
+- **Conversazioni più espressive** (`reactions`, `comment_replies` tramite `comments.parent_id/quote`, `mentions`, `mention_preferences`, `shares`): reazioni private come i salvati, risposte con citazione dello stesso post, menzioni con preferenza del destinatario che rispetta blocchi e visibilità, condivisioni interne senza copia pubblica né contatori.
+- **Scoperta intenzionale** (`explore_preferences`, `product_metrics_daily`): sezioni Esplora spiegate e nascondibili (contatti seguiti da contatti reciproci, hashtag); metriche aggregate senza `user_id`, leggibili solo dai moderatori e calcolate dal job di manutenzione.
+- Verifiche locali: `npm run typecheck` superato, lint mirato pulito sui file toccati, **124 test unitari/SQL** superati (PGlite carica le quattro nuove migrazioni), `npm run build` (Turbopack) superato, `npm audit --omit=dev` senza vulnerabilità. I nuovi percorsi Playwright (digest, collaborazioni, espressioni, esplora) passano su desktop e mobile.
+- Difetti preesistenti non introdotti da questo lavoro: i test browser `feed calmo`, `note della comunità`, `salvati` e, su mobile, `federazione` fallivano già su `HEAD` (la Nota federata più recente precede i post locali nel feed). Restano da correggere a parte.
+- Le quattro migrazioni (`20260926120000_user_digest.sql`, `20260926130000_collaborative_posts.sql`, `20260926140000_expressiveness.sql`, `20260926150000_intentional_discovery.sql`) non sono state applicate al progetto Supabase cloud. Il canale email del digest resta non operativo: manca un provider di invio, quindi nell’attesa si usa solo `in_app`.
+

@@ -895,6 +895,132 @@ test('tema: scelta scura persistente senza lampo iniziale', async ({ page }) => 
   );
 });
 
+test('digest: attivazione, motivi spiegati e persistenza', async ({ page }) => {
+  await page.goto('/demo');
+  await page
+    .getByRole('button', { name: 'Impostazioni', exact: true })
+    .filter({ visible: true })
+    .click();
+  const digest = page.locator('section').filter({
+    has: page.getByRole('heading', { name: 'Digest scelto da te' }),
+  });
+  await digest.getByLabel('Attiva il digest').check();
+  await digest.getByRole('button', { name: 'Salva preferenze' }).click();
+  await digest.getByRole('button', { name: /Tavolo lungo/ }).click();
+  await digest.getByRole('button', { name: 'Aggiorna adesso' }).click();
+  await expect(digest.getByText('Cerchia Tavolo lungo')).toBeVisible();
+  const items = await digest.locator('.digest-items li').count();
+  expect(items).toBeGreaterThan(0);
+  expect(items).toBeLessThanOrEqual(5);
+  await page.reload();
+  await page
+    .getByRole('button', { name: 'Impostazioni', exact: true })
+    .filter({ visible: true })
+    .click();
+  const reloaded = page.locator('section').filter({
+    has: page.getByRole('heading', { name: 'Digest scelto da te' }),
+  });
+  await expect(reloaded.getByText('Cerchia Tavolo lungo')).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+test('collaborazioni: invita un contatto, aggiunge media e chiude l’album', async ({ page }) => {
+  await page.goto('/demo');
+  await page
+    .getByRole('button', { name: 'Collaborazioni', exact: true })
+    .filter({ visible: true })
+    .click();
+  const panel = page.locator('article').filter({ hasText: 'Sto preparando un album condiviso' });
+  await expect(panel.getByText('Collaboratore')).toBeVisible();
+  await panel.getByRole('button', { name: 'Invita un contatto' }).click();
+  await panel.getByRole('combobox').selectOption({ label: '@marco' });
+  await panel.getByRole('button', { name: 'Invita', exact: true }).click();
+  await expect(panel.getByText('In attesa di risposta')).toBeVisible();
+  await panel.locator('input[type="file"]').setInputFiles({
+    name: 'gita.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+      'base64',
+    ),
+  });
+  await panel.getByPlaceholder('Didascalia facoltativa').fill('Sul treno');
+  await panel.getByRole('button', { name: 'Aggiungi', exact: true }).click();
+  await expect(panel.getByText('Sul treno')).toBeVisible();
+  await panel.getByRole('button', { name: 'Chiudi album' }).click();
+  await expect(panel.getByText('Album chiuso dall’autore.')).toBeVisible();
+  await page.reload();
+  await page
+    .getByRole('button', { name: 'Collaborazioni', exact: true })
+    .filter({ visible: true })
+    .click();
+  const reloaded = page.locator('article').filter({ hasText: 'Sto preparando un album condiviso' });
+  await expect(reloaded.getByText('Sul treno')).toBeVisible();
+  await expect(reloaded.getByText('Album chiuso dall’autore.')).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+test('espressioni: reazione privata, risposta citata e condivisione interna', async ({ page }) => {
+  await page.goto('/demo');
+  const post = page.locator('.post-card').filter({ hasText: 'Domanda seria' });
+  await post.getByRole('button', { name: 'Reazione ❤️' }).click();
+  await expect(post.getByRole('button', { name: 'Reazione ❤️' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await post.getByRole('button', { name: 'Commenti' }).click();
+  await post.getByLabel('Scrivi un commento').fill('Provo la frittata');
+  await post.getByRole('button', { name: 'Invia commento' }).click();
+  await expect(post.getByText('Provo la frittata')).toBeVisible();
+  await post.getByRole('button', { name: 'Rispondi a questo commento' }).first().click();
+  await post.getByLabel('Scrivi un commento').fill('Risposta con citazione');
+  await post.getByRole('button', { name: 'Invia commento' }).click();
+  await expect(post.getByText('Risposta con citazione')).toBeVisible();
+  await expect(post.locator('.comment-quote').first()).toBeVisible();
+  await post.getByRole('button', { name: 'Condividi internamente' }).click();
+  await post.getByLabel('Destinazione').selectOption({ index: 1 });
+  await post.getByRole('button', { name: 'Condividi', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Condividi internamente' })).toHaveCount(0);
+  await page.reload();
+  const reloaded = page.locator('.post-card').filter({ hasText: 'Domanda seria' });
+  await expect(reloaded.getByRole('button', { name: 'Reazione ❤️' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await reloaded.getByRole('button', { name: 'Commenti' }).click();
+  await expect(reloaded.getByText('Risposta con citazione')).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+test('esplora: percorsi spiegati e sezioni nascondibili', async ({ page }) => {
+  await page.goto('/demo');
+  await page
+    .getByRole('button', { name: 'Esplora', exact: true })
+    .filter({ visible: true })
+    .click();
+  await expect(page.getByRole('heading', { name: 'Chi seguono i tuoi contatti' })).toBeVisible();
+  await expect(page.getByText(/seguito da/)).toBeVisible();
+  await page
+    .getByRole('heading', { name: 'Chi seguono i tuoi contatti' })
+    .locator('..')
+    .getByRole('button', { name: 'Nascondi' })
+    .click();
+  await expect(page.getByRole('heading', { name: 'Chi seguono i tuoi contatti' })).toHaveCount(0);
+  await page
+    .getByRole('button', { name: 'Impostazioni', exact: true })
+    .filter({ visible: true })
+    .click();
+  const discovery = page.locator('section').filter({
+    has: page.getByRole('heading', { name: 'Scoperta' }),
+  });
+  await discovery.getByRole('button', { name: 'Mostra' }).first().click();
+  await page
+    .getByRole('button', { name: 'Esplora', exact: true })
+    .filter({ visible: true })
+    .click();
+  await expect(page.getByRole('heading', { name: 'Chi seguono i tuoi contatti' })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
 test('stati vuoti: la ricerca offre un’indicazione contestuale', async ({ page }) => {
   await page.goto('/demo');
   await page

@@ -1906,6 +1906,318 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
     await asUser(alice, 'select public.acknowledge_chat_revision($1,1)', [id]);
     expect(await asUser(alice, 'select * from public.messages where id=$1', [id])).toHaveLength(0);
   });
+  it('protegge la scoperta e calcola metriche aggregate senza identificativi', async () => {
+    await asUser(
+      alice,
+      "insert into public.explore_preferences(user_id,section,hidden) values($1,'contacts',true)",
+      [alice],
+    );
+    expect(
+      await asUser(alice, "select hidden from public.explore_preferences where section='contacts'"),
+    ).toEqual([{ hidden: true }]);
+    expect(await asUser(bob, 'select * from public.explore_preferences')).toHaveLength(0);
+    await expect(
+      asUser(
+        alice,
+        "insert into public.explore_preferences(user_id,section) values($1,'contacts')",
+        [bob],
+      ),
+    ).rejects.toThrow(/row-level security|permission denied/);
+    const columns = await db.query<{ column_name: string }>(
+      "select column_name from information_schema.columns where table_name='product_metrics_daily'",
+    );
+    expect(columns.rows.map((row) => row.column_name)).not.toContain('user_id');
+    await expect(asUser(alice, 'select public.refresh_product_metrics()')).rejects.toThrow(
+      'permission denied',
+    );
+    await db.exec('set role service_role');
+    try {
+      await db.query('select public.refresh_product_metrics()');
+    } finally {
+      await db.exec('reset role');
+    }
+    expect(await asUser(alice, 'select * from public.product_metrics_daily')).toHaveLength(0);
+    await db.query('insert into private.admins(user_id) values($1) on conflict do nothing', [eve]);
+    try {
+      expect(
+        await asUser(
+          eve,
+          "select metric,count from public.product_metrics_daily where metric='onboarded_completed'",
+        ),
+      ).toHaveLength(1);
+    } finally {
+      await db.query('delete from private.admins where user_id=$1', [eve]);
+    }
+  });
+  it('tiene private le reazioni e limita risposte, menzioni e condivisioni', async () => {
+    await asUser(alice, "insert into public.posts(author_id,body) values($1,'Espressivo')", [alice]);
+    const [{ id: postId }] = await asUser<{ id: string }>(
+      alice,
+      "select id from public.posts where author_id=$1 and body='Espressivo' order by created_at desc limit 1",
+      [alice],
+    );
+    await asUser(alice, "insert into public.reactions(user_id,target_type,target_id,emoji) values($1,'post',$2,'❤️')", [
+      alice,
+      postId,
+    ]);
+    expect(
+      await asUser(alice, 'select emoji from public.reactions where target_id=$1', [postId]),
+    ).toEqual([{ emoji: '❤️' }]);
+    expect(await asUser(bob, 'select * from public.reactions')).toHaveLength(0);
+    await expect(
+      asUser(eve, "insert into public.reactions(user_id,target_type,target_id,emoji) values($1,'post',$2,'👍')", [
+        eve,
+        postId,
+      ]),
+    ).rejects.toThrow('row-level security');
+    await expect(
+      asUser(alice, "insert into public.reactions(user_id,target_type,target_id,emoji) values($1,'post',$2,'🔥')", [
+        alice,
+        postId,
+      ]),
+    ).rejects.toThrow();
+
+    await asUser(alice, "insert into public.comments(author_id,post_id,body,quote) values($1,$2,'Primo','')", [
+      alice,
+      postId,
+    ]);
+    const [{ id: parentId }] = await asUser<{ id: string }>(
+      alice,
+      'select id from public.comments where post_id=$1 order by created_at desc limit 1',
+      [postId],
+    );
+    await asUser(
+      alice,
+      "insert into public.comments(author_id,post_id,body,parent_id,quote) values($1,$2,'Risposta',$3,'')",
+      [alice, postId, parentId],
+    );
+    expect(
+      await asUser<{ quote: string; parent_id: string }>(
+        alice,
+        'select quote,parent_id from public.comments where body=$1',
+        ['Risposta'],
+      ),
+    ).toEqual([{ quote: 'Primo', parent_id: parentId }]);
+    await asUser(bob, "insert into public.posts(author_id,body) values($1,'Altro post')", [bob]);
+    const [{ id: otherPost }] = await asUser<{ id: string }>(
+      bob,
+      "select id from public.posts where author_id=$1 and body='Altro post' order by created_at desc limit 1",
+      [bob],
+    );
+    await expect(
+      asUser(
+        alice,
+        "insert into public.comments(author_id,post_id,body,parent_id) values($1,$2,'Fuori contesto',$3)",
+        [alice, otherPost, parentId],
+      ),
+    ).rejects.toThrow('Risposta non disponibile');
+
+    await asUser(alice, "insert into public.posts(author_id,body) values($1,'Ciao @bob')", [alice]);
+    expect(
+      await asUser<{ mentioned_id: string }>(
+        bob,
+        'select mentioned_id from public.mentions where mentioned_id=$1',
+        [bob],
+      ),
+    ).toHaveLength(1);
+    expect(
+      await asUser<{ kind: string }>(bob, "select kind from public.notifications where kind='mention'"),
+    ).toHaveLength(1);
+    await asUser(bob, "insert into public.mention_preferences(user_id,mentions_enabled) values($1,false) on conflict(user_id) do update set mentions_enabled=false", [
+      bob,
+    ]);
+    const before = await asUser(bob, "select * from public.notifications where kind='mention'");
+    await asUser(alice, "insert into public.posts(author_id,body) values($1,'Ancora @bob')", [alice]);
+    expect(await asUser(bob, "select * from public.notifications where kind='mention'")).toEqual(
+      before,
+    );
+
+    await asUser(
+      alice,
+      "insert into public.shares(user_id,target_type,target_id,destination_type,destination_id,note) values($1,'post',$2,'chat',$3,'Per te')",
+      [alice, postId, bob],
+    );
+    expect(await asUser(alice, 'select note from public.shares')).toEqual([{ note: 'Per te' }]);
+    expect(await asUser(bob, 'select * from public.shares')).toHaveLength(0);
+    await expect(
+      asUser(
+        alice,
+        "insert into public.shares(user_id,target_type,target_id,destination_type,destination_id) values($1,'post',$2,'chat',$3)",
+        [alice, postId, eve],
+      ),
+    ).rejects.toThrow('row-level security');
+  });
+  it('limita le collaborazioni ai contatti reciproci e blocca l’album dopo la chiusura', async () => {
+    await asUser(alice, "insert into public.posts(author_id,body) values($1,'Collaboriamo')", [
+      alice,
+    ]);
+    const created = await asUser<{ id: string }>(
+      alice,
+      "select id from public.posts where author_id=$1 and body='Collaboriamo' order by created_at desc limit 1",
+      [alice],
+    );
+    const postId = created[0].id;
+    await asUser(alice, 'select public.open_collaboration($1)', [postId]);
+    await expect(
+      asUser(alice, 'select public.invite_collaborator($1,$2)', [postId, eve]),
+    ).rejects.toThrow('Invito non disponibile');
+    await asUser(alice, 'select public.invite_collaborator($1,$2)', [postId, bob]);
+    expect(
+      await asUser<{ status: string }>(
+        bob,
+        'select status from public.collaborators where post_id=$1 and user_id=$2',
+        [postId, bob],
+      ),
+    ).toEqual([{ status: 'invited' }]);
+    await expect(
+      asUser(bob, 'select public.set_collaborator_permission($1,$2,false,false,false)', [
+        postId,
+        bob,
+      ]),
+    ).rejects.toThrow('Accesso negato');
+    await asUser(bob, 'select public.respond_collaboration($1,true)', [postId]);
+
+    const paths: Record<string, string> = {
+      bob: `${bob}/${crypto.randomUUID()}`,
+      bob2: `${bob}/${crypto.randomUUID()}`,
+      eve: `${eve}/${crypto.randomUUID()}`,
+    };
+    for (const [owner, path] of [
+      [bob, paths.bob],
+      [bob, paths.bob2],
+      [eve, paths.eve],
+    ] as const) {
+      await asUser(
+        owner,
+        "insert into public.media_assets(path,owner_id,bytes,mime) values($1,$2,100,'image/webp')",
+        [path, owner],
+      );
+      await asUser(
+        owner,
+        `insert into storage.objects(bucket_id,name,metadata) values('media',$1,'{"size":100,"mimetype":"image/webp"}')`,
+        [path],
+      );
+    }
+    const item = await asUser<{ add_album_item: string }>(
+      bob,
+      'select public.add_album_item($1,$2,$3)',
+      [postId, paths.bob, 'Alba'],
+    );
+    const itemId = item[0].add_album_item;
+    expect(
+      await asUser(bob, 'select caption from public.album_items where id=$1', [itemId]),
+    ).toEqual([{ caption: 'Alba' }]);
+    await expect(
+      asUser(eve, 'select public.add_album_item($1,$2,$3)', [postId, paths.eve, 'x']),
+    ).rejects.toThrow('Album non disponibile');
+    await expect(
+      asUser(
+        bob,
+        'insert into public.album_items(post_id,media_path,added_by) values($1,$2,$3)',
+        [postId, paths.bob2, bob],
+      ),
+    ).rejects.toThrow('permission denied');
+    await expect(
+      asUser(eve, 'select public.remove_album_item($1)', [itemId]),
+    ).rejects.toThrow('Accesso negato');
+
+    await asUser(alice, 'select public.close_album($1)', [postId]);
+    await expect(
+      asUser(bob, 'select public.add_album_item($1,$2,$3)', [postId, paths.bob2, 'x']),
+    ).rejects.toThrow('Album non disponibile');
+    await asUser(alice, 'select public.remove_album_item($1)', [itemId]);
+    expect(
+      await asUser(alice, 'select * from public.album_items where post_id=$1', [postId]),
+    ).toHaveLength(0);
+  });
+  it('genera il digest nel rispetto di privacy, blocchi e idempotenza del periodo', async () => {
+    await expect(
+      asUser(alice, 'insert into public.digest_preferences(user_id,enabled) values($1,true)', [
+        bob,
+      ]),
+    ).rejects.toThrow(/row-level security|permission denied/);
+    await expect(
+      asUser(
+        eve,
+        "insert into public.digest_preferences(user_id,enabled,channel) values($1,true,'email')",
+        [eve],
+      ),
+    ).rejects.toThrow();
+    await asUser(
+      alice,
+      "insert into public.digest_preferences(user_id,enabled,frequency,channel,email_consent,email_consent_at) values($1,true,'daily','in_app',false,null)",
+      [alice],
+    );
+    expect(await asUser(bob, 'select * from public.digest_preferences')).toHaveLength(0);
+
+    await asUser(
+      bob,
+      "insert into public.posts(author_id,body) values($1,'#cucina pasta al limone')",
+      [bob],
+    );
+    await asUser(
+      eve,
+      "insert into public.posts(author_id,body) values($1,'#cucina segreto di eve')",
+      [eve],
+    );
+    await asUser(
+      alice,
+      'insert into public.blocks(blocker_id,blocked_id) values($1,$2) on conflict do nothing',
+      [alice, eve],
+    );
+    await asUser(
+      alice,
+      "insert into public.digest_sources(user_id,source_type,source_id) values($1,'person',$2),($1,'person',$3),($1,'topic','cucina')",
+      [alice, bob, eve],
+    );
+
+    const circle = await asUser<{ create_circle: string }>(
+      alice,
+      "select public.create_circle('Digest','Solo per il digest',null)",
+    );
+    const circleId = circle[0].create_circle;
+    await asUser(
+      alice,
+      "select public.create_circle_post(array[$1]::uuid[],'Novità della cerchia','',null,'')",
+      [circleId],
+    );
+    await asUser(
+      alice,
+      "insert into public.digest_sources(user_id,source_type,source_id) values($1,'circle',$2)",
+      [alice, circleId],
+    );
+
+    const generated = await asUser<{ digest_refresh: { post_id: string; reason: string }[] }>(
+      alice,
+      'select public.digest_refresh()',
+    );
+    const items = generated[0].digest_refresh;
+    expect(items.length).toBeGreaterThan(0);
+    expect(items.length).toBeLessThanOrEqual(5);
+    expect(items.map((item) => item.reason).some((reason) => reason.startsWith('Cerchia'))).toBe(
+      true,
+    );
+    const evePost = await db.query<{ id: string }>(
+      "select id from public.posts where author_id=$1 and body like '%segreto di eve%'",
+      [eve],
+    );
+    expect(items.map((item) => item.post_id)).not.toContain(evePost.rows[0].id);
+
+    await asUser(alice, 'select public.digest_refresh()');
+    expect(
+      await asUser(alice, 'select period_key from public.digest_deliveries where user_id=$1', [
+        alice,
+      ]),
+    ).toHaveLength(1);
+    expect(await asUser(bob, 'select * from public.digest_deliveries')).toHaveLength(0);
+    await expect(
+      asUser(
+        alice,
+        "insert into public.digest_deliveries(user_id,period_key,items) values($1,'x','[]')",
+        [alice],
+      ),
+    ).rejects.toThrow('permission denied');
+  });
   it('un blocco revoca visibilità e follow in entrambe le direzioni', async () => {
     await asUser(alice, 'insert into public.blocks(blocker_id,blocked_id) values($1,$2)', [
       alice,

@@ -9,9 +9,12 @@ import {
   Flag,
   Trash2,
   LockKeyhole,
+  SmilePlus,
+  Share2,
+  CornerDownRight,
 } from 'lucide-react';
 import type { Post, Snapshot, Action } from '@/lib/core/types';
-import { relativeTime } from '@/lib/core/rules';
+import { relativeTime, REACTIONS } from '@/lib/core/rules';
 import { PostNotes } from './community-notes';
 import { Avatar, Media, Modal } from './primitives';
 export function PostCard({
@@ -40,6 +43,10 @@ export function PostCard({
   const [menu, setMenu] = useState(false);
   const [report, setReport] = useState(false);
   const [remove, setRemove] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [replyTo, setReplyTo] = useState<{ id: string; name: string; quote: string } | null>(null);
+  const [shareDestination, setShareDestination] = useState('');
+  const [shareNote, setShareNote] = useState('');
   const [pending, setPending] = useState(false);
   const author = state.profiles.find((p) => p.id === post.author_id);
   const likes = state.likes.filter((l) => l.post_id === post.id);
@@ -47,6 +54,43 @@ export function PostCard({
   const comments = state.comments
     .filter((c) => c.post_id === post.id)
     .sort((a, b) => a.created_at.localeCompare(b.created_at));
+  const roots = comments.filter((c) => !c.parent_id);
+  const repliesOf = (id: string) => comments.filter((c) => c.parent_id === id);
+  const myReaction = (state.reactions ?? []).find(
+    (item) => item.user_id === state.me.id && item.target_type === 'post' && item.target_id === post.id,
+  )?.emoji;
+  const shareDestinations = [
+    ...state.follows
+      .filter(
+        (follow) =>
+          follow.follower_id === state.me.id &&
+          follow.accepted &&
+          state.follows.some(
+            (back) =>
+              back.follower_id === follow.following_id &&
+              back.following_id === state.me.id &&
+              back.accepted,
+          ),
+      )
+      .map((follow) => ({
+        value: `chat:${follow.following_id}`,
+        label: `Chat con ${
+          state.profiles.find((p) => p.id === follow.following_id)?.display_name ?? 'una persona'
+        }`,
+      })),
+    ...(state.circles ?? [])
+      .filter(
+        (circle) =>
+          !circle.archived_at &&
+          (state.circleMembers ?? []).some(
+            (member) =>
+              member.circle_id === circle.id &&
+              member.user_id === state.me.id &&
+              member.status === 'active',
+          ),
+      )
+      .map((circle) => ({ value: `circle:${circle.id}`, label: `Cerchia ${circle.name}` })),
+  ];
   const pollResults = (state.pollResults ?? []).filter((result) => result.poll_id === post.id);
   const selectedOption = pollResults.find((result) => result.selected)?.option_id;
   const pollClosed = Boolean(post.poll?.closes_at && Date.parse(post.poll.closes_at) <= now);
@@ -222,6 +266,14 @@ export function PostCard({
           <Bookmark size={21} fill={saved ? 'currentColor' : 'none'} />
           <span>{saved ? 'Salvato' : 'Salva'}</span>
         </button>
+        <button
+          aria-label="Condividi internamente"
+          disabled={pending || concealed}
+          onClick={() => setShareOpen(true)}
+        >
+          <Share2 size={20} />
+          <span>Condividi</span>
+        </button>
         <span className="post-date">
           {new Date(post.created_at).toLocaleDateString('it-IT', {
             day: 'numeric',
@@ -229,6 +281,34 @@ export function PostCard({
           })}
         </span>
       </div>
+      {!concealed && (
+        <div className="reaction-row" aria-label="Reazioni private">
+          <SmilePlus size={16} aria-hidden="true" />
+          {REACTIONS.map((emoji) => {
+            const active = myReaction === emoji;
+            return (
+              <button
+                key={emoji}
+                className={active ? 'reaction active' : 'reaction'}
+                aria-label={`Reazione ${emoji}`}
+                aria-pressed={active}
+                disabled={pending}
+                onClick={() =>
+                  act({
+                    type: 'react',
+                    target_type: 'post',
+                    target_id: post.id,
+                    emoji: active ? null : emoji,
+                  })
+                }
+              >
+                {emoji}
+              </button>
+            );
+          })}
+          <span className="muted fine">Solo tu vedi le tue reazioni.</span>
+        </div>
+      )}
       {post.author_id === state.me.id && likes.length > 0 && (
         <details className="author-interactions">
           <summary>Le interazioni sul tuo post</summary>
@@ -250,15 +330,53 @@ export function PostCard({
       )}
       {!concealed && commentsOpen && (
         <section className="comments" aria-label="Commenti del post">
-          {comments.map((c) => (
-            <div className="comment" key={c.id}>
-              <Avatar person={state.profiles.find((p) => p.id === c.author_id)} size="small" />
-              <p>
-                <strong>
-                  {state.profiles.find((p) => p.id === c.author_id)?.display_name ?? 'Utente'}
-                </strong>
-                <span>{c.body}</span>
-              </p>
+          {roots.map((comment) => (
+            <div className="comment-thread" key={comment.id}>
+              <div className="comment">
+                <Avatar
+                  person={state.profiles.find((p) => p.id === comment.author_id)}
+                  size="small"
+                />
+                <p>
+                  <strong>
+                    {state.profiles.find((p) => p.id === comment.author_id)?.display_name ??
+                      'Utente'}
+                  </strong>
+                  <span>{comment.body}</span>
+                </p>
+                <button
+                  className="text-button"
+                  aria-label="Rispondi a questo commento"
+                  disabled={pending}
+                  onClick={() =>
+                    setReplyTo({
+                      id: comment.id,
+                      name:
+                        state.profiles.find((p) => p.id === comment.author_id)?.display_name ??
+                        'Utente',
+                      quote: comment.body.slice(0, 180),
+                    })
+                  }
+                >
+                  <CornerDownRight size={14} /> Rispondi
+                </button>
+              </div>
+              {repliesOf(comment.id).map((reply) => (
+                <div className="comment comment-reply" key={reply.id}>
+                  <Avatar
+                    person={state.profiles.find((p) => p.id === reply.author_id)}
+                    size="small"
+                  />
+                  <p>
+                    <strong>
+                      {state.profiles.find((p) => p.id === reply.author_id)?.display_name ??
+                        'Utente'}
+                    </strong>
+                    {reply.quote && <span className="comment-quote">{reply.quote}</span>}
+                    <span>{reply.body}</span>
+                  </p>
+                </div>
+              ))}
             </div>
           ))}
           <form
@@ -267,13 +385,35 @@ export function PostCard({
               e.preventDefault();
               const form = e.currentTarget;
               const body = String(new FormData(form).get('body'));
-              if (await act({ type: 'comment', post_id: post.id, body })) form.reset();
+              const ok = await act({
+                type: 'comment',
+                post_id: post.id,
+                body,
+                parent_id: replyTo?.id ?? null,
+                quote: replyTo?.quote ?? '',
+              });
+              if (ok) {
+                form.reset();
+                setReplyTo(null);
+              }
             }}
           >
+            {replyTo && (
+              <p className="comment-reply-hint">
+                Risposta a {replyTo.name} · {replyTo.quote.slice(0, 60)}
+                <button
+                  type="button"
+                  className="text-button"
+                  onClick={() => setReplyTo(null)}
+                >
+                  Annulla
+                </button>
+              </p>
+            )}
             <input
               name="body"
               aria-label="Scrivi un commento"
-              placeholder="Aggiungi una risposta…"
+              placeholder={replyTo ? `Rispondi a ${replyTo.name}…` : 'Aggiungi una risposta…'}
               maxLength={1000}
               required
             />
@@ -321,6 +461,61 @@ export function PostCard({
           >
             Elimina post
           </button>
+        </Modal>
+      )}
+      {shareOpen && (
+        <Modal title="Condividi internamente" onClose={() => setShareOpen(false)}>
+          <p className="muted">
+            La condivisione resta privata: nessuna copia pubblica e nessun contatore.
+          </p>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const [kind, id] = shareDestination.split(':');
+              if (!kind || !id) return;
+              const ok = await act({
+                type: 'share',
+                target_type: 'post',
+                target_id: post.id,
+                destination_type: kind === 'chat' ? 'chat' : 'circle',
+                destination_id: id,
+                note: shareNote,
+              });
+              if (ok) {
+                setShareOpen(false);
+                setShareDestination('');
+                setShareNote('');
+              }
+            }}
+          >
+            <label>
+              Destinazione
+              <select
+                value={shareDestination}
+                required
+                onChange={(e) => setShareDestination(e.target.value)}
+              >
+                <option value="">Scegli dove condividere</option>
+                {shareDestinations.map((destination) => (
+                  <option key={destination.value} value={destination.value}>
+                    {destination.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Nota personale
+              <textarea
+                value={shareNote}
+                maxLength={280}
+                rows={2}
+                onChange={(e) => setShareNote(e.target.value)}
+              />
+            </label>
+            <button className="primary" disabled={pending || !shareDestination}>
+              Condividi
+            </button>
+          </form>
         </Modal>
       )}
     </article>

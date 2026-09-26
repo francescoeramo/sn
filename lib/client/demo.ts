@@ -1,5 +1,5 @@
 import { clearChatStore } from './chat-store';
-import type { Action, Snapshot, Profile } from '@/lib/core/types';
+import type { Action, Snapshot, Profile, DigestItem } from '@/lib/core/types';
 import {
   isActive,
   LIMITS,
@@ -26,6 +26,19 @@ import {
   eventPhotoInput,
   eventResponseInput,
   eventUpdateInput,
+  digestPreferenceInput,
+  digestSourceInput,
+  postIdInput,
+  collaboratorInput,
+  collaborationResponseInput,
+  collaboratorPermissionInput,
+  albumItemInput,
+  albumItemIdInput,
+  commentInput,
+  reactionInput,
+  mentionPreferenceInput,
+  shareInput,
+  explorePreferenceInput,
 } from '@/lib/core/rules';
 const uid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const ago = (minutes: number) => new Date(Date.now() - minutes * 60000).toISOString();
@@ -106,6 +119,40 @@ export function seed(): Snapshot {
       { event_id: uid(601), user_id: uid(2), response: 'maybe', updated_at: ago(20) },
     ],
     eventUpdates: [],
+    digestPreferences: [],
+    digestSources: [],
+    digestDeliveries: [],
+    collaborativePosts: [
+      { post_id: uid(120), owner_id: uid(1), album_closed_at: null, created_at: ago(200) },
+    ],
+    collaborators: [
+      {
+        post_id: uid(120),
+        user_id: uid(2),
+        invited_by: uid(1),
+        status: 'active',
+        can_media: true,
+        can_caption: true,
+        can_update: false,
+        created_at: ago(199),
+      },
+    ],
+    albumItems: [
+      {
+        id: uid(130),
+        post_id: uid(120),
+        media_path: '/art/playlist.svg',
+        caption: 'La scaletta',
+        added_by: uid(1),
+        created_at: ago(150),
+      },
+    ],
+    reactions: [],
+    mentionPreferences: [],
+    mentions: [],
+    shares: [],
+    explorePreferences: [],
+    productMetrics: [],
     saved: { posts: [], nextCursor: null },
     notes: [],
     pollResults: [
@@ -169,6 +216,17 @@ export function seed(): Snapshot {
         created_at: ago(15 + n),
         expires_at: new Date(Date.now() + 20 * 3600000).toISOString(),
       })),
+      {
+        id: uid(120),
+        author_id: uid(1),
+        body: 'Sto preparando un album condiviso per la gita. Chi vuole aggiungere una foto?',
+        kind: 'post',
+        media_path: null,
+        media_type: null,
+        alt: '',
+        created_at: ago(200),
+        expires_at: null,
+      },
     ],
     remotePosts: [
       {
@@ -205,6 +263,7 @@ export function seed(): Snapshot {
       { follower_id: uid(1), following_id: uid(3), accepted: true },
       { follower_id: uid(3), following_id: uid(1), accepted: true },
       { follower_id: uid(1), following_id: uid(4), accepted: true },
+      { follower_id: uid(3), following_id: uid(5), accepted: true },
     ],
     messages: [
       {
@@ -283,6 +342,18 @@ export async function loadDemo(): Promise<Snapshot> {
         state.eventResponses ??= [];
         state.eventUpdates ??= [];
         state.eventPhotos ??= [];
+        state.digestPreferences ??= [];
+        state.digestSources ??= [];
+        state.digestDeliveries ??= [];
+        state.collaborativePosts ??= [];
+        state.collaborators ??= [];
+        state.albumItems ??= [];
+        state.reactions ??= [];
+        state.mentionPreferences ??= [];
+        state.mentions ??= [];
+        state.shares ??= [];
+        state.explorePreferences ??= [];
+        state.productMetrics ??= [];
         state.saved ??= { posts: [], nextCursor: null };
         state.messages = state.messages.filter((m) => isActive(m));
         state.posts = state.posts.filter((p) => isActive(p));
@@ -346,6 +417,18 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
   s.eventResponses ??= [];
   s.eventUpdates ??= [];
   s.eventPhotos ??= [];
+  s.digestPreferences ??= [];
+  s.digestSources ??= [];
+  s.digestDeliveries ??= [];
+  s.collaborativePosts ??= [];
+  s.collaborators ??= [];
+  s.albumItems ??= [];
+  s.reactions ??= [];
+  s.mentionPreferences ??= [];
+  s.mentions ??= [];
+  s.shares ??= [];
+  s.explorePreferences ??= [];
+  s.productMetrics ??= [];
   s.saved ??= { posts: [], nextCursor: null };
   const me = s.me.id;
   const now = new Date().toISOString();
@@ -724,6 +807,172 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
       s.eventPhotos = s.eventPhotos.filter((item) => item !== photo);
       break;
     }
+    case 'digest-preferences': {
+      const value = digestPreferenceInput.parse(action);
+      const existing = s.digestPreferences.find((item) => item.user_id === me);
+      const consentAt = value.email_consent ? (existing?.email_consent_at ?? now) : null;
+      const next = {
+        user_id: me,
+        ...value,
+        email_consent_at: consentAt,
+        updated_at: now,
+      };
+      s.digestPreferences = [next];
+      break;
+    }
+    case 'digest-source': {
+      const value = digestSourceInput.parse(action);
+      const rest = s.digestSources.filter(
+        (item) =>
+          !(
+            item.source_type === value.source_type &&
+            item.source_id === value.source_id &&
+            item.user_id === me
+          ),
+      );
+      s.digestSources = [
+        ...rest,
+        { user_id: me, ...value, created_at: now },
+      ];
+      break;
+    }
+    case 'digest-refresh': {
+      const items = buildDemoDigest(s, me);
+      const period = demoDigestPeriod(s, me);
+      const existing = s.digestDeliveries.find(
+        (item) => item.user_id === me && item.period_key === period,
+      );
+      if (existing) existing.items = items;
+      else
+        s.digestDeliveries.push({
+          id,
+          user_id: me,
+          period_key: period,
+          items,
+          status: 'delivered',
+          generated_at: now,
+          delivered_at: now,
+        });
+      break;
+    }
+    case 'open-collaboration': {
+      const value = postIdInput.parse(action);
+      const post = s.posts.find((item) => item.id === value.post_id);
+      if (!post || post.author_id !== me || post.kind !== 'post' || !isActive(post))
+        throw new Error('Post non disponibile.');
+      if (!s.collaborativePosts.some((item) => item.post_id === post.id))
+        s.collaborativePosts.push({
+          post_id: post.id,
+          owner_id: me,
+          album_closed_at: null,
+          created_at: now,
+        });
+      break;
+    }
+    case 'invite-collaborator': {
+      const value = collaboratorInput.parse(action);
+      const album = s.collaborativePosts.find((item) => item.post_id === value.post_id);
+      const mutual =
+        s.follows.some(
+          (f) => f.follower_id === me && f.following_id === value.user_id && f.accepted,
+        ) &&
+        s.follows.some(
+          (f) => f.follower_id === value.user_id && f.following_id === me && f.accepted,
+        );
+      if (!album || album.owner_id !== me || value.user_id === me || !mutual)
+        throw new Error('Invito non disponibile.');
+      if (
+        !s.collaborators.some(
+          (item) => item.post_id === value.post_id && item.user_id === value.user_id,
+        )
+      )
+        s.collaborators.push({
+          post_id: value.post_id,
+          user_id: value.user_id,
+          invited_by: me,
+          status: 'invited',
+          can_media: true,
+          can_caption: true,
+          can_update: false,
+          created_at: now,
+        });
+      break;
+    }
+    case 'respond-collaboration': {
+      const value = collaborationResponseInput.parse(action);
+      const invite = s.collaborators.find(
+        (item) =>
+          item.post_id === value.post_id && item.user_id === me && item.status === 'invited',
+      );
+      if (!invite) throw new Error('Invito non disponibile.');
+      if (value.accept) invite.status = 'active';
+      else s.collaborators = s.collaborators.filter((item) => item !== invite);
+      break;
+    }
+    case 'remove-collaborator': {
+      const value = collaboratorInput.parse(action);
+      const album = s.collaborativePosts.find((item) => item.post_id === value.post_id);
+      if (!album || (album.owner_id !== me && value.user_id !== me))
+        throw new Error('Accesso negato.');
+      s.collaborators = s.collaborators.filter(
+        (item) => !(item.post_id === value.post_id && item.user_id === value.user_id),
+      );
+      break;
+    }
+    case 'set-collaborator-permission': {
+      const value = collaboratorPermissionInput.parse(action);
+      const album = s.collaborativePosts.find((item) => item.post_id === value.post_id);
+      const member = s.collaborators.find(
+        (item) => item.post_id === value.post_id && item.user_id === value.user_id,
+      );
+      if (!album || album.owner_id !== me || !member) throw new Error('Accesso negato.');
+      member.can_media = value.can_media;
+      member.can_caption = value.can_caption;
+      member.can_update = value.can_update;
+      break;
+    }
+    case 'close-album': {
+      const value = postIdInput.parse(action);
+      const album = s.collaborativePosts.find((item) => item.post_id === value.post_id);
+      if (!album || album.owner_id !== me) throw new Error('Accesso negato.');
+      album.album_closed_at = now;
+      break;
+    }
+    case 'add-album-item': {
+      const value = albumItemInput.parse(action);
+      const album = s.collaborativePosts.find((item) => item.post_id === value.post_id);
+      if (!album || album.album_closed_at) throw new Error('Album non disponibile.');
+      const allowed =
+        album.owner_id === me ||
+        s.collaborators.some(
+          (item) =>
+            item.post_id === value.post_id &&
+            item.user_id === me &&
+            item.status === 'active' &&
+            item.can_media,
+        );
+      if (!allowed) throw new Error('Accesso negato.');
+      s.albumItems.push({
+        id,
+        post_id: value.post_id,
+        media_path: value.media_path,
+        caption: value.caption,
+        added_by: me,
+        created_at: now,
+      });
+      break;
+    }
+    case 'remove-album-item': {
+      const value = albumItemIdInput.parse(action);
+      const item = s.albumItems.find((entry) => entry.id === value.item_id);
+      const album = item
+        ? s.collaborativePosts.find((entry) => entry.post_id === item.post_id)
+        : undefined;
+      if (!item || !album || (item.added_by !== me && album.owner_id !== me))
+        throw new Error('Accesso negato.');
+      s.albumItems = s.albumItems.filter((entry) => entry !== item);
+      break;
+    }
     case 'chat-settings': {
       const v = chatSettingsInput.parse(action);
       if (
@@ -960,16 +1209,92 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
       else s.likes.push({ user_id: me, post_id: action.post_id });
       break;
     }
-    case 'comment':
-      if (action.body.trim())
-        s.comments.push({
+    case 'comment': {
+      const value = commentInput.parse(action);
+      const parent = value.parent_id
+        ? s.comments.find((item) => item.id === value.parent_id && item.post_id === value.post_id)
+        : undefined;
+      if (value.parent_id && !parent) throw new Error('Risposta non disponibile.');
+      s.comments.push({
+        id,
+        author_id: me,
+        post_id: value.post_id,
+        body: value.body,
+        created_at: now,
+        parent_id: value.parent_id ?? null,
+        quote: parent
+          ? (value.quote?.trim() || parent.body).slice(0, 180)
+          : (value.quote?.trim() ?? ''),
+      });
+      break;
+    }
+    case 'react': {
+      const value = reactionInput.parse(action);
+      s.reactions = (s.reactions ?? []).filter(
+        (item) =>
+          !(
+            item.user_id === me &&
+            item.target_type === value.target_type &&
+            item.target_id === value.target_id
+          ),
+      );
+      if (value.emoji)
+        s.reactions.push({
           id,
-          author_id: me,
-          post_id: action.post_id,
-          body: action.body.trim(),
+          user_id: me,
+          target_type: value.target_type,
+          target_id: value.target_id,
+          emoji: value.emoji,
           created_at: now,
         });
       break;
+    }
+    case 'mention-preference': {
+      const value = mentionPreferenceInput.parse(action);
+      s.mentionPreferences = [
+        { user_id: me, mentions_enabled: value.enabled, updated_at: now },
+      ];
+      break;
+    }
+    case 'explore-preference': {
+      const value = explorePreferenceInput.parse(action);
+      s.explorePreferences = [
+        ...s.explorePreferences.filter(
+          (item) => !(item.user_id === me && item.section === value.section),
+        ),
+        { user_id: me, section: value.section, hidden: value.hidden, updated_at: now },
+      ];
+      break;
+    }
+    case 'share': {
+      const value = shareInput.parse(action);
+      const destinationOk =
+        value.destination_type === 'chat'
+          ? s.follows.some(
+              (f) => f.follower_id === me && f.following_id === value.destination_id && f.accepted,
+            ) &&
+            s.follows.some(
+              (f) => f.follower_id === value.destination_id && f.following_id === me && f.accepted,
+            )
+          : s.circleMembers.some(
+              (member) =>
+                member.circle_id === value.destination_id &&
+                member.user_id === me &&
+                member.status === 'active',
+            );
+      if (!destinationOk) throw new Error('Destinazione non autorizzata.');
+      s.shares.push({
+        id,
+        user_id: me,
+        target_type: value.target_type,
+        target_id: value.target_id,
+        destination_type: value.destination_type,
+        destination_id: value.destination_id,
+        note: value.note,
+        created_at: now,
+      });
+      break;
+    }
     case 'follow': {
       const exists = s.follows.some(
         (f) => f.follower_id === me && f.following_id === action.user_id,
@@ -1236,6 +1561,94 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
   initializeChat(s);
   s.bookmarks = s.bookmarks.filter((b) => s.posts.some((p) => p.id === b.post_id));
   return s;
+}
+
+function demoDigestPeriod(s: Snapshot, me: string) {
+  const pref = s.digestPreferences?.find((item) => item.user_id === me);
+  const date = new Date();
+  if (pref?.frequency === 'weekly') {
+    const target = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+    const day = (target.getUTCDay() + 6) % 7;
+    target.setUTCDate(target.getUTCDate() - day + 3);
+    const firstThursday = new Date(Date.UTC(target.getUTCFullYear(), 0, 4));
+    const firstDay = (firstThursday.getUTCDay() + 6) % 7;
+    firstThursday.setUTCDate(firstThursday.getUTCDate() - firstDay + 3);
+    const week = 1 + Math.round((target.getTime() - firstThursday.getTime()) / (7 * 86400000));
+    return `${target.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
+  }
+  return date.toISOString().slice(0, 10);
+}
+
+export function buildDemoDigest(s: Snapshot, me: string): DigestItem[] {
+  const pref = s.digestPreferences?.find((item) => item.user_id === me);
+  if (!pref?.enabled) return [];
+  const windowMs = pref.frequency === 'weekly' ? 7 * 86400000 : 86400000;
+  const since = new Date(Date.now() - windowMs).toISOString();
+  const currentPeriod = demoDigestPeriod(s, me);
+  const seen = new Set(
+    (s.digestDeliveries ?? [])
+      .filter((delivery) => delivery.user_id === me && delivery.period_key !== currentPeriod)
+      .flatMap((delivery) => delivery.items.map((item) => item.post_id)),
+  );
+  const blocked = new Set(s.blocks.filter((b) => b.blocker_id === me).map((b) => b.blocked_id));
+  const visible = (postId: string) => {
+    const post = s.posts.find((p) => p.id === postId);
+    if (!post || post.kind !== 'post' || !isActive(post) || post.created_at < since) return false;
+    if (blocked.has(post.author_id)) return false;
+    const author = s.profiles.find((p) => p.id === post.author_id);
+    if (!author) return false;
+    if (
+      author.is_private &&
+      author.id !== me &&
+      !s.follows.some(
+        (f) => f.follower_id === me && f.following_id === author.id && f.accepted,
+      )
+    )
+      return false;
+    return true;
+  };
+  const candidates: DigestItem[] = [];
+  for (const source of (s.digestSources ?? []).filter(
+    (item) => item.user_id === me && item.enabled,
+  )) {
+    if (source.source_type === 'circle') {
+      const circle = (s.circles ?? []).find((c) => c.id === source.source_id && !c.archived_at);
+      if (!circle) continue;
+      for (const link of (s.circlePosts ?? []).filter((cp) => cp.circle_id === circle.id))
+        candidates.push({ post_id: link.post_id, reason: `Cerchia ${circle.name}`, priority: 1 });
+    } else if (source.source_type === 'person') {
+      const person = s.profiles.find((p) => p.id === source.source_id);
+      if (!person) continue;
+      for (const post of s.posts.filter((p) => p.author_id === person.id))
+        candidates.push({ post_id: post.id, reason: `Da ${person.display_name}`, priority: 2 });
+    } else {
+      const term = source.source_id.replace(/^#/, '').toLowerCase();
+      for (const post of s.posts.filter((p) => p.body.toLowerCase().includes(term)))
+        candidates.push({ post_id: post.id, reason: `Argomento #${term}`, priority: 3 });
+    }
+  }
+  for (const follow of s.follows.filter((f) => f.follower_id === me && f.accepted)) {
+    const person = s.profiles.find((p) => p.id === follow.following_id);
+    if (!person) continue;
+    for (const post of s.posts.filter((p) => p.author_id === person.id))
+      candidates.push({ post_id: post.id, reason: `Da ${person.display_name}`, priority: 4 });
+  }
+  const chosen: DigestItem[] = [];
+  const used = new Set<string>();
+  const ordered = [...candidates].sort((a, b) => {
+    if (a.priority !== b.priority) return a.priority - b.priority;
+    const first = s.posts.find((p) => p.id === a.post_id)?.created_at ?? '';
+    const second = s.posts.find((p) => p.id === b.post_id)?.created_at ?? '';
+    return second.localeCompare(first);
+  });
+  for (const candidate of ordered) {
+    if (chosen.length >= 5) break;
+    if (used.has(candidate.post_id) || seen.has(candidate.post_id)) continue;
+    if (!visible(candidate.post_id)) continue;
+    used.add(candidate.post_id);
+    chosen.push(candidate);
+  }
+  return chosen;
 }
 
 export function initializeChat(s: Snapshot) {

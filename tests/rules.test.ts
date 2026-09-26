@@ -12,8 +12,10 @@ import {
   mfaAction,
   chatGroupActionInput,
   encryptedGroupMessageInput,
+  digestPreferenceInput,
+  digestSourceInput,
 } from '../lib/core/rules';
-import { applyDemo, seed } from '../lib/client/demo';
+import { applyDemo, buildDemoDigest, seed } from '../lib/client/demo';
 describe('Regole condivise', () => {
   it('valida le azioni di gestione dei gruppi', () => {
     const id = '00000000-0000-4000-8000-000000000001';
@@ -356,6 +358,190 @@ describe('Salvataggi e avvisi nella demo', () => {
     };
     expect(applyDemo(state, action).posts[0].content_warning).toBe('Spoiler');
     expect(() => applyDemo(state, { ...action, content_warning: 'x'.repeat(161) })).toThrow();
-    expect(state.posts).toHaveLength(6);
+    expect(state.posts).toHaveLength(7);
+  });
+});
+describe('Post collaborativi e album condivisi', () => {
+  const giulia = '00000000-0000-4000-8000-000000000002';
+  const andrea = '00000000-0000-4000-8000-000000000005';
+  it('valida inviti, chiusura dell’album e un solo media per elemento', () => {
+    let state = applyDemo(seed(), {
+      type: 'post',
+      body: 'Collaboriamo',
+      kind: 'post',
+      media_path: null,
+      alt: '',
+    });
+    const postId = state.posts[0].id;
+    expect(() =>
+      applyDemo(state, { type: 'invite-collaborator', post_id: postId, user_id: giulia }),
+    ).toThrow('Invito non disponibile');
+    state = applyDemo(state, { type: 'open-collaboration', post_id: postId });
+    expect(() =>
+      applyDemo(state, { type: 'invite-collaborator', post_id: postId, user_id: andrea }),
+    ).toThrow('Invito non disponibile');
+    state = applyDemo(state, { type: 'invite-collaborator', post_id: postId, user_id: giulia });
+    const invited = state.collaborators!.filter((item) => item.post_id === postId);
+    expect(invited).toHaveLength(1);
+    expect(invited[0].status).toBe('invited');
+    state = applyDemo(state, {
+      type: 'add-album-item',
+      post_id: postId,
+      media_path: 'data:image/png;base64,AAAA',
+      caption: 'Alba',
+    });
+    expect(state.albumItems!.filter((item) => item.post_id === postId)).toHaveLength(1);
+    state = applyDemo(state, { type: 'close-album', post_id: postId });
+    expect(
+      state.collaborativePosts!.find((item) => item.post_id === postId)!.album_closed_at,
+    ).not.toBeNull();
+    expect(() =>
+      applyDemo(state, {
+        type: 'add-album-item',
+        post_id: postId,
+        media_path: 'data:image/png;base64,BBBB',
+        caption: '',
+      }),
+    ).toThrow('Album non disponibile');
+  });
+});
+describe('Conversazioni più espressive', () => {
+  const giulia = '00000000-0000-4000-8000-000000000002';
+  it('alterna una sola reazione privata per elemento', () => {
+    let state = seed();
+    const postId = state.posts[0].id;
+    state = applyDemo(state, { type: 'react', target_type: 'post', target_id: postId, emoji: '❤️' });
+    expect(state.reactions).toHaveLength(1);
+    state = applyDemo(state, { type: 'react', target_type: 'post', target_id: postId, emoji: '👍' });
+    expect(state.reactions).toHaveLength(1);
+    expect(state.reactions![0].emoji).toBe('👍');
+    state = applyDemo(state, { type: 'react', target_type: 'post', target_id: postId, emoji: null });
+    expect(state.reactions).toHaveLength(0);
+  });
+  it('cita il commento di origine e rifiuta risposte fuori contesto', () => {
+    let state = seed();
+    const postId = state.posts[0].id;
+    state = applyDemo(state, { type: 'comment', post_id: postId, body: 'Originale' });
+    const parent = state.comments[state.comments.length - 1];
+    state = applyDemo(state, {
+      type: 'comment',
+      post_id: postId,
+      body: 'Risposta',
+      parent_id: parent.id,
+    });
+    const reply = state.comments[state.comments.length - 1];
+    expect(reply.quote).toBe('Originale');
+    expect(reply.parent_id).toBe(parent.id);
+    expect(() =>
+      applyDemo(state, {
+        type: 'comment',
+        post_id: state.posts[1].id,
+        body: 'Fuori',
+        parent_id: parent.id,
+      }),
+    ).toThrow('Risposta non disponibile');
+  });
+  it('condivide solo verso destinazioni autorizzate e registra la nota', () => {
+    let state = seed();
+    const postId = state.posts[0].id;
+    expect(() =>
+      applyDemo(state, {
+        type: 'share',
+        target_type: 'post',
+        target_id: postId,
+        destination_type: 'chat',
+        destination_id: '00000000-0000-4000-8000-000000000005',
+        note: 'x',
+      }),
+    ).toThrow('Destinazione non autorizzata');
+    state = applyDemo(state, {
+      type: 'share',
+      target_type: 'post',
+      target_id: postId,
+      destination_type: 'chat',
+      destination_id: giulia,
+      note: 'Per te',
+    });
+    expect(state.shares).toHaveLength(1);
+    expect(state.shares![0].note).toBe('Per te');
+  });
+});
+describe('Scoperta intenzionale', () => {
+  it('nasconde e riattiva le sezioni spiegate', () => {
+    let state = seed();
+    state = applyDemo(state, {
+      type: 'explore-preference',
+      section: 'contacts',
+      hidden: true,
+    });
+    expect(state.explorePreferences).toEqual([
+      expect.objectContaining({ section: 'contacts', hidden: true }),
+    ]);
+    state = applyDemo(state, {
+      type: 'explore-preference',
+      section: 'contacts',
+      hidden: false,
+    });
+    expect(state.explorePreferences).toHaveLength(1);
+    expect(state.explorePreferences![0].hidden).toBe(false);
+  });
+});
+describe('Digest scelto dall’utente', () => {
+  const base = {
+    enabled: true,
+    frequency: 'daily' as const,
+    time_slot: 8,
+    timezone: 'Europe/Rome' as const,
+    channel: 'in_app' as const,
+    email_consent: false,
+  };
+  it('richiede un consenso separato e valori ammessi', () => {
+    expect(digestPreferenceInput.safeParse(base).success).toBe(true);
+    expect(
+      digestPreferenceInput.safeParse({ ...base, channel: 'email', email_consent: false }).success,
+    ).toBe(false);
+    expect(
+      digestPreferenceInput.safeParse({ ...base, channel: 'email', email_consent: true }).success,
+    ).toBe(true);
+    expect(digestPreferenceInput.safeParse({ ...base, frequency: 'monthly' }).success).toBe(false);
+    expect(digestSourceInput.safeParse({ source_type: 'topic', source_id: 'cucina', enabled: true }).success).toBe(true);
+    expect(digestSourceInput.safeParse({ source_type: 'topic', source_id: '', enabled: true }).success).toBe(false);
+  });
+  it('spento di default e ordina cerchie, persone e argomenti con motivo', () => {
+    let state = seed();
+    expect(buildDemoDigest(state, state.me.id)).toEqual([]);
+    state = applyDemo(state, { type: 'digest-preferences', ...base });
+    state = applyDemo(state, {
+      type: 'digest-source',
+      source_type: 'circle',
+      source_id: '00000000-0000-4000-8000-000000000501',
+      enabled: true,
+    });
+    state = applyDemo(state, {
+      type: 'digest-source',
+      source_type: 'topic',
+      source_id: 'cucina',
+      enabled: true,
+    });
+    const items = buildDemoDigest(state, state.me.id);
+    expect(items.length).toBeGreaterThan(0);
+    expect(items.length).toBeLessThanOrEqual(5);
+    expect(items[0].reason).toMatch(/^Cerchia /);
+    for (const item of items) expect(item.reason.length).toBeGreaterThan(0);
+  });
+  it('rigenera lo stesso periodo senza ripetere invii precedenti', () => {
+    let state = seed();
+    state = applyDemo(state, { type: 'digest-preferences', ...base });
+    state = applyDemo(state, {
+      type: 'digest-source',
+      source_type: 'circle',
+      source_id: '00000000-0000-4000-8000-000000000501',
+      enabled: true,
+    });
+    const first = buildDemoDigest(state, state.me.id);
+    state = applyDemo(state, { type: 'digest-refresh' });
+    const second = applyDemo(state, { type: 'digest-refresh' });
+    expect(second.digestDeliveries).toHaveLength(1);
+    expect(second.digestDeliveries![0].items).toEqual(first);
   });
 });
