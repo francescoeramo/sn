@@ -406,7 +406,10 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
   const combinedFeed = [
     ...feed.map((post) => ({ kind: 'local' as const, post })),
     ...remoteFeed.map((post) => ({ kind: 'remote' as const, post })),
-  ].sort((a, b) => b.post.created_at.localeCompare(a.post.created_at));
+  ].sort((a, b) => {
+    if (a.kind !== b.kind) return a.kind === 'local' ? -1 : 1;
+    return b.post.created_at.localeCompare(a.post.created_at);
+  });
   const tags = [
     ...new Set(visiblePosts.filter((p) => !p.content_warning).flatMap((p) => hashtags(p.body))),
   ].slice(0, 4);

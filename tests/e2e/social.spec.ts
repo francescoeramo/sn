@@ -664,7 +664,7 @@ test('note della comunità: proposta, revisione motivata e post originale conser
   await restoration.getByRole('button', { name: 'Ripristina account' }).click();
   await expect(page.getByRole('status')).toContainText('Account ripristinato');
   const review = page.getByRole('region', { name: 'Revisione note' });
-  await expect(review).toContainText('Ho fatto una playlist');
+  await expect(review).toContainText('Domanda seria');
   await review.getByLabel('Motivo della decisione').fill('La fonte è pertinente e verificabile.');
   await review.getByRole('button', { name: 'Salva decisione' }).click();
   await expect(review).toContainText('Nessuna nota in attesa.');
@@ -678,7 +678,7 @@ test('note della comunità: proposta, revisione motivata e post originale conser
   await expect(page.locator('.context-note')).toContainText(
     'La fonte aggiunge un dettaglio verificabile',
   );
-  await expect(page.locator('.post-card').first()).toContainText('Ho fatto una playlist');
+  await expect(page.locator('.post-card').first()).toContainText('Domanda seria');
   await expect(page.locator('.context-note a')).toHaveAttribute('rel', 'noopener noreferrer');
   await page.reload();
   await expect(page.locator('.context-note')).toBeVisible();
@@ -728,7 +728,7 @@ test('salvati: raccolta privata nel profilo, persistenza e rimozione', async ({
   await page
     .locator('article')
     .first()
-    .getByRole('button', { name: /Giulia Rossi/ })
+    .getByRole('button', { name: /Marco Bianchi/ })
     .click();
   await expect(page.getByRole('button', { name: 'Salvati', exact: true })).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
