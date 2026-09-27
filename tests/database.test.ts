@@ -2229,6 +2229,29 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
       ),
     ).rejects.toThrow('Accesso negato');
   });
+  it('restituisce la chiave di un post appena inserito dall’autore', async () => {
+    const mediaPath = `${alice}/${crypto.randomUUID()}`;
+    await asUser(
+      alice,
+      "insert into public.media_assets(path,owner_id,bytes,mime) values($1,$2,100,'image/webp')",
+      [mediaPath, alice],
+    );
+    await asUser(
+      alice,
+      "insert into storage.objects(bucket_id,name,metadata) values('media',$1,'{}')",
+      [mediaPath],
+    );
+    const created = await asUser<{ activity_key: string }>(
+      alice,
+      "insert into public.posts(author_id,body,kind,media_path,alt,content_warning) values($1,'Pubblicazione','post',$2,'Immagine','') returning activity_key",
+      [alice, mediaPath],
+    );
+    expect(created).toHaveLength(1);
+    expect(created[0].activity_key).toMatch(/^[0-9a-f-]{36}$/);
+    expect(
+      await asUser(bob, "select id from public.posts where body='Pubblicazione'"),
+    ).toHaveLength(0);
+  });
   it('disabilitando un account nega accesso anche a un token già emesso', async () => {
     await db.query('update public.profiles set disabled=true where id=$1', [bob]);
     expect(await asUser(bob, 'select * from public.messages')).toHaveLength(0);
