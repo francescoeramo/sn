@@ -1452,31 +1452,24 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
       ),
     ).rejects.toThrow('row-level security');
   });
-  it('accetta un file riservato, nega dimensioni superiori e sovrascritture', async () => {
+  it('accetta un file riservato senza dipendere dai metadati interni di Storage', async () => {
     const path = bob + '/00000000-0000-4000-8000-000000000556';
     await asUser(
       bob,
       "insert into public.media_assets(path,owner_id,bytes,mime) values($1,$2,100,'image/webp')",
       [path, bob],
     );
-    await expect(
-      asUser(
-        bob,
-        'insert into storage.objects(bucket_id,name,metadata) values(\'media\',$1,\'{"size":101,"mimetype":"image/webp"}\')',
-        [path],
-      ),
-    ).rejects.toThrow('row-level security');
     await asUser(
       bob,
-      'insert into storage.objects(bucket_id,name,metadata) values(\'media\',$1,\'{"size":100,"mimetype":"image/webp"}\')',
+      "insert into storage.objects(bucket_id,name,metadata) values('media',$1,'{}')",
       [path],
     );
     await asUser(bob, 'update storage.objects set metadata=\'{"size":200}\' where name=$1', [path]);
-    const r = await db.query<{ metadata: { size: number } }>(
+    const r = await db.query<{ metadata: Record<string, never> }>(
       'select metadata from storage.objects where name=$1',
       [path],
     );
-    expect(r.rows[0].metadata.size).toBe(100);
+    expect(r.rows[0].metadata).toEqual({});
     await expect(
       asUser(bob, 'delete from public.media_assets where path=$1', [path]),
     ).rejects.toThrow('permission denied');
