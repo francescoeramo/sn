@@ -1,6 +1,8 @@
 import type { NextConfig } from 'next';
 const config: NextConfig = {
-  output: 'standalone',
+  // Vercel already creates its optimized deployment output. Next 16.3's standalone
+  // finalization conflicts with Vercel's build adapter, while local standalone use remains supported.
+  output: process.env.VERCEL ? undefined : 'standalone',
   poweredByHeader: false,
   async headers() {
     return [
