@@ -1956,6 +1956,15 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
     expect(
       await asUser(alice, 'select emoji from public.reactions where target_id=$1', [postId]),
     ).toEqual([{ emoji: '❤️' }]);
+    // Il client usa UPSERT anche per cambiare emoji: richiede UPDATE e la relativa policy.
+    await asUser(
+      alice,
+      "insert into public.reactions(user_id,target_type,target_id,emoji) values($1,'post',$2,'👍') on conflict(user_id,target_type,target_id) do update set user_id=excluded.user_id,target_type=excluded.target_type,target_id=excluded.target_id,emoji=excluded.emoji",
+      [alice, postId],
+    );
+    expect(
+      await asUser(alice, 'select emoji from public.reactions where target_id=$1', [postId]),
+    ).toEqual([{ emoji: '👍' }]);
     expect(await asUser(bob, 'select * from public.reactions')).toHaveLength(0);
     await expect(
       asUser(eve, "insert into public.reactions(user_id,target_type,target_id,emoji) values($1,'post',$2,'👍')", [
