@@ -82,7 +82,9 @@ export function EventsPanel({ state, demo, busy, now, onAction }: Props) {
       capacity: capacity ? Number(capacity) : null,
     };
     const ok = await onAction(
-      editingId ? { type: 'update-event', event_id: editingId, ...fields } : { type: 'create-event', ...fields },
+      editingId
+        ? { type: 'update-event', event_id: editingId, ...fields }
+        : { type: 'create-event', ...fields },
     );
     if (ok) resetForm();
   }
@@ -239,8 +241,9 @@ function EventRow({
     submit.preventDefault();
     if (!photoFile) return;
     try {
-      if (!photoFile.type.startsWith('image/')) throw new Error('Scegli un’immagine JPEG, PNG o WebP.');
       const prepared = await prepareMedia(photoFile, setPhotoStatus);
+      if (!prepared.type.startsWith('image/'))
+        throw new Error('Serve una foto. Sceglila dalla libreria e riprova.');
       let media_path: string;
       if (demo) {
         media_path = await asDataURL(prepared);
@@ -397,7 +400,10 @@ function EventRow({
                             ? photo.media_path
                             : `/api/media?path=${encodeURIComponent(photo.media_path)}`
                         }
-                        alt={photo.caption || `Foto condivisa da ${author?.display_name ?? 'una persona'}`}
+                        alt={
+                          photo.caption ||
+                          `Foto condivisa da ${author?.display_name ?? 'una persona'}`
+                        }
                         width={320}
                         height={320}
                         unoptimized
@@ -429,7 +435,7 @@ function EventRow({
                   <span className="sr-only">Aggiungi una foto all’album</span>
                   <input
                     type="file"
-                    accept="image/jpeg,image/png,image/webp"
+                    accept="image/*,.heic,.heif"
                     onChange={(input) => setPhotoFile(input.target.files?.[0] ?? null)}
                   />
                 </label>
@@ -447,9 +453,7 @@ function EventRow({
                 </button>
               </form>
             ) : (
-              <p className="event-album-hint">
-                Conferma «Partecipo» per aggiungere le tue foto.
-              </p>
+              <p className="event-album-hint">Conferma «Partecipo» per aggiungere le tue foto.</p>
             )}
             {photoStatus && <p className="event-album-status">{photoStatus}</p>}
           </section>

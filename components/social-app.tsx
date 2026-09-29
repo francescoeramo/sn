@@ -53,6 +53,7 @@ import { CirclePanel } from './circle-panel';
 import { EventsPanel } from './events-panel';
 import { DigestPanel } from './digest-panel';
 import { CollaborationPanel } from './collaboration-panel';
+import { actionErrorMessage } from '@/lib/client/action-feedback';
 
 type View =
   | 'home'
@@ -149,6 +150,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
   const [instanceDecision, setInstanceDecision] = useState<string | null>(null);
   const [clock, setClock] = useState(0);
   const locked = useRef(false);
+  const lastActionError = useRef('');
   const refresh = useCallback(async () => {
     try {
       const next = demo ? await loadDemo() : await request('bootstrap');
@@ -234,6 +236,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
     if (!state || locked.current) return false;
     locked.current = true;
     setBusy(true);
+    lastActionError.current = '';
     try {
       const next = demo ? await mutateDemo(action) : await request('action', action);
       setState(next);
@@ -270,7 +273,9 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
       );
       return true;
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Operazione non riuscita.');
+      const message = actionErrorMessage(action, error);
+      lastActionError.current = message;
+      setNotice(message);
       return false;
     } finally {
       locked.current = false;
@@ -539,17 +544,6 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
           <main id="main-content" className="feed-column">
             <header className="page-heading">
               <div>
-                <span className="eyebrow">
-                  {view === 'home'
-                    ? 'UN POSTO PER RITROVARSI'
-                    : view === 'search'
-                      ? 'DENTRO LA COMMUNITY'
-                      : view === 'messages'
-                        ? 'DUE PAROLE, TRA VOI'
-                        : view === 'events'
-                          ? 'CI VEDIAMO LÌ'
-                          : 'IL TUO SPAZIO'}
-                </span>
                 <h1>
                   {title}
                   <span className="heading-dot">.</span>
@@ -568,9 +562,6 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
               <>
                 <div className="welcome-line">
                   <p>Ciao {me.display_name.split(' ')[0]}, che si dice?</p>
-                  <span>
-                    <Clock3 size={13} /> In ordine di tempo
-                  </span>
                 </div>
                 <section className="stories" aria-label="Storie">
                   <button className="story-button" onClick={() => setComposer('story')}>
@@ -695,7 +686,8 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                             <span>
                               <strong>{profile.display_name}</strong>
                               <small>
-                                @{profile.username} · seguito da {via?.display_name ?? 'un contatto'}
+                                @{profile.username} · seguito da{' '}
+                                {via?.display_name ?? 'un contatto'}
                               </small>
                             </span>
                           </button>
@@ -1175,13 +1167,13 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                                       ? 'ha scritto in un gruppo.'
                                       : n.kind === 'event_update'
                                         ? 'ha pubblicato un aggiornamento per un evento.'
-                                          : n.kind === 'event_cancelled'
-                                            ? 'ha annullato un evento.'
-                                            : n.kind === 'mention'
-                                              ? 'ti ha menzionato in un post.'
-                                              : n.kind === 'request'
-                                                ? 'ha chiesto di seguirti.'
-                                                : 'ha iniziato a seguirti.'}
+                                        : n.kind === 'event_cancelled'
+                                          ? 'ha annullato un evento.'
+                                          : n.kind === 'mention'
+                                            ? 'ti ha menzionato in un post.'
+                                            : n.kind === 'request'
+                                              ? 'ha chiesto di seguirti.'
+                                              : 'ha iniziato a seguirti.'}
                         </p>
                         <small>{relativeTime(n.created_at)}</small>
                         {n.kind === 'group_message' && (
@@ -1674,11 +1666,10 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
           </main>
           <aside className="right-rail">
             <section className="community-note">
-              <span className="eyebrow">POCHE PERSONE. SPAZIO PER TUTTI.</span>
               <h2>
                 Facciamo
                 <br />
-                come a casa<span>✳</span>
+                come a casa
               </h2>
               <p>Un’idea al volo, un giorno storto, qualcosa che ti va di condividere.</p>
               <div className="community-faces">
@@ -1724,11 +1715,10 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
               )}
             </section>
             <section className="rail-section">
-              <span className="eyebrow">DI COSA SI PARLA</span>
+              <h2>Argomenti</h2>
               {tags.length ? (
-                tags.map((tag, i) => (
+                tags.map((tag) => (
                   <button className="topic-row" key={tag} onClick={() => search('#' + tag)}>
-                    <span className="topic-index">0{i + 1}</span>
                     <span>
                       <strong>#{tag}</strong>
                       <small>
@@ -1816,6 +1806,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
           )}
           onClose={() => setComposer(null)}
           onPost={act}
+          getLastError={() => lastActionError.current}
         />
       )}
       {story && (

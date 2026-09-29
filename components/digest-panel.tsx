@@ -33,8 +33,7 @@ export function DigestPanel({ state, busy, onAction }: Props) {
     (member) => member.user_id === state.me.id && member.status === 'active',
   );
   const myCircles = (state.circles ?? []).filter(
-    (circle) =>
-      !circle.archived_at && memberships.some((member) => member.circle_id === circle.id),
+    (circle) => !circle.archived_at && memberships.some((member) => member.circle_id === circle.id),
   );
   const mutualPeople = useMemo(() => {
     const outgoing = new Set(
@@ -90,9 +89,9 @@ export function DigestPanel({ state, busy, onAction }: Props) {
     <section className="panel" aria-labelledby="digest-title">
       <h2 id="digest-title">Digest scelto da te</h2>
       <p className="muted">
-        Al massimo cinque elementi recenti dalle cerchie, dalle persone e dagli argomenti che scegli.
-        Niente sponsorizzazioni, punteggi nascosti o tracciamento delle aperture: conserviamo solo le
-        preferenze e l’ultimo invio.
+        Al massimo cinque elementi recenti dalle cerchie, dalle persone e dagli argomenti che
+        scegli. Niente sponsorizzazioni, punteggi nascosti o tracciamento delle aperture:
+        conserviamo solo le preferenze e l’ultimo invio.
       </p>
       <form
         key={`${prefs?.updated_at ?? 'default'}-${enabled}`}
@@ -151,7 +150,11 @@ export function DigestPanel({ state, busy, onAction }: Props) {
               configurato il digest arriva soltanto nell’app.
             </small>
           </span>
-          <input name="email_consent" type="checkbox" defaultChecked={prefs?.email_consent ?? false} />
+          <input
+            name="email_consent"
+            type="checkbox"
+            defaultChecked={prefs?.email_consent ?? false}
+          />
         </label>
         <button className="primary" disabled={busy}>
           Salva preferenze <Check size={17} />
@@ -160,8 +163,7 @@ export function DigestPanel({ state, busy, onAction }: Props) {
 
       <h3>Da dove pesca</h3>
       <p className="muted fine">
-        L’ordine è spiegabile: prima le cerchie scelte, poi le persone, quindi gli argomenti e,
-        infine, gli altri post in ordine cronologico.
+        Prima cerchie, persone e argomenti scelti. Gli altri post seguono la data di pubblicazione.
       </p>
       <div className="button-row">
         {myCircles.map((circle) => {

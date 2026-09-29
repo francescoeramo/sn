@@ -113,9 +113,17 @@ export function hashtags(text: string) {
   ];
 }
 export function fileKind(mime: string) {
-  return ['image/jpeg', 'image/png', 'image/webp'].includes(mime)
+  return [
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/heic',
+    'image/heif',
+    'image/avif',
+    'image/gif',
+  ].includes(mime)
     ? 'image'
-    : ['video/mp4', 'video/webm'].includes(mime)
+    : ['video/mp4', 'video/webm', 'video/quicktime'].includes(mime)
       ? 'video'
       : null;
 }
@@ -304,12 +312,10 @@ export const eventFields = {
 };
 const eventEndsAfterStart = (value: { starts_at: string; ends_at: string | null }) =>
   !value.ends_at || value.ends_at > value.starts_at;
-export const eventInput = z
-  .object(eventFields)
-  .refine(eventEndsAfterStart, {
-    message: 'La fine deve essere successiva all’inizio.',
-    path: ['ends_at'],
-  });
+export const eventInput = z.object(eventFields).refine(eventEndsAfterStart, {
+  message: 'La fine deve essere successiva all’inizio.',
+  path: ['ends_at'],
+});
 export const eventDetailsInput = z
   .object({ event_id: userId, ...eventFields })
   .refine(eventEndsAfterStart, {

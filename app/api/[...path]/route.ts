@@ -427,7 +427,7 @@ export async function POST(request: NextRequest, { params }: Context) {
             ? bytes[0] === 137 && bytes[1] === 80
             : file.type === 'image/webp'
               ? new TextDecoder().decode(bytes.slice(8, 12)) === 'WEBP'
-              : ['video/mp4', 'audio/mp4'].includes(file.type)
+              : ['video/mp4', 'video/quicktime', 'audio/mp4'].includes(file.type)
                 ? new TextDecoder().decode(bytes.slice(4, 8)) === 'ftyp'
                 : file.type === 'audio/ogg'
                   ? new TextDecoder().decode(bytes.slice(0, 4)) === 'OggS'

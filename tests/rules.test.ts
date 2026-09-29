@@ -286,6 +286,13 @@ describe('Regole condivise', () => {
     expect(fileKind('image/svg+xml')).toBeNull();
     expect(fileKind('text/html')).toBeNull();
   });
+
+  it('riconosce i formati foto e video usati da iPhone', () => {
+    expect(fileKind('image/heic')).toBe('image');
+    expect(fileKind('image/heif')).toBe('image');
+    expect(fileKind('image/avif')).toBe('image');
+    expect(fileKind('video/quicktime')).toBe('video');
+  });
   it('rende invisibili le storie esattamente alla scadenza', () =>
     expect(
       isActive({ expires_at: '2026-01-01T00:00:00Z' }, Date.parse('2026-01-01T00:00:00Z')),
@@ -410,12 +417,27 @@ describe('Conversazioni più espressive', () => {
   it('alterna una sola reazione privata per elemento', () => {
     let state = seed();
     const postId = state.posts[0].id;
-    state = applyDemo(state, { type: 'react', target_type: 'post', target_id: postId, emoji: '❤️' });
+    state = applyDemo(state, {
+      type: 'react',
+      target_type: 'post',
+      target_id: postId,
+      emoji: '❤️',
+    });
     expect(state.reactions).toHaveLength(1);
-    state = applyDemo(state, { type: 'react', target_type: 'post', target_id: postId, emoji: '👍' });
+    state = applyDemo(state, {
+      type: 'react',
+      target_type: 'post',
+      target_id: postId,
+      emoji: '👍',
+    });
     expect(state.reactions).toHaveLength(1);
     expect(state.reactions![0].emoji).toBe('👍');
-    state = applyDemo(state, { type: 'react', target_type: 'post', target_id: postId, emoji: null });
+    state = applyDemo(state, {
+      type: 'react',
+      target_type: 'post',
+      target_id: postId,
+      emoji: null,
+    });
     expect(state.reactions).toHaveLength(0);
   });
   it('cita il commento di origine e rifiuta risposte fuori contesto', () => {
@@ -504,8 +526,13 @@ describe('Digest scelto dall’utente', () => {
       digestPreferenceInput.safeParse({ ...base, channel: 'email', email_consent: true }).success,
     ).toBe(true);
     expect(digestPreferenceInput.safeParse({ ...base, frequency: 'monthly' }).success).toBe(false);
-    expect(digestSourceInput.safeParse({ source_type: 'topic', source_id: 'cucina', enabled: true }).success).toBe(true);
-    expect(digestSourceInput.safeParse({ source_type: 'topic', source_id: '', enabled: true }).success).toBe(false);
+    expect(
+      digestSourceInput.safeParse({ source_type: 'topic', source_id: 'cucina', enabled: true })
+        .success,
+    ).toBe(true);
+    expect(
+      digestSourceInput.safeParse({ source_type: 'topic', source_id: '', enabled: true }).success,
+    ).toBe(false);
   });
   it('spento di default e ordina cerchie, persone e argomenti con motivo', () => {
     let state = seed();

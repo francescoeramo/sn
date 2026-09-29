@@ -11,6 +11,7 @@ export function Composer({
   circles = [],
   onClose,
   onPost,
+  getLastError,
 }: {
   me: Profile;
   demo: boolean;
@@ -18,6 +19,7 @@ export function Composer({
   circles?: Circle[];
   onClose: () => void;
   onPost: (action: Action) => Promise<boolean>;
+  getLastError: () => string;
 }) {
   const [mode, setMode] = useState<Post['kind'] | 'poll'>(initialKind);
   const kind: Post['kind'] = mode === 'poll' ? 'post' : mode;
@@ -106,9 +108,13 @@ export function Composer({
               circle_ids: circleIds.length ? circleIds : undefined,
             });
             if (ok) onClose();
-            else setStatus('Il post non è stato pubblicato. La bozza è ancora qui.');
+            else setStatus(getLastError());
           } catch (error) {
-            setStatus(error instanceof Error ? error.message : 'Caricamento non riuscito.');
+            setStatus(
+              error instanceof Error
+                ? error.message
+                : 'File non preparato. Scegli un altro file e riprova.',
+            );
           } finally {
             setBusy(false);
           }
@@ -263,7 +269,7 @@ export function Composer({
             <Film size={19} />
             <input
               type="file"
-              accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"
+              accept="image/jpeg,image/png,image/webp,image/heic,image/heif,image/avif,image/gif,video/mp4,video/webm,video/quicktime,.heic,.heif,.mov"
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
               disabled={busy}
             />
@@ -275,13 +281,12 @@ export function Composer({
               <X size={14} /> Rimuovi allegato
             </button>
             <label>
-              Descrivi il contenuto
+              Descrizione del contenuto (facoltativa)
               <input
                 value={alt}
                 onChange={(e) => setAlt(e.target.value)}
                 maxLength={300}
-                placeholder="Una descrizione per chi non vede l’immagine"
-                required={file.type.startsWith('image/')}
+                placeholder="Es. Due persone sedute al mare"
               />
             </label>
           </>

@@ -566,7 +566,7 @@ export function ChatConversation({
                 ref={input}
                 type="file"
                 aria-label="Allega alla chat"
-                accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,audio/webm,audio/ogg,audio/mp4"
+                accept="image/jpeg,image/png,image/webp,image/heic,image/heif,image/avif,image/gif,video/mp4,video/webm,video/quicktime,audio/webm,audio/ogg,audio/mp4,.heic,.heif,.mov,.m4a"
                 disabled={busy || !!editing}
                 onChange={(e) => {
                   pendingPacket.current = null;

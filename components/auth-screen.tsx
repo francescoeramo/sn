@@ -34,7 +34,6 @@ export function AuthScreen({
         <Link href="/" className="wordmark">
           sn<span>●</span>
         </Link>
-        <span className="eyebrow">CI TROVIAMO QUI</span>
         <h1>
           Le persone.
           <br />
@@ -58,7 +57,6 @@ export function AuthScreen({
       <section className="auth-card">
         {!configured ? (
           <>
-            <span className="eyebrow">STIAMO PREPARANDO CASA</span>
             <h2>Un primo giro?</h2>
             <p>
               La beta non è ancora online. Puoi esplorare la demo, scrivere un post e provare le
@@ -73,7 +71,6 @@ export function AuthScreen({
           </>
         ) : (
           <>
-            <span className="eyebrow">BETA PRIVATA</span>
             <h2>
               {signup
                 ? 'C’è posto per te.'

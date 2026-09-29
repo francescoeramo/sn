@@ -180,8 +180,9 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
 
   async function uploadCircleImage(file: File | null) {
     if (!file) return null;
-    if (!file.type.startsWith('image/')) throw new Error('Scegli un’immagine JPEG, PNG o WebP.');
     const prepared = await prepareMedia(file, setImageStatus);
+    if (!prepared.type.startsWith('image/'))
+      throw new Error('Serve una foto. Sceglila dalla libreria e riprova.');
     if (demo) return asDataURL(prepared);
     setImageStatus('Caricamento…');
     const form = new FormData();
@@ -268,10 +269,10 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
               />
             </label>
             <label>
-              Immagine <small>facoltativa, JPEG, PNG o WebP</small>
+              Immagine <small>facoltativa</small>
               <input
                 type="file"
-                accept="image/jpeg,image/png,image/webp"
+                accept="image/*,.heic,.heif"
                 onChange={(event) => {
                   setEditImage(event.target.files?.[0] ?? null);
                   setRemoveImage(false);
@@ -556,10 +557,10 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
             />
           </label>
           <label>
-            Immagine <small>facoltativa, JPEG, PNG o WebP</small>
+            Immagine <small>facoltativa</small>
             <input
               type="file"
-              accept="image/jpeg,image/png,image/webp"
+              accept="image/*,.heic,.heif"
               onChange={(event) => setImage(event.target.files?.[0] ?? null)}
             />
           </label>

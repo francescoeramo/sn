@@ -1,29 +1,90 @@
 import { fileKind, LIMITS } from '@/lib/core/rules';
+
+function detectedType(file: File) {
+  if (file.type) return file.type.toLowerCase();
+  const extension = file.name.split('.').pop()?.toLowerCase();
+  return extension === 'heic'
+    ? 'image/heic'
+    : extension === 'heif'
+      ? 'image/heif'
+      : extension === 'mov'
+        ? 'video/quicktime'
+        : extension === 'm4v'
+          ? 'video/mp4'
+          : '';
+}
+
+async function imageSource(file: File) {
+  try {
+    const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    return {
+      width: bitmap.width,
+      height: bitmap.height,
+      draw: (context: CanvasRenderingContext2D, width: number, height: number) =>
+        context.drawImage(bitmap, 0, 0, width, height),
+      close: () => bitmap.close(),
+    };
+  } catch {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    image.src = url;
+    try {
+      await image.decode();
+      return {
+        width: image.naturalWidth,
+        height: image.naturalHeight,
+        draw: (context: CanvasRenderingContext2D, width: number, height: number) =>
+          context.drawImage(image, 0, 0, width, height),
+        close: () => URL.revokeObjectURL(url),
+      };
+    } catch {
+      URL.revokeObjectURL(url);
+      throw new Error('Foto non leggibile. Esportala come JPEG e riprova.');
+    }
+  }
+}
+
+function canvasBlob(canvas: HTMLCanvasElement) {
+  return new Promise<Blob | null>((resolve) => {
+    canvas.toBlob(
+      (webp) => {
+        if (webp?.type === 'image/webp') resolve(webp);
+        else canvas.toBlob(resolve, 'image/jpeg', 0.84);
+      },
+      'image/webp',
+      0.82,
+    );
+  });
+}
+
 export async function prepareMedia(file: File, onProgress: (value: string) => void): Promise<File> {
-  const kind = fileKind(file.type);
-  if (!kind) throw new Error('Scegli un’immagine JPEG, PNG, WebP o un video MP4/WebM.');
+  const type = detectedType(file);
+  const kind = fileKind(type);
+  if (!kind)
+    throw new Error('Formato non supportato. Scegli una foto o un video da Foto su iPhone.');
   if (file.size > 100 * 1024 * 1024)
     throw new Error('Il file originale supera 100 MB. Scegli un file più piccolo.');
   if (kind === 'image') {
     onProgress('Preparo l’immagine…');
-    const bitmap = await createImageBitmap(file);
-    const ratio = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+    const source = await imageSource(file);
+    const ratio = Math.min(1, 1600 / Math.max(source.width, source.height));
     const canvas = document.createElement('canvas');
-    canvas.width = Math.round(bitmap.width * ratio);
-    canvas.height = Math.round(bitmap.height * ratio);
+    canvas.width = Math.round(source.width * ratio);
+    canvas.height = Math.round(source.height * ratio);
     const ctx = canvas.getContext('2d');
     if (!ctx) {
-      bitmap.close();
-      throw new Error('Impossibile elaborare l’immagine.');
+      source.close();
+      throw new Error('Foto non preparata. Scegli un’altra foto e riprova.');
     }
-    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    bitmap.close();
-    const blob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, 'image/webp', 0.82),
-    );
+    source.draw(ctx, canvas.width, canvas.height);
+    source.close();
+    const blob = await canvasBlob(canvas);
     if (!blob || blob.size > LIMITS.file)
-      throw new Error('L’immagine è troppo grande anche dopo la compressione.');
-    return new File([blob], 'immagine.webp', { type: 'image/webp' });
+      throw new Error('Foto ancora sopra 3 MB. Ritagliala o riducila e riprova.');
+    const outputType = blob.type === 'image/jpeg' ? 'image/jpeg' : 'image/webp';
+    return new File([blob], outputType === 'image/jpeg' ? 'immagine.jpg' : 'immagine.webp', {
+      type: outputType,
+    });
   }
   const url = URL.createObjectURL(file);
   const video = document.createElement('video');
@@ -80,8 +141,8 @@ export async function prepareMedia(file: File, onProgress: (value: string) => vo
       }
     }
     if (file.size > LIMITS.file)
-      throw new Error('Questo browser non può comprimere il video. Scegli un file entro 3 MB.');
-    return file;
+      throw new Error('Video sopra 3 MB e non comprimibile qui. Accorcialo su iPhone e riprova.');
+    return file.type === type ? file : new File([file], file.name, { type });
   } finally {
     video.pause();
     video.removeAttribute('src');

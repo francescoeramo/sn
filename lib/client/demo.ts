@@ -759,9 +759,7 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
       if (substantial)
         for (const response of s.eventResponses.filter(
           (item) =>
-            item.event_id === event.id &&
-            item.user_id !== me &&
-            item.response !== 'declined',
+            item.event_id === event.id && item.user_id !== me && item.response !== 'declined',
         ))
           s.notifications.push({
             id: crypto.randomUUID(),
@@ -830,10 +828,7 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
             item.user_id === me
           ),
       );
-      s.digestSources = [
-        ...rest,
-        { user_id: me, ...value, created_at: now },
-      ];
+      s.digestSources = [...rest, { user_id: me, ...value, created_at: now }];
       break;
     }
     case 'digest-refresh': {
@@ -1106,7 +1101,7 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
       if (media !== null) {
         if (
           media.length > Math.ceil((LIMITS.file * 4) / 3) + 100 ||
-          !/^data:(?:image\/(?:jpeg|png|webp)|video\/(?:mp4|webm));base64,[A-Za-z0-9+/]*={0,2}$/.test(
+          !/^data:(?:image\/(?:jpeg|png|webp)|video\/(?:mp4|webm|quicktime));base64,[A-Za-z0-9+/]*={0,2}$/.test(
             media,
           )
         ) {
@@ -1251,9 +1246,7 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
     }
     case 'mention-preference': {
       const value = mentionPreferenceInput.parse(action);
-      s.mentionPreferences = [
-        { user_id: me, mentions_enabled: value.enabled, updated_at: now },
-      ];
+      s.mentionPreferences = [{ user_id: me, mentions_enabled: value.enabled, updated_at: now }];
       break;
     }
     case 'explore-preference': {
@@ -1600,9 +1593,7 @@ export function buildDemoDigest(s: Snapshot, me: string): DigestItem[] {
     if (
       author.is_private &&
       author.id !== me &&
-      !s.follows.some(
-        (f) => f.follower_id === me && f.following_id === author.id && f.accepted,
-      )
+      !s.follows.some((f) => f.follower_id === me && f.following_id === author.id && f.accepted)
     )
       return false;
     return true;

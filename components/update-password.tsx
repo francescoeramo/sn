@@ -12,7 +12,6 @@ export function UpdatePassword({ valid }: { valid: boolean }) {
   if (!valid)
     return (
       <section className="auth-card account-card">
-        <span className="eyebrow">RECUPERO ACCOUNT</span>
         <h1>Il link non è più valido.</h1>
         <p>Richiedi un nuovo link dalla schermata di accesso.</p>
         <Link className="primary" href="/">
@@ -25,7 +24,6 @@ export function UpdatePassword({ valid }: { valid: boolean }) {
     return (
       <section className="auth-card account-card">
         <LockKeyhole size={24} aria-hidden="true" />
-        <span className="eyebrow">PASSWORD AGGIORNATA</span>
         <h1>Le sessioni sono state chiuse.</h1>
         <p>Accedi di nuovo con la nuova password su questo browser e sugli altri dispositivi.</p>
         <Link className="primary" href="/">
@@ -36,7 +34,6 @@ export function UpdatePassword({ valid }: { valid: boolean }) {
 
   return (
     <section className="auth-card account-card">
-      <span className="eyebrow">RECUPERO ACCOUNT</span>
       <h1>Scegli una nuova password.</h1>
       <p>Usa almeno 12 caratteri. Dopo il cambio dovrai accedere di nuovo su ogni dispositivo.</p>
       <form

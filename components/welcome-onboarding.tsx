@@ -28,7 +28,7 @@ export function WelcomeOnboarding({
           <Clock3 size={20} aria-hidden="true" />
           <p>
             <strong>Il feed ha una fine</strong>
-            <span>I post sono in ordine cronologico. Quando sei in pari, puoi uscire.</span>
+            <span>Quando arrivi ai post già letti, il feed finisce.</span>
           </p>
         </div>
         <div>

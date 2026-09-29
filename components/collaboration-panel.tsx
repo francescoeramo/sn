@@ -59,11 +59,11 @@ export function CollaborationPanel({ state, demo, busy, onAction }: Props) {
     const file = files[postId];
     if (!file) return;
     try {
-      if (!file.type.startsWith('image/'))
-        throw new Error('Scegli un’immagine JPEG, PNG o WebP.');
       const prepared = await prepareMedia(file, (text) =>
         setStatus((current) => ({ ...current, [postId]: text })),
       );
+      if (!prepared.type.startsWith('image/'))
+        throw new Error('Serve una foto. Sceglila dalla libreria e riprova.');
       let media_path: string;
       if (demo) {
         media_path = await asDataURL(prepared);
@@ -218,8 +218,7 @@ export function CollaborationPanel({ state, demo, busy, onAction }: Props) {
                         <option value="">Scegli un contatto</option>
                         {contacts
                           .filter(
-                            (contact) =>
-                              !members.some((member) => member.user_id === contact.id),
+                            (contact) => !members.some((member) => member.user_id === contact.id),
                           )
                           .map((contact) => (
                             <option key={contact.id} value={contact.id}>
@@ -299,7 +298,9 @@ export function CollaborationPanel({ state, demo, busy, onAction }: Props) {
                         <button
                           className="text-button danger-text"
                           disabled={busy}
-                          onClick={() => void onAction({ type: 'remove-album-item', item_id: item.id })}
+                          onClick={() =>
+                            void onAction({ type: 'remove-album-item', item_id: item.id })
+                          }
                         >
                           Rimuovi
                         </button>
@@ -321,7 +322,7 @@ export function CollaborationPanel({ state, demo, busy, onAction }: Props) {
                   <span className="sr-only">Aggiungi un media all’album condiviso</span>
                   <input
                     type="file"
-                    accept="image/jpeg,image/png,image/webp"
+                    accept="image/*,.heic,.heif"
                     onChange={(input) =>
                       setFiles((current) => ({
                         ...current,
