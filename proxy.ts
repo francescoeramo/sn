@@ -15,6 +15,7 @@ export function proxy(request: NextRequest) {
     "base-uri 'self'",
     "form-action 'self'",
     "frame-ancestors 'none'",
+    ...(dev ? [] : ['upgrade-insecure-requests']),
   ].join('; ');
   const headers = new Headers(request.headers);
   headers.set('x-nonce', nonce);

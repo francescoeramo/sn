@@ -38,6 +38,15 @@ export async function authenticated() {
   if (error || !data.user) throw new ApiError('Accedi per continuare.', 401);
   return { db, user: data.user };
 }
+// Authenticated account that is not disabled, without requiring AAL2.
+// Used by the MFA routes, where a level-1 session must still be able to verify or manage factors.
+export async function activeAccount() {
+  const { db, user } = await authenticated();
+  const profile = await db.from('profiles').select('*').eq('id', user.id).single();
+  if (profile.error || !profile.data || profile.data.disabled)
+    throw new ApiError('Account non disponibile.', 403);
+  return { db, user, profile: profile.data };
+}
 export async function identity() {
   const { db, user } = await authenticated();
   const assurance = checked(await db.auth.mfa.getAuthenticatorAssuranceLevel());

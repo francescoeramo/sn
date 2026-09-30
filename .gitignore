@@ -12,3 +12,9 @@ supabase/.branches/
 artifacts/
 .vercel/
 .impeccable/review/
+next-env.d.ts
+# Local Easy OpenCode installation and configuration.
+.opencode/
+opencode.json
+# Generated Easy OpenCode shims (safe to regenerate); first-party scripts use .mjs.
+scripts/*.js

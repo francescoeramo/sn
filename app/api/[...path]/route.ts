@@ -26,7 +26,7 @@ import {
 import {
   database,
   identity,
-  authenticated,
+  activeAccount,
   checked,
   adminDatabase,
   ApiError,
@@ -85,7 +85,7 @@ async function enforceAuthRate(email: string, bucket: 'login' | 'signup' | 'reco
   if (!allowed) throw new ApiError('Troppi tentativi. Riprova più tardi.', 429);
 }
 async function mfaState() {
-  const { db } = await authenticated();
+  const { db } = await activeAccount();
   const factors = checked(await db.auth.mfa.listFactors());
   const assurance = checked(await db.auth.mfa.getAuthenticatorAssuranceLevel());
   return {
@@ -249,7 +249,7 @@ export async function POST(request: NextRequest, { params }: Context) {
     }
     if (route === 'auth/mfa') {
       const value = mfaAction.parse(await body(request));
-      const { db } = await authenticated();
+      const { db } = await activeAccount();
       if (value.action === 'enroll') {
         const factors = checked(await db.auth.mfa.listFactors());
         if (factors.totp.some((factor) => factor.status === 'verified'))
