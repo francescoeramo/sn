@@ -19,6 +19,7 @@ import {
 } from '@/lib/client/chat-store';
 import { relativeTime } from '@/lib/core/rules';
 import { Avatar, Empty } from './primitives';
+import { useLanguage } from './language-provider';
 
 type OpenGroupMessage = ChatGroupMessagesState['messages'][number] & {
   body: string;
@@ -98,6 +99,7 @@ export function GroupChatConversation({
   profiles: Profile[];
   onNotice: (message: string) => void;
 }) {
+  const language = useLanguage();
   const [device, setDevice] = useState<LocalDevice | null>(null);
   const [devices, setDevices] = useState<Device[]>([]);
   const [prints, setPrints] = useState<string[]>([]);
@@ -301,16 +303,20 @@ export function GroupChatConversation({
               <article className={`group-message ${own ? 'own' : ''}`} key={message.id}>
                 {!own && <Avatar person={author} size="small" />}
                 <div>
-                  {!own && <strong>{author?.display_name ?? 'Membro del gruppo'}</strong>}
+                  {!own && (
+                    <strong data-user-copy>{author?.display_name ?? 'Membro del gruppo'}</strong>
+                  )}
                   {message.warning ? (
                     <p className="group-message-warning" role="alert">
                       {message.warning}
                     </p>
                   ) : (
-                    <p>{message.body}</p>
+                    <p data-user-copy>{message.body}</p>
                   )}
                   <footer>
-                    <time dateTime={message.created_at}>{relativeTime(message.created_at)}</time>
+                    <time dateTime={message.created_at}>
+                      {relativeTime(message.created_at, language)}
+                    </time>
                     {own && (
                       <span aria-label={stateLabel} title={stateLabel}>
                         {deliveredCount ? <CheckCheck size={15} /> : <Check size={15} />}

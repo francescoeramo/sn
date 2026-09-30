@@ -6,6 +6,7 @@ import { Clock3, ImagePlus, MapPin, Pencil, Plus, Users, X } from 'lucide-react'
 import type { Action, Event, Snapshot } from '@/lib/core/types';
 import { asDataURL, prepareMedia } from '@/lib/client/media';
 import { Empty } from './primitives';
+import { useLanguage } from './language-provider';
 
 type Props = {
   state: Snapshot;
@@ -14,14 +15,6 @@ type Props = {
   now: number;
   onAction: (action: Action) => Promise<boolean>;
 };
-
-const dateTime = new Intl.DateTimeFormat('it-IT', {
-  weekday: 'short',
-  day: 'numeric',
-  month: 'long',
-  hour: '2-digit',
-  minute: '2-digit',
-});
 
 function toLocalInput(value: string) {
   const date = new Date(value);
@@ -167,7 +160,7 @@ export function EventsPanel({ state, demo, busy, now, onAction }: Props) {
               <option value="">I tuoi follower approvati</option>
               {circles.map((circle) => (
                 <option key={circle.id} value={circle.id}>
-                  Cerchia · {circle.name}
+                  Cerchia · <span data-user-copy>{circle.name}</span>
                 </option>
               ))}
             </select>
@@ -210,6 +203,14 @@ function EventRow({
   onAction,
   onEdit,
 }: Props & { event: Event; onEdit: (event: Event) => void }) {
+  const language = useLanguage();
+  const dateTime = new Intl.DateTimeFormat(language === 'en' ? 'en-GB' : 'it-IT', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'long',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
   const [message, setMessage] = useState('');
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoCaption, setPhotoCaption] = useState('');
@@ -280,17 +281,25 @@ function EventRow({
       <time dateTime={event.starts_at}>
         <strong>{new Date(event.starts_at).getDate()}</strong>
         <span>
-          {new Intl.DateTimeFormat('it-IT', { month: 'short' }).format(new Date(event.starts_at))}
+          {new Intl.DateTimeFormat(language === 'en' ? 'en-GB' : 'it-IT', {
+            month: 'short',
+          }).format(new Date(event.starts_at))}
         </span>
       </time>
       <div className="event-body">
         <div className="event-heading">
           <div>
-            <h3>{event.title}</h3>
+            <h3 data-user-copy>{event.title}</h3>
             <p>
-              {circle
-                ? `Cerchia · ${circle.name}`
-                : `Da ${organizer?.display_name ?? 'un contatto'}`}
+              {circle ? (
+                <>
+                  Cerchia · <span data-user-copy>{circle.name}</span>
+                </>
+              ) : (
+                <>
+                  Da <span data-user-copy>{organizer?.display_name ?? 'un contatto'}</span>
+                </>
+              )}
             </p>
           </div>
           {event.cancelled_at && <span className="event-cancelled">Annullato</span>}
@@ -305,7 +314,11 @@ function EventRow({
             </button>
           )}
         </div>
-        {event.description && <p className="event-copy">{event.description}</p>}
+        {event.description && (
+          <p className="event-copy" data-user-copy>
+            {event.description}
+          </p>
+        )}
         <div className="event-facts">
           <span>
             <Clock3 size={15} /> {dateTime.format(new Date(event.starts_at))}
@@ -358,10 +371,10 @@ function EventRow({
               return (
                 <div key={update.id}>
                   <span>
-                    <strong>{author?.display_name ?? 'Persona'}</strong>
+                    <strong data-user-copy>{author?.display_name ?? 'Persona'}</strong>
                     {update.kind === 'update' && <small>Aggiornamento</small>}
                   </span>
-                  <p>{update.body}</p>
+                  <p data-user-copy>{update.body}</p>
                 </div>
               );
             })}
@@ -412,8 +425,8 @@ function EventRow({
                         unoptimized
                       />
                       <figcaption>
-                        <span>{author?.display_name ?? 'Persona'}</span>
-                        {photo.caption && <p>{photo.caption}</p>}
+                        <span data-user-copy>{author?.display_name ?? 'Persona'}</span>
+                        {photo.caption && <p data-user-copy>{photo.caption}</p>}
                         {removable && (
                           <button
                             className="text-button danger-text"

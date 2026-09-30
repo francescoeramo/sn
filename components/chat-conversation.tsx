@@ -21,6 +21,7 @@ import { rememberDevices, keepMessages } from '@/lib/client/chat-store';
 import { asDataURL, prepareChatMedia } from '@/lib/client/media';
 import { syncConversation, chatAction } from '@/lib/client/chat-lifecycle';
 import { Avatar, Empty } from './primitives';
+import { useLanguage } from './language-provider';
 
 export function ChatConversation({
   me,
@@ -37,6 +38,7 @@ export function ChatConversation({
   allowed: boolean;
   onSend: (action: Action) => Promise<boolean>;
 }) {
+  const language = useLanguage();
   const [session, setSession] = useState<Awaited<ReturnType<typeof prepareSession>> | null>(null);
   const [decoded, setDecoded] = useState<DecryptedMessage[]>([]);
   const [keyError, setKeyError] = useState('');
@@ -227,7 +229,7 @@ export function ChatConversation({
       <div className="chat-heading">
         <Avatar person={person} />
         <div>
-          <strong>{person.display_name}</strong>
+          <strong data-user-copy>{person.display_name}</strong>
           <small>@{person.username}</small>
         </div>
         <button
@@ -340,7 +342,11 @@ export function ChatConversation({
                 ) : (
                   <Image src={src} alt="Immagine nella chat" width={480} height={360} unoptimized />
                 ))}
-              {m.warning ? <p role="status">{m.warning}</p> : m.body && <p>{m.body}</p>}
+              {m.warning ? (
+                <p role="status">{m.warning}</p>
+              ) : (
+                m.body && <p data-user-copy>{m.body}</p>
+              )}
               {!m.encrypted && <small className="muted">Storico non cifrato</small>}
               <div className="chat-meta">
                 {lifecycle?.edited_at && <span>Modificato</span>}
@@ -354,9 +360,13 @@ export function ChatConversation({
                     {lifecycle?.delivered_at ? <CheckCheck size={16} /> : <Check size={16} />}
                   </span>
                 )}
-                <time dateTime={m.created_at}>{relativeTime(m.created_at)}</time>
+                <time dateTime={m.created_at}>{relativeTime(m.created_at, language)}</time>
                 {m.expires_at && (
-                  <span title={new Date(m.expires_at).toLocaleString('it-IT')}>
+                  <span
+                    title={new Date(m.expires_at).toLocaleString(
+                      language === 'en' ? 'en-GB' : 'it-IT',
+                    )}
+                  >
                     <Clock3 size={11} /> Scade tra{' '}
                     {Math.max(1, Math.ceil((Date.parse(m.expires_at) - now) / 60000)) < 60
                       ? `${Math.max(1, Math.ceil((Date.parse(m.expires_at) - now) / 60000))} min`

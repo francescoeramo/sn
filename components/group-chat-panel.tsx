@@ -266,7 +266,7 @@ export function GroupChatPanel({
             onClick={() => setSelected(item.id)}
           >
             <Users size={15} />
-            {item.name}
+            <span data-user-copy>{item.name}</span>
           </button>
         ))}
       </div>
@@ -279,7 +279,7 @@ export function GroupChatPanel({
           <div className="group-detail-heading">
             <div>
               <span>Gruppo</span>
-              <h3>{group.name}</h3>
+              <h3 data-user-copy>{group.name}</h3>
             </div>
             <button
               className="text-button"
@@ -324,7 +324,7 @@ export function GroupChatPanel({
                 <option value="">Scegli…</option>
                 {candidates.map((person) => (
                   <option value={person.id} key={person.id}>
-                    {person.display_name}
+                    <span data-user-copy>{person.display_name}</span>
                   </option>
                 ))}
               </select>
@@ -354,7 +354,7 @@ export function GroupChatPanel({
                 <li key={member.user_id}>
                   <Avatar person={person} size="small" />
                   <span>
-                    <strong>{person.display_name}</strong>
+                    <strong data-user-copy>{person.display_name}</strong>
                     <small>{member.role === 'admin' ? 'Admin' : 'Membro'}</small>
                   </span>
                   {admin && (

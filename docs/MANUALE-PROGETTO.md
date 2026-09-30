@@ -22,35 +22,35 @@ La root `/` mostra l’app reale quando è configurata e lo stato di setup quand
 
 Comandi disponibili:
 
-| Comando | Uso |
-| --- | --- |
-| `npm run dev` | Server locale su 127.0.0.1:3000 |
-| `npm run lint` | ESLint |
-| `npm run typecheck` | TypeScript senza emissione |
-| `npm test` | Vitest e test SQL/unitari con PGlite |
-| `npm run build` | Build Next.js |
-| `npm run test:e2e` | Playwright |
-| `npm run check` | lint, typecheck, test e build |
-| `npm run backup` | Procedura di backup documentata in `docs/BACKUP.md` |
+| Comando             | Uso                                                 |
+| ------------------- | --------------------------------------------------- |
+| `npm run dev`       | Server locale su 127.0.0.1:3000                     |
+| `npm run lint`      | ESLint                                              |
+| `npm run typecheck` | TypeScript senza emissione                          |
+| `npm test`          | Vitest e test SQL/unitari con PGlite                |
+| `npm run build`     | Build Next.js                                       |
+| `npm run test:e2e`  | Playwright                                          |
+| `npm run check`     | lint, typecheck, test e build                       |
+| `npm run backup`    | Procedura di backup documentata in `docs/BACKUP.md` |
 
 Leggere `AGENTS.md` prima di intervenire: il repository avverte che questa versione di Next.js ha cambiamenti incompatibili; prima di modificare codice applicativo consultare la documentazione installata in `node_modules/next/dist/docs/`. Non eliminare il blocco agent rule in `AGENTS.md`: viene rigenerato da Next.
 
 ## 3. Mappa del repository
 
-| Percorso | Responsabilità |
-| --- | --- |
-| `app/` | Pagine, layout, callback Auth, route pubbliche ActivityPub e API catch-all |
-| `components/` | Interfaccia React: feed, composer, chat, cerchie, eventi, onboarding, moderazione, temi |
-| `lib/core/` | Tipi, validazioni, limiti, regole pure e primitive HTTP; indipendente da Next e Supabase |
-| `lib/client/` | Stato locale demo, ciclo di vita chat, sessioni/chiavi client e preparazione media |
-| `lib/crypto/chat.ts` | Cifratura client dei messaggi |
-| `lib/server/` | Accesso Supabase, logica social/chat/cerchie e federazione server-side |
-| `supabase/migrations/` | Schema, indici, trigger, funzioni e policy RLS; applicare in ordine cronologico |
-| `tests/` | Test unitari, crittografici, HTTP, federazione, SQL/PGlite e Playwright |
-| `scripts/` | Inviti, backup, backup Storage e preparazione del bundle standalone |
-| `docs/` | Stato, decisioni, verifica, crittografia, backup e roadmap (questo file ne consolida i contenuti) |
-| `PRODUCT.md` | Direzione e vincoli di prodotto correnti |
-| `SN-prompt-progetto.md` | Brief originale, requisiti estesi e successive fasi |
+| Percorso                | Responsabilità                                                                                    |
+| ----------------------- | ------------------------------------------------------------------------------------------------- |
+| `app/`                  | Pagine, layout, callback Auth, route pubbliche ActivityPub e API catch-all                        |
+| `components/`           | Interfaccia React: feed, composer, chat, cerchie, eventi, onboarding, moderazione, temi           |
+| `lib/core/`             | Tipi, validazioni, limiti, regole pure e primitive HTTP; indipendente da Next e Supabase          |
+| `lib/client/`           | Stato locale demo, ciclo di vita chat, sessioni/chiavi client e preparazione media                |
+| `lib/crypto/chat.ts`    | Cifratura client dei messaggi                                                                     |
+| `lib/server/`           | Accesso Supabase, logica social/chat/cerchie e federazione server-side                            |
+| `supabase/migrations/`  | Schema, indici, trigger, funzioni e policy RLS; applicare in ordine cronologico                   |
+| `tests/`                | Test unitari, crittografici, HTTP, federazione, SQL/PGlite e Playwright                           |
+| `scripts/`              | Inviti, backup, backup Storage e preparazione del bundle standalone                               |
+| `docs/`                 | Stato, decisioni, verifica, crittografia, backup e roadmap (questo file ne consolida i contenuti) |
+| `PRODUCT.md`            | Direzione e vincoli di prodotto correnti                                                          |
+| `SN-prompt-progetto.md` | Brief originale, requisiti estesi e successive fasi                                               |
 
 File di ingresso importanti: `app/page.tsx`, `app/demo/page.tsx`, `components/social-app.tsx`, `app/api/[...path]/route.ts`, `lib/server/supabase.ts`, `lib/server/social.ts`, `lib/server/chat.ts`, `lib/server/groups.ts`.
 
@@ -59,6 +59,8 @@ File di ingresso importanti: `app/page.tsx`, `app/demo/page.tsx`, `components/so
 ### Interfaccia e dati
 
 `components/social-app.tsx` coordina schermate e stato. Le componenti specializzate mantengono rendering e interazioni: `composer.tsx`, `post-card.tsx`, `story-player.tsx`, `chat-conversation.tsx`, `group-chat-*`, `circle-panel.tsx`, `events-panel.tsx`, `community-notes.tsx` e impostazioni. La demo passa al medesimo guscio `SocialApp` con `demo=true`, ma persiste su IndexedDB tramite `lib/client/demo.ts`; la modalità reale chiama le API Next.
+
+L’interfaccia è disponibile in italiano e inglese. La scelta si trova nelle impostazioni, si applica subito e viene salvata in `localStorage` con la chiave `sn-language`; vale anche prima dell’accesso e nella demo. `components/language-provider.tsx` traduce soltanto le stringhe del prodotto definite in `lib/client/i18n.ts` e aggiorna l’attributo `lang` del documento. Nomi e contenuti inseriti dalle persone, compresi post, commenti, messaggi, titoli, descrizioni e didascalie, restano invariati.
 
 Il client non deve poter assegnarsi ruoli, scrivere notifiche o modificare campi privilegiati. In produzione le operazioni ordinarie usano il token dell’utente e sono ristrette da RLS. Le funzioni privilegiate sono isolate nel server e impiegate per rate limit, manutenzione e ciclo di vita account.
 
@@ -72,25 +74,25 @@ Login, signup e recupero hanno rate limit applicativo tramite RPC e chiave HMAC 
 
 La route catch-all è il catalogo effettivo: leggere il relativo handler prima di cambiare contratti. Sintesi delle route esposte:
 
-| Metodo | Percorso | Scopo |
-| --- | --- | --- |
-| GET | `/api/bootstrap` | Snapshot iniziale autenticato |
-| GET | `/api/posts?before=…` | Pagina feed, massimo 40 |
-| GET | `/api/search?q=…` | Ricerca full-text italiana |
-| GET | `/api/saved` | Pagina dei post salvati |
-| GET | `/api/messages?user=…&before=…` | Messaggi 1:1, pagina recente |
-| GET | `/api/chat/sync`, `/api/chat/devices` | Sincronizzazione e dispositivi chat |
+| Metodo   | Percorso                                                                   | Scopo                                      |
+| -------- | -------------------------------------------------------------------------- | ------------------------------------------ |
+| GET      | `/api/bootstrap`                                                           | Snapshot iniziale autenticato              |
+| GET      | `/api/posts?before=…`                                                      | Pagina feed, massimo 40                    |
+| GET      | `/api/search?q=…`                                                          | Ricerca full-text italiana                 |
+| GET      | `/api/saved`                                                               | Pagina dei post salvati                    |
+| GET      | `/api/messages?user=…&before=…`                                            | Messaggi 1:1, pagina recente               |
+| GET      | `/api/chat/sync`, `/api/chat/devices`                                      | Sincronizzazione e dispositivi chat        |
 | GET/POST | `/api/chat/groups`, `/api/chat/groups/message`, `/api/chat/groups/receipt` | Stato, operazioni gruppi, invio e ricevute |
-| GET/POST | `/api/auth/mfa`, `/api/auth/sessions` | Fattori TOTP e sessioni |
-| POST | `/api/auth/login`, `/api/auth/signup`, `/api/auth/logout` | Accesso e registrazione |
-| POST | `/api/auth/recover`, `/api/auth/password` | Recupero e cambio password |
-| POST | `/api/chat/device`, `/api/chat/delivered` | Registrazione dispositivo e ricevute chat |
-| POST | `/api/action` | Mutazioni social validate dal dominio |
-| POST | `/api/upload` | Upload media con quote e controlli |
-| GET | `/api/media?path=…` | Lettura autorizzata da bucket privato |
-| GET | `/api/export` | Esportazione JSON personale |
-| POST | `/api/account/delete` | Avvio/ripresa cancellazione account |
-| POST | `/api/maintenance` | Pulizia e, se abilitata, coda federata |
+| GET/POST | `/api/auth/mfa`, `/api/auth/sessions`                                      | Fattori TOTP e sessioni                    |
+| POST     | `/api/auth/login`, `/api/auth/signup`, `/api/auth/logout`                  | Accesso e registrazione                    |
+| POST     | `/api/auth/recover`, `/api/auth/password`                                  | Recupero e cambio password                 |
+| POST     | `/api/chat/device`, `/api/chat/delivered`                                  | Registrazione dispositivo e ricevute chat  |
+| POST     | `/api/action`                                                              | Mutazioni social validate dal dominio      |
+| POST     | `/api/upload`                                                              | Upload media con quote e controlli         |
+| GET      | `/api/media?path=…`                                                        | Lettura autorizzata da bucket privato      |
+| GET      | `/api/export`                                                              | Esportazione JSON personale                |
+| POST     | `/api/account/delete`                                                      | Avvio/ripresa cancellazione account        |
+| POST     | `/api/maintenance`                                                         | Pulizia e, se abilitata, coda federata     |
 
 I percorsi ActivityPub (`/ap/*`, WebFinger e profili `app/users/[username]`) sono distinti. Discovery è anteprima locale, non interoperabilità pronta alla produzione.
 
@@ -106,33 +108,33 @@ Ordine delle migrazioni attuale: `20260909094232_initial_social.sql`, `202609092
 
 “Implementato” in questa tabella descrive il repository/demo/migrazioni; non implica collaudo Auth, email, Storage o RLS sul cloud.
 
-| Area | Stato noto e attenzione |
-| --- | --- |
-| Feed e profili | Post di testo/media, feed cronologico, profili pubblici/privati, ricerca utenti e hashtag; query di ricerca testuale italiana. Il bootstrap carica una finestra finita; paginazione post presente. I conteggi visibili possono derivare dai record caricati e vanno rivisti prima di una beta con molto traffico. |
-| Interazioni | Like senza contatori pubblici, commenti, richieste follow, blocchi, notifiche, sondaggi a voto singolo e scadenza facoltativa. |
-| Media e storie | Immagini, video, audio in chat; storie con scadenza e timer dopo consenso esplicito all’avviso; compressione/ricodifica browser con fallback. Il server limita byte e controlla firme/formati, ma non usa antivirus o decodifica isolata per certificare durata. |
-| Chat 1:1 | Solo contatti reciproci; nuovi messaggi/allegati cifrati client-side, scadenza configurabile, ricevute, modifica/cancellazione secondo finestra e conservazione sincronizzata o solo dispositivo. I vecchi messaggi restano in chiaro. |
-| Chat di gruppo | Membership/ruoli/inviti, messaggi E2EE v2, ricevute e UI; demo IndexedDB. Manca collaudo cloud. |
-| Note della comunità | Proposte con fonti HTTPS, revisione umana e motivazione. |
-| Salvataggi e avvisi | Raccolta privata paginata; visibilità continua a rispettare blocchi/scadenze/eliminazioni. Avviso fino a 160 caratteri; il media delle storie si carica dopo “Mostra storia”. |
-| Account e moderazione | Inviti, Auth, recovery, TOTP, sessioni, export/eliminazione, controlli moderatore e audit append-only. Cloud da collaudare. |
-| Federazione | Trasporto ActivityPub sperimentale: WebFinger, actor, outbox, inbox firmata, Note remote e queue delivery/retry. `FEDERATION_DELIVERY_ENABLED` deve restare false fino ai test reali con Mastodon/Pixelfed. |
-| Cerchie | Membership privata, inviti, ruoli, mini-feed, più destinazioni, sondaggi, gestione completa e immagine facoltativa implementati localmente; cloud non collaudato. |
-| Eventi | Incontri locali per follower approvati o cerchia, luogo testuale, intervallo, capienza, risposte idempotenti, modifica dei dettagli riservata all’organizzatore e album collaborativo disponibile dopo l’inizio. Notifiche singole per variazioni sostanziali; album con quote media e pulizia coerenti. Cloud non collaudato. |
-| Digest | Scelto dall’utente, spento di default, con frequenza, fascia, fuso e canale; massimo cinque elementi con motivo spiegabile e rigenerazione idempotente per periodo. Conserva preferenze e ultimo invio, non le aperture. Il canale email richiede un provider di invio ancora assente. |
-| Collaborazioni | Post collaborativi e album condivisi con inviti tra contatti reciproci, permessi revocabili, chiusura dell’album e blocco dei contributi dopo rimozione o chiusura; media coerenti con le quote e la pulizia esistenti. |
-| Espressività | Reazioni private, risposte contestuali con citazione dello stesso post, menzioni governate da preferenza e condivisioni interne senza copia pubblica né contatori. |
-| Scoperta | Sezioni Esplora esplicite e nascondibili; metriche aggregate senza identificativi, leggibili solo dai moderatori e calcolate dal job di manutenzione. Nessun feed «Per te» o ranking. |
+| Area                  | Stato noto e attenzione                                                                                                                                                                                                                                                                                                        |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Feed e profili        | Post di testo/media, feed cronologico, profili pubblici/privati, ricerca utenti e hashtag; query di ricerca testuale italiana. Il bootstrap carica una finestra finita; paginazione post presente. I conteggi visibili possono derivare dai record caricati e vanno rivisti prima di una beta con molto traffico.              |
+| Interazioni           | Like senza contatori pubblici, commenti, richieste follow, blocchi, notifiche, sondaggi a voto singolo e scadenza facoltativa.                                                                                                                                                                                                 |
+| Media e storie        | Immagini, video, audio in chat; storie con scadenza e timer dopo consenso esplicito all’avviso; compressione/ricodifica browser con fallback. Il server limita byte e controlla firme/formati, ma non usa antivirus o decodifica isolata per certificare durata.                                                               |
+| Chat 1:1              | Solo contatti reciproci; nuovi messaggi/allegati cifrati client-side, scadenza configurabile, ricevute, modifica/cancellazione secondo finestra e conservazione sincronizzata o solo dispositivo. I vecchi messaggi restano in chiaro.                                                                                         |
+| Chat di gruppo        | Membership/ruoli/inviti, messaggi E2EE v2, ricevute e UI; demo IndexedDB. Manca collaudo cloud.                                                                                                                                                                                                                                |
+| Note della comunità   | Proposte con fonti HTTPS, revisione umana e motivazione.                                                                                                                                                                                                                                                                       |
+| Salvataggi e avvisi   | Raccolta privata paginata; visibilità continua a rispettare blocchi/scadenze/eliminazioni. Avviso fino a 160 caratteri; il media delle storie si carica dopo “Mostra storia”.                                                                                                                                                  |
+| Account e moderazione | Inviti, Auth, recovery, TOTP, sessioni, export/eliminazione, controlli moderatore e audit append-only. Cloud da collaudare.                                                                                                                                                                                                    |
+| Federazione           | Trasporto ActivityPub sperimentale: WebFinger, actor, outbox, inbox firmata, Note remote e queue delivery/retry. `FEDERATION_DELIVERY_ENABLED` deve restare false fino ai test reali con Mastodon/Pixelfed.                                                                                                                    |
+| Cerchie               | Membership privata, inviti, ruoli, mini-feed, più destinazioni, sondaggi, gestione completa e immagine facoltativa implementati localmente; cloud non collaudato.                                                                                                                                                              |
+| Eventi                | Incontri locali per follower approvati o cerchia, luogo testuale, intervallo, capienza, risposte idempotenti, modifica dei dettagli riservata all’organizzatore e album collaborativo disponibile dopo l’inizio. Notifiche singole per variazioni sostanziali; album con quote media e pulizia coerenti. Cloud non collaudato. |
+| Digest                | Scelto dall’utente, spento di default, con frequenza, fascia, fuso e canale; massimo cinque elementi con motivo spiegabile e rigenerazione idempotente per periodo. Conserva preferenze e ultimo invio, non le aperture. Il canale email richiede un provider di invio ancora assente.                                         |
+| Collaborazioni        | Post collaborativi e album condivisi con inviti tra contatti reciproci, permessi revocabili, chiusura dell’album e blocco dei contributi dopo rimozione o chiusura; media coerenti con le quote e la pulizia esistenti.                                                                                                        |
+| Espressività          | Reazioni private, risposte contestuali con citazione dello stesso post, menzioni governate da preferenza e condivisioni interne senza copia pubblica né contatori.                                                                                                                                                             |
+| Scoperta              | Sezioni Esplora esplicite e nascondibili; metriche aggregate senza identificativi, leggibili solo dai moderatori e calcolate dal job di manutenzione. Nessun feed «Per te» o ranking.                                                                                                                                          |
 
 ### Limiti/quote beta
 
-| Limite dichiarato nel progetto | Valore |
-| --- | --- |
-| Account | 20, accesso tramite inviti monouso con scadenza di 7 giorni |
-| Allegato singolo | 3 MiB |
-| Media per persona | 40 MiB |
-| Media totale | 800 MiB, inclusi upload incompleti in attesa di pulizia |
-| Durata video interfaccia | 20 secondi; la durata non è verificata in modo affidabile dal backend |
+| Limite dichiarato nel progetto | Valore                                                                |
+| ------------------------------ | --------------------------------------------------------------------- |
+| Account                        | 20, accesso tramite inviti monouso con scadenza di 7 giorni           |
+| Allegato singolo               | 3 MiB                                                                 |
+| Media per persona              | 40 MiB                                                                |
+| Media totale                   | 800 MiB, inclusi upload incompleti in attesa di pulizia               |
+| Durata video interfaccia       | 20 secondi; la durata non è verificata in modo affidabile dal backend |
 
 Le quote non limitano da sole la banda e non sono un budget di hosting. Tenere monitorati storage, database, traffico, email e limiti dei piani; non attivare upgrade, componenti a pagamento o addebiti automatici senza decisione esplicita.
 
@@ -168,17 +170,17 @@ Per un incidente su chiavi o credenziali, ruotare i segreti coinvolti e valutare
 
 Variabili lette dal progetto (`.env.example` è il riferimento):
 
-| Variabile | Uso | Esposizione |
-| --- | --- | --- |
-| `NEXT_PUBLIC_SUPABASE_URL` | URL progetto | Pubblica |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Chiave publishable Supabase | Pubblica, protetta da Auth/RLS |
-| `APP_ORIGIN` | Origine canonica per callback e controllo Origin | Server/config |
-| `SUPABASE_SECRET_KEY` | Operazioni amministrative isolate e rate limit | Solo server, segreta |
-| `FEDERATION_KEY_SECRET` | Cifratura chiavi private ActivityPub | Solo server, segreta, persistente |
-| `FEDERATION_DELIVERY_ENABLED` | Abilita worker consegne federate | Server, false finché non validato |
-| `FEDERATION_DISCOVERY_PREVIEW` | Preview discovery locale | Solo sviluppo; ignorata prod |
-| `CRON_SECRET` | Bearer secret manutenzione, almeno 32 caratteri casuali | Solo server/job, segreta |
-| `PRIVACY_CONTACT_EMAIL` | Contatto richiesto per registrazione | Configurazione pubblicabile |
+| Variabile                              | Uso                                                     | Esposizione                       |
+| -------------------------------------- | ------------------------------------------------------- | --------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`             | URL progetto                                            | Pubblica                          |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Chiave publishable Supabase                             | Pubblica, protetta da Auth/RLS    |
+| `APP_ORIGIN`                           | Origine canonica per callback e controllo Origin        | Server/config                     |
+| `SUPABASE_SECRET_KEY`                  | Operazioni amministrative isolate e rate limit          | Solo server, segreta              |
+| `FEDERATION_KEY_SECRET`                | Cifratura chiavi private ActivityPub                    | Solo server, segreta, persistente |
+| `FEDERATION_DELIVERY_ENABLED`          | Abilita worker consegne federate                        | Server, false finché non validato |
+| `FEDERATION_DISCOVERY_PREVIEW`         | Preview discovery locale                                | Solo sviluppo; ignorata prod      |
+| `CRON_SECRET`                          | Bearer secret manutenzione, almeno 32 caratteri casuali | Solo server/job, segreta          |
+| `PRIVACY_CONTACT_EMAIL`                | Contatto richiesto per registrazione                    | Configurazione pubblicabile       |
 
 ### Collegamento cloud previsto
 
@@ -259,4 +261,3 @@ Questo manuale è il punto di ingresso, ma i dettagli normativi/operativi restan
 - Checklist cloud: `docs/VERIFICA.md`.
 - Evidenza dei test eseguiti: `docs/TEST-RESULTS.md`.
 - Configurazione locale: `.env.example`; non inserire segreti in Git.
-

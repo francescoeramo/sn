@@ -46,7 +46,7 @@ export function PostNotes({
         .map((note) => (
           <aside className="context-note" key={note.id}>
             <strong>Nota della comunità</strong>
-            <p>{note.body}</p>
+            <p data-user-copy>{note.body}</p>
             <Sources sources={note.sources} />
             <details>
               <summary>Decisione del moderatore</summary>
@@ -61,7 +61,7 @@ export function PostNotes({
               ? 'La tua nota è in revisione'
               : 'La tua nota non è stata approvata'}
           </summary>
-          <p>{note.body}</p>
+          <p data-user-copy>{note.body}</p>
           <Sources sources={note.sources} />
           {note.review_reason && <p>Motivo: {note.review_reason}</p>}
         </details>
@@ -153,7 +153,7 @@ function ReviewNote({
     <article className="note-review">
       <blockquote>{postBody}</blockquote>
       <h3>Contesto proposto</h3>
-      <p>{note.body}</p>
+      <p data-user-copy>{note.body}</p>
       <Sources sources={note.sources} />
       <form
         onSubmit={async (e) => {

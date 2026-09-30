@@ -177,7 +177,8 @@ export function DigestPanel({ state, busy, onAction }: Props) {
               disabled={busy}
               onClick={() => void toggleSource('circle', circle.id, !active)}
             >
-              {circle.name} {active ? <Undo2 size={15} /> : <Plus size={15} />}
+              <span data-user-copy>{circle.name}</span>{' '}
+              {active ? <Undo2 size={15} /> : <Plus size={15} />}
             </button>
           );
         })}
@@ -252,7 +253,7 @@ export function DigestPanel({ state, busy, onAction }: Props) {
                 <p className="digest-reason">
                   <BellRing size={14} /> {entry.reason}
                 </p>
-                <p>{entry.body}</p>
+                <p data-user-copy>{entry.body}</p>
               </li>
             );
           })}

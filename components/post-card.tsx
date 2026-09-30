@@ -17,6 +17,7 @@ import type { Post, Snapshot, Action } from '@/lib/core/types';
 import { relativeTime, REACTIONS } from '@/lib/core/rules';
 import { PostNotes } from './community-notes';
 import { Avatar, Media, Modal } from './primitives';
+import { useLanguage } from './language-provider';
 export function PostCard({
   post,
   state,
@@ -36,6 +37,7 @@ export function PostCard({
   onProfile: (id: string) => void;
   onTag: (tag: string) => void;
 }) {
+  const language = useLanguage();
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [revealed, setRevealed] = useState(false);
   const concealed = Boolean(post.content_warning) && !revealed;
@@ -57,7 +59,8 @@ export function PostCard({
   const roots = comments.filter((c) => !c.parent_id);
   const repliesOf = (id: string) => comments.filter((c) => c.parent_id === id);
   const myReaction = (state.reactions ?? []).find(
-    (item) => item.user_id === state.me.id && item.target_type === 'post' && item.target_id === post.id,
+    (item) =>
+      item.user_id === state.me.id && item.target_type === 'post' && item.target_id === post.id,
   )?.emoji;
   const shareDestinations = [
     ...state.follows
@@ -110,9 +113,10 @@ export function PostCard({
         <button className="person-button" onClick={() => onProfile(post.author_id)}>
           <Avatar person={author} />
           <span>
-            <strong>{author?.display_name ?? 'Utente'}</strong>
+            <strong data-user-copy>{author?.display_name ?? 'Utente'}</strong>
             <small>
-              @{author?.username ?? 'utente'} <span>·</span> {relativeTime(post.created_at)}{' '}
+              @{author?.username ?? 'utente'} <span>·</span>{' '}
+              {relativeTime(post.created_at, language)}{' '}
               {author?.is_private && <LockKeyhole size={11} />}
             </small>
           </span>
@@ -156,7 +160,7 @@ export function PostCard({
       {post.content_warning && (
         <div className="content-warning">
           <span>Avviso di contenuto</span>
-          <p>{post.content_warning}</p>
+          <p data-user-copy>{post.content_warning}</p>
           <button
             className="secondary"
             aria-expanded={!concealed}
@@ -171,7 +175,7 @@ export function PostCard({
         {!concealed && (
           <>
             {post.body && (
-              <p className="post-body">
+              <p className="post-body" data-user-copy>
                 {post.body.split(/(#[\p{L}\p{N}_]+)/gu).map((part, i) =>
                   part.startsWith('#') ? (
                     <button className="hashtag" key={i} onClick={() => onTag(part)}>
@@ -202,7 +206,7 @@ export function PostCard({
                             act({ type: 'vote-poll', poll_id: post.id, option_id: option.id })
                           }
                         >
-                          <span>{option.body}</span>
+                          <span data-user-copy>{option.body}</span>
                           {showPollResults && <small>{percentage}%</small>}
                         </button>
                         {showPollResults && (
@@ -221,7 +225,7 @@ export function PostCard({
                     : pollClosed
                       ? 'Sondaggio chiuso'
                       : post.poll.closes_at
-                        ? `Si chiude ${new Date(post.poll.closes_at).toLocaleString('it-IT', { dateStyle: 'medium', timeStyle: 'short' })}`
+                        ? `Si chiude ${new Date(post.poll.closes_at).toLocaleString(language === 'en' ? 'en-GB' : 'it-IT', { dateStyle: 'medium', timeStyle: 'short' })}`
                         : 'Nessuna scadenza'}
                 </p>
               </section>
@@ -275,7 +279,7 @@ export function PostCard({
           <span>Condividi</span>
         </button>
         <span className="post-date">
-          {new Date(post.created_at).toLocaleDateString('it-IT', {
+          {new Date(post.created_at).toLocaleDateString(language === 'en' ? 'en-GB' : 'it-IT', {
             day: 'numeric',
             month: 'short',
           })}
@@ -319,7 +323,7 @@ export function PostCard({
         </details>
       )}
       {!concealed && comments.length > 0 && !commentsOpen && (
-        <button className="comment-preview" onClick={() => setCommentsOpen(true)}>
+        <button className="comment-preview" data-user-copy onClick={() => setCommentsOpen(true)}>
           <strong>
             {state.profiles
               .find((p) => p.id === comments[0].author_id)
@@ -337,7 +341,7 @@ export function PostCard({
                   person={state.profiles.find((p) => p.id === comment.author_id)}
                   size="small"
                 />
-                <p>
+                <p data-user-copy>
                   <strong>
                     {state.profiles.find((p) => p.id === comment.author_id)?.display_name ??
                       'Utente'}
@@ -367,7 +371,7 @@ export function PostCard({
                     person={state.profiles.find((p) => p.id === reply.author_id)}
                     size="small"
                   />
-                  <p>
+                  <p data-user-copy>
                     <strong>
                       {state.profiles.find((p) => p.id === reply.author_id)?.display_name ??
                         'Utente'}
@@ -401,11 +405,7 @@ export function PostCard({
             {replyTo && (
               <p className="comment-reply-hint">
                 Risposta a {replyTo.name} · {replyTo.quote.slice(0, 60)}
-                <button
-                  type="button"
-                  className="text-button"
-                  onClick={() => setReplyTo(null)}
-                >
+                <button type="button" className="text-button" onClick={() => setReplyTo(null)}>
                   Annulla
                 </button>
               </p>

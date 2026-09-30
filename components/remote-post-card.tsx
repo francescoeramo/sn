@@ -4,6 +4,7 @@ import { ExternalLink, Flag, Globe2 } from 'lucide-react';
 import type { Action, RemotePost } from '@/lib/core/types';
 import { initials, relativeTime } from '@/lib/core/rules';
 import { Modal } from './primitives';
+import { useLanguage } from './language-provider';
 
 export function RemotePostCard({
   post,
@@ -14,6 +15,7 @@ export function RemotePostCard({
   busy: boolean;
   onAction: (action: Action) => Promise<boolean>;
 }) {
+  const language = useLanguage();
   const [revealed, setRevealed] = useState(false);
   const [reporting, setReporting] = useState(false);
   const concealed = Boolean(post.content_warning) && !revealed;
@@ -25,9 +27,9 @@ export function RemotePostCard({
             {initials(post.display_name)}
           </span>
           <span>
-            <strong>{post.display_name}</strong>
+            <strong data-user-copy>{post.display_name}</strong>
             <small>
-              @{post.username}@{post.host} <span>·</span> {relativeTime(post.created_at)}
+              @{post.username}@{post.host} <span>·</span> {relativeTime(post.created_at, language)}
             </small>
           </span>
         </div>
@@ -38,7 +40,7 @@ export function RemotePostCard({
       {post.content_warning && (
         <div className="content-warning">
           <span>Avviso di contenuto</span>
-          <p>{post.content_warning}</p>
+          <p data-user-copy>{post.content_warning}</p>
           <button
             className="secondary"
             aria-expanded={!concealed}
@@ -53,7 +55,11 @@ export function RemotePostCard({
         id={`remote-content-${encodeURIComponent(post.id)}`}
         className={!concealed ? 'post-content revealed' : ''}
       >
-        {!concealed && <p className="post-body">{post.body}</p>}
+        {!concealed && (
+          <p className="post-body" data-user-copy>
+            {post.body}
+          </p>
+        )}
       </div>
       <footer className="remote-post-footer">
         <p>

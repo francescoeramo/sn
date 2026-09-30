@@ -326,7 +326,9 @@ function StoryFrame({
           {error}
         </p>
       )}
-      <p className="story-caption">{post.body}</p>
+      <p className="story-caption" data-user-copy>
+        {post.body}
+      </p>
       <p className="fine muted">Tocca ai lati per cambiare storia. Tieni premuto per fermarla.</p>
     </section>
   );

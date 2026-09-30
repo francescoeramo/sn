@@ -138,15 +138,17 @@ export function initials(name: string) {
     .slice(0, 2)
     .toUpperCase();
 }
-export function relativeTime(time: string) {
+export function relativeTime(time: string, language: 'it' | 'en' = 'it') {
   const minutes = Math.max(0, Math.floor((Date.now() - Date.parse(time)) / 60000));
   return minutes < 1
-    ? 'ora'
+    ? language === 'en'
+      ? 'now'
+      : 'ora'
     : minutes < 60
       ? `${minutes} min`
       : minutes < 1440
         ? `${Math.floor(minutes / 60)} h`
-        : `${Math.floor(minutes / 1440)} g`;
+        : `${Math.floor(minutes / 1440)} ${language === 'en' ? 'd' : 'g'}`;
 }
 
 export function chatFileKind(mime: string) {

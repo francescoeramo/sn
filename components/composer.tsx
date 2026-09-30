@@ -42,7 +42,7 @@ export function Composer({
       <div className="composer-person">
         <Avatar person={me} />
         <div>
-          <strong>{me.display_name}</strong>
+          <strong data-user-copy>{me.display_name}</strong>
           <small>
             <LockKeyhole size={12} />
             {circleIds.length
@@ -174,7 +174,7 @@ export function Composer({
                     {circle.name.slice(0, 2).toLocaleUpperCase('it')}
                   </span>
                   <span>
-                    <strong>{circle.name}</strong>
+                    <strong data-user-copy>{circle.name}</strong>
                     <small>Solo membri</small>
                   </span>
                 </label>
@@ -265,7 +265,9 @@ export function Composer({
         {mode !== 'poll' && (
           <label className="file-picker">
             <ImagePlus size={21} />
-            <span>{file ? file.name : 'Aggiungi foto o video'}</span>
+            <span data-user-copy={file ? true : undefined}>
+              {file ? file.name : 'Aggiungi foto o video'}
+            </span>
             <Film size={19} />
             <input
               type="file"

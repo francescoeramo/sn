@@ -118,7 +118,7 @@ export function CollaborationPanel({ state, demo, busy, onAction }: Props) {
           <ul className="group-members">
             {ownedOpenPosts.map((post) => (
               <li key={post.id}>
-                <span>{post.body.slice(0, 80) || 'Post senza testo'}</span>
+                <span data-user-copy>{post.body.slice(0, 80) || 'Post senza testo'}</span>
                 <button
                   className="secondary"
                   disabled={busy}
@@ -145,7 +145,7 @@ export function CollaborationPanel({ state, demo, busy, onAction }: Props) {
         return (
           <article className="panel" key={album.post_id}>
             <h2>{isOwner ? 'Il tuo post collaborativo' : 'Collaborazione'}</h2>
-            <p>{post.body.slice(0, 200) || 'Post senza testo'}</p>
+            <p data-user-copy>{post.body.slice(0, 200) || 'Post senza testo'}</p>
             {mine?.status === 'invited' && (
               <div className="button-row">
                 <button
@@ -296,7 +296,7 @@ export function CollaborationPanel({ state, demo, busy, onAction }: Props) {
                     />
                     <figcaption>
                       <span>{profileName(item.added_by)}</span>
-                      {item.caption && <p>{item.caption}</p>}
+                      {item.caption && <p data-user-copy>{item.caption}</p>}
                       {(item.added_by === state.me.id || isOwner) && (
                         <button
                           className="text-button danger-text"

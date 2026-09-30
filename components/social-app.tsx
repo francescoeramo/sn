@@ -48,6 +48,8 @@ import { RemotePostCard } from './remote-post-card';
 import { SecuritySettings } from './security-settings';
 import { WelcomeOnboarding } from './welcome-onboarding';
 import { ThemeSettings } from './theme-settings';
+import { LanguageSettings } from './language-settings';
+import { useLanguage } from './language-provider';
 import { GroupChatPanel } from './group-chat-panel';
 import { CirclePanel } from './circle-panel';
 import { EventsPanel } from './events-panel';
@@ -150,6 +152,7 @@ async function request(path: string, body?: unknown) {
 }
 
 export function SocialApp({ demo, configured }: { demo: boolean; configured: boolean }) {
+  const language = useLanguage();
   const router = useRouter();
   const [state, setState] = useState<Snapshot | null>(null);
   const [loading, setLoading] = useState(configured);
@@ -507,7 +510,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
           <button className="my-account" onClick={() => navigate('profile')}>
             <Avatar person={me} />
             <span>
-              <strong>{me.display_name}</strong>
+              <strong data-user-copy>{me.display_name}</strong>
               <small>@{me.username}</small>
             </span>
             <ChevronRight size={18} />
@@ -595,7 +598,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                         <span className="story-ring">
                           <Avatar person={p} size="large" />
                         </span>
-                        <span>{p.display_name.split(' ')[0]}</span>
+                        <span data-user-copy>{p.display_name.split(' ')[0]}</span>
                       </button>
                     ))}
                 </section>
@@ -693,10 +696,10 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                           >
                             <Avatar person={profile} />
                             <span>
-                              <strong>{profile.display_name}</strong>
+                              <strong data-user-copy>{profile.display_name}</strong>
                               <small>
                                 @{profile.username} · seguito da{' '}
-                                {via?.display_name ?? 'un contatto'}
+                                <span data-user-copy>{via?.display_name ?? 'un contatto'}</span>
                               </small>
                             </span>
                           </button>
@@ -753,7 +756,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                             >
                               <Avatar person={p} />
                               <span>
-                                <strong>{p.display_name}</strong>
+                                <strong data-user-copy>{p.display_name}</strong>
                                 <small>@{p.username}</small>
                               </span>
                             </button>
@@ -796,11 +799,11 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                 <div className={`profile-cover ${focusProfile.color}`} aria-hidden="true" />
                 <div className="profile-details">
                   <Avatar person={focusProfile} size="large" />
-                  <h2>{focusProfile.display_name}</h2>
+                  <h2 data-user-copy>{focusProfile.display_name}</h2>
                   <span className="muted">
                     @{focusProfile.username} {focusProfile.is_private && <LockKeyhole size={13} />}
                   </span>
-                  <p>{focusProfile.bio || 'Nessuna biografia.'}</p>
+                  <p data-user-copy>{focusProfile.bio || 'Nessuna biografia.'}</p>
                   {focusProfile.id === me.id ? (
                     <button className="secondary" onClick={() => navigate('settings')}>
                       Modifica profilo
@@ -1090,7 +1093,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                             }}
                           >
                             <Avatar person={p} size="small" />
-                            {p.display_name.split(' ')[0]}
+                            <span data-user-copy>{p.display_name.split(' ')[0]}</span>
                           </button>
                         ))}
                     </div>
@@ -1161,7 +1164,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                             className="inline-name"
                             onClick={() => navigate('profile', n.actor_id)}
                           >
-                            {actor?.display_name ?? 'Utente'}
+                            <span data-user-copy>{actor?.display_name ?? 'Utente'}</span>
                           </button>{' '}
                           {n.kind === 'note_approved'
                             ? 'ha approvato la tua nota della comunità.'
@@ -1185,7 +1188,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                                               ? 'ha chiesto di seguirti.'
                                               : 'ha iniziato a seguirti.'}
                         </p>
-                        <small>{relativeTime(n.created_at)}</small>
+                        <small>{relativeTime(n.created_at, language)}</small>
                         {n.kind === 'group_message' && (
                           <button
                             className="text-button notification-group-link"
@@ -1315,6 +1318,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                 </section>
                 <SecuritySettings demo={demo} />
                 <ThemeSettings />
+                <LanguageSettings />
                 <DigestPanel state={state} busy={busy} onAction={act} />
                 <section className="panel">
                   <h2>Menzioni</h2>
@@ -1466,7 +1470,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                     {(state.moderationAccounts ?? []).map((account) => (
                       <li key={account.id}>
                         <span>
-                          <strong>{account.display_name}</strong>
+                          <strong data-user-copy>{account.display_name}</strong>
                           <small>
                             @{account.username}
                             {account.is_admin
@@ -1503,8 +1507,8 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                   .filter((r) => r.status === 'open')
                   .map((r) => (
                     <div className="report" key={r.id}>
-                      <strong>Segnalazione · {relativeTime(r.created_at)}</strong>
-                      <p>{r.reason}</p>
+                      <strong>Segnalazione · {relativeTime(r.created_at, language)}</strong>
+                      <p data-user-copy>{r.reason}</p>
                       <blockquote>
                         {state.posts.find((p) => p.id === r.post_id)?.body ??
                           'Post non presente nel feed caricato.'}
@@ -1550,9 +1554,11 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                       } catch {}
                       return (
                         <div className="report" key={report.id}>
-                          <strong>Segnalazione federata · {relativeTime(report.created_at)}</strong>
-                          <p>{report.reason}</p>
-                          <blockquote>
+                          <strong>
+                            Segnalazione federata · {relativeTime(report.created_at, language)}
+                          </strong>
+                          <p data-user-copy>{report.reason}</p>
+                          <blockquote data-user-copy>
                             {remote?.body ?? 'Contenuto non presente nel feed caricato.'}
                           </blockquote>
                           <p className="fine muted">Origine: {origin}</p>
@@ -1630,7 +1636,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                         <li key={block.hostname}>
                           <span>
                             <strong>{block.hostname}</strong>
-                            <small>{block.reason}</small>
+                            <small data-user-copy>{block.reason}</small>
                           </span>
                           <button
                             className="secondary"
@@ -1665,11 +1671,13 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                                   ? entry.target_id
                                   : entry.target_id.slice(0, 8)}
                               </small>
-                              {entry.reason && <small>{entry.reason}</small>}
+                              {entry.reason && <small data-user-copy>{entry.reason}</small>}
                             </span>
                             <span>
-                              {moderator?.display_name ?? 'Account rimosso'} ·{' '}
-                              {relativeTime(entry.created_at)}
+                              <span data-user-copy>
+                                {moderator?.display_name ?? 'Account rimosso'}
+                              </span>{' '}
+                              · {relativeTime(entry.created_at, language)}
                             </span>
                           </li>
                         );
@@ -1693,7 +1701,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                   <button className="person-button" onClick={() => navigate('profile', p.id)}>
                     <Avatar person={p} />
                     <span>
-                      <strong>{p.display_name}</strong>
+                      <strong data-user-copy>{p.display_name}</strong>
                       <small>@{p.username}</small>
                     </span>
                   </button>

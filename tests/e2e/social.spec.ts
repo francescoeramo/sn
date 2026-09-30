@@ -1,4 +1,24 @@
 import { test, expect } from '@playwright/test';
+test('lingua: cambia subito, resta salvata e non traduce i contenuti delle persone', async ({
+  page,
+}) => {
+  await page.goto('/demo');
+  await page.getByRole('button', { name: 'Impostazioni', exact: true }).click();
+  await page.getByRole('switch', { name: 'Usa SN in inglese' }).check();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await expect(page.getByRole('heading', { name: 'Your settings.' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Save changes' })).toBeVisible();
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await expect(page.getByRole('heading', { name: 'Your feed.' })).toBeVisible();
+  await expect(page.getByText(/Domanda seria: qual è il piatto/)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Create a post' })).toBeVisible();
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await page.getByRole('switch', { name: 'Use SN in English' }).uncheck();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'it');
+  await expect(page.getByRole('heading', { name: 'Le tue impostazioni.' })).toBeVisible();
+});
+
 test('eventi: crea un incontro privato e conserva la risposta', async ({ page }) => {
   await page.goto('/demo');
   await page.getByRole('button', { name: 'Eventi', exact: true }).filter({ visible: true }).click();

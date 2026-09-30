@@ -219,8 +219,10 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
         <header className="circle-hero">
           <CircleMark circle={selected} demo={demo} />
           <div>
-            <h2 id="circle-title">{selected.name}</h2>
-            <p>{selected.description || 'Nessuna descrizione.'}</p>
+            <h2 id="circle-title" data-user-copy>
+              {selected.name}
+            </h2>
+            <p data-user-copy>{selected.description || 'Nessuna descrizione.'}</p>
             <span>
               {members.length} {members.length === 1 ? 'persona' : 'persone'}
             </span>
@@ -369,7 +371,7 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
                 <button className="circle-member-profile" onClick={() => onProfile(profile.id)}>
                   <Avatar person={profile} />
                   <span>
-                    <strong>{profile.display_name}</strong>
+                    <strong data-user-copy>{profile.display_name}</strong>
                     <small>{member.role === 'admin' ? 'Admin' : `@${profile.username}`}</small>
                   </span>
                 </button>
@@ -424,7 +426,7 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
                   <div className="circle-member-profile">
                     <Avatar person={profile} />
                     <span>
-                      <strong>{profile.display_name}</strong>
+                      <strong data-user-copy>{profile.display_name}</strong>
                       <small>Non ha ancora risposto</small>
                     </span>
                   </div>
@@ -461,7 +463,7 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
                   }
                 >
                   <Avatar person={profile} />
-                  <span>{profile.display_name}</span>
+                  <span data-user-copy>{profile.display_name}</span>
                   <Plus size={16} />
                 </button>
               ))}
@@ -503,7 +505,7 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
               <article key={circle.id}>
                 <CircleMark circle={circle} demo={demo} />
                 <div>
-                  <strong>{circle.name}</strong>
+                  <strong data-user-copy>{circle.name}</strong>
                   <span>
                     {inviter ? `${inviter.display_name} ti ha invitato` : 'Hai ricevuto un invito'}
                   </span>
@@ -595,8 +597,8 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
             <button key={circle.id} onClick={() => setSelectedId(circle.id)}>
               <CircleMark circle={circle} demo={demo} />
               <span>
-                <strong>{circle.name}</strong>
-                <small>{circle.description || 'Nessuna descrizione'}</small>
+                <strong data-user-copy>{circle.name}</strong>
+                <small data-user-copy>{circle.description || 'Nessuna descrizione'}</small>
               </span>
               <span className="circle-count">
                 <Users size={15} /> {count}

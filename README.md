@@ -1,6 +1,6 @@
 # SN
 
-SN è un social italiano per un piccolo gruppo di amici. Ha un feed finito, profili privati per impostazione predefinita, nuovi messaggi cifrati e nessuna pubblicità.
+SN è un social per un piccolo gruppo di amici, con interfaccia in italiano e inglese. Ha un feed finito, profili privati per impostazione predefinita, nuovi messaggi cifrati e nessuna pubblicità.
 
 ## Prova la demo
 
