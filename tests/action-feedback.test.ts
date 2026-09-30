@@ -50,4 +50,16 @@ describe('messaggi di errore delle azioni', () => {
       'Post non pubblicato. Controlla testo, allegato e destinazione.',
     );
   });
+
+  it('aggiunge un recupero agli errori che indicano solo una risorsa assente', () => {
+    const action: Action = {
+      type: 'delete-message',
+      message_id: crypto.randomUUID(),
+      everyone: false,
+    };
+
+    expect(actionErrorMessage(action, new Error('Messaggio non disponibile.'))).toBe(
+      'Messaggio non eliminato. Riapri la chat e riprova.',
+    );
+  });
 });

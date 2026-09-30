@@ -91,7 +91,10 @@ export function CollaborationPanel({ state, demo, busy, onAction }: Props) {
     } catch (error) {
       setStatus((current) => ({
         ...current,
-        [postId]: error instanceof Error ? error.message : 'Caricamento non riuscito.',
+        [postId]:
+          error instanceof Error
+            ? error.message
+            : 'Foto non aggiunta all’album. Scegli di nuovo il file e riprova.',
       }));
     }
   }

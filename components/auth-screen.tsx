@@ -34,22 +34,6 @@ export function AuthScreen({
         <Link href="/" className="wordmark">
           sn<span>●</span>
         </Link>
-        <h1>
-          Le persone.
-          <br />
-          Le cose da dire.
-          <br />
-          <em>Il tuo spazio.</em>
-        </h1>
-        <p>
-          Una chiacchierata, un video, una giornata qualunque. SN è un piccolo social da abitare
-          insieme.
-        </p>
-        <div className="auth-art" aria-hidden="true">
-          <span>ciao!</span>
-          <span>ci sei?</span>
-          <span>☀</span>
-        </div>
         <div className="auth-caption">
           <LockKeyhole size={16} /> Accesso su invito · Nessuna pubblicità
         </div>
@@ -57,7 +41,7 @@ export function AuthScreen({
       <section className="auth-card">
         {!configured ? (
           <>
-            <h2>Un primo giro?</h2>
+            <h2>Prova la demo</h2>
             <p>
               La beta non è ancora online. Puoi esplorare la demo, scrivere un post e provare le
               funzioni.
@@ -73,12 +57,12 @@ export function AuthScreen({
           <>
             <h2>
               {signup
-                ? 'C’è posto per te.'
+                ? 'Crea il tuo account.'
                 : recover
                   ? 'Recupera l’accesso.'
                   : mfa
-                    ? 'Un ultimo controllo.'
-                    : 'Bentornato.'}
+                    ? 'Verifica l’accesso.'
+                    : 'Accedi.'}
             </h2>
             <p>
               {signup
@@ -87,7 +71,7 @@ export function AuthScreen({
                   ? 'Inserisci la tua email. Se è associata a un account, riceverai un link.'
                   : mfa
                     ? 'Inserisci il codice a sei cifre mostrato dalla tua app authenticator.'
-                    : 'Accedi e ritrova i tuoi amici.'}
+                    : 'Inserisci email e password.'}
             </p>
             <form
               onSubmit={async (e) => {
@@ -120,7 +104,17 @@ export function AuthScreen({
                     setMode('mfa');
                   } else await onLogin();
                 } catch (error) {
-                  setMessage(error instanceof Error ? error.message : 'Accesso non riuscito.');
+                  setMessage(
+                    error instanceof Error
+                      ? error.message
+                      : mfa
+                        ? 'Codice non verificato. Controlla le sei cifre e riprova.'
+                        : recover
+                          ? 'Link non richiesto. Controlla l’indirizzo email e riprova.'
+                          : signup
+                            ? 'Account non creato. Controlla i campi e il codice invito.'
+                            : 'Accesso non riuscito. Controlla email e password e riprova.',
+                  );
                 } finally {
                   setBusy(false);
                 }

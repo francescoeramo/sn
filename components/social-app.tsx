@@ -109,19 +109,41 @@ function download(value: unknown, name: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 async function request(path: string, body?: unknown) {
-  const response = await fetch(
-    `/api/${path}`,
-    body === undefined
-      ? { cache: 'no-store' }
-      : {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        },
-  );
-  const value = await response.json();
+  const fallback = path.startsWith('bootstrap')
+    ? 'Piazza non caricata. Controlla la connessione e riprova.'
+    : path.startsWith('search')
+      ? 'Ricerca non aggiornata. Controlla la connessione e riprova.'
+      : path.startsWith('saved')
+        ? 'Post salvati non caricati. Controlla la connessione e riprova.'
+        : path.startsWith('posts')
+          ? 'Post precedenti non caricati. Controlla la connessione e riprova.'
+          : path.startsWith('messages')
+            ? 'Messaggi non caricati. Riapri la conversazione e riprova.'
+            : path === 'export'
+              ? 'Dati non esportati. Controlla la connessione e riprova.'
+              : path === 'auth/logout'
+                ? 'Uscita non completata. Controlla la connessione e riprova.'
+                : path === 'account/delete'
+                  ? 'Account non eliminato. Controlla la connessione e riprova.'
+                  : 'Operazione non riuscita.';
+  let response: Response;
+  try {
+    response = await fetch(
+      `/api/${path}`,
+      body === undefined
+        ? { cache: 'no-store' }
+        : {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          },
+    );
+  } catch {
+    throw new Error(fallback);
+  }
+  const value = await response.json().catch(() => ({}));
   if (!response.ok)
-    throw Object.assign(new Error(value.error ?? 'Operazione non riuscita.'), {
+    throw Object.assign(new Error(value.error ?? fallback), {
       status: response.status,
     });
   return value;
@@ -161,7 +183,12 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
       setState(next);
     } catch (error) {
       if ((error as { status?: number }).status === 401) setState(null);
-      else setNotice(error instanceof Error ? error.message : 'Caricamento non riuscito.');
+      else
+        setNotice(
+          error instanceof Error
+            ? error.message
+            : 'Piazza non caricata. Controlla la connessione e riprova.',
+        );
     } finally {
       setLoading(false);
     }
@@ -446,7 +473,6 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
         <Link href={demo ? '/demo' : '/'} className="wordmark" aria-label="SN, home">
           sn<span>●</span>
         </Link>
-        <span className="sidebar-subtitle">CI TROVIAMO QUI</span>
         <nav aria-label="Navigazione principale">
           {navigation.map((item) => (
             <button
@@ -493,26 +519,17 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
           <div className="mobile-wordmark" aria-hidden="true">
             sn<span>●</span>
           </div>
-          <div className="breadcrumb">
-            Il tuo spazio <ChevronRight size={13} />
-            <span>{title}</span>
-          </div>
-          <form
+          <button
             className="top-search"
-            onSubmit={(e) => {
-              e.preventDefault();
+            type="button"
+            aria-label="Cerca persone, post o hashtag"
+            onClick={() => {
+              setQuery('');
               navigate('search');
             }}
           >
             <Search size={17} />
-            <input
-              aria-label="Cerca su SN"
-              placeholder="Persone, parole, hashtag"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-            <kbd>↵</kbd>
-          </form>
+          </button>
           <span className="beta-pill">
             <i /> BETA PRIVATA
           </span>
@@ -560,9 +577,6 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
             </header>
             {view === 'home' && (
               <>
-                <div className="welcome-line">
-                  <p>Ciao {me.display_name.split(' ')[0]}, che si dice?</p>
-                </div>
                 <section className="stories" aria-label="Storie">
                   <button className="story-button" onClick={() => setComposer('story')}>
                     <span className="story-add">
@@ -584,11 +598,6 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                         <span>{p.display_name.split(' ')[0]}</span>
                       </button>
                     ))}
-                  <div className="story-note">
-                    Piccole cose,
-                    <br />
-                    per 24 ore.<span>↗</span>
-                  </div>
                 </section>
                 <section className="quick-compose">
                   <button className="compose-prompt" onClick={() => setComposer('post')}>
@@ -784,16 +793,14 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
             )}
             {view === 'profile' && focusProfile && (
               <section className="profile-card">
-                <div className={`profile-cover ${focusProfile.color}`}>
-                  <span aria-hidden="true">ciao, sono qui.</span>
-                </div>
+                <div className={`profile-cover ${focusProfile.color}`} aria-hidden="true" />
                 <div className="profile-details">
                   <Avatar person={focusProfile} size="large" />
                   <h2>{focusProfile.display_name}</h2>
                   <span className="muted">
                     @{focusProfile.username} {focusProfile.is_private && <LockKeyhole size={13} />}
                   </span>
-                  <p>{focusProfile.bio || 'Ancora poche righe. Il resto arriverà nei post.'}</p>
+                  <p>{focusProfile.bio || 'Nessuna biografia.'}</p>
                   {focusProfile.id === me.id ? (
                     <button className="secondary" onClick={() => navigate('settings')}>
                       Modifica profilo
@@ -889,12 +896,12 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                     }
                     title={
                       showingSaved
-                        ? 'Tieni da parte ciò che vuoi ritrovare.'
+                        ? 'Nessun post salvato.'
                         : view === 'reels'
-                          ? 'Il primo reel potrebbe essere tuo.'
+                          ? 'Nessun reel.'
                           : view === 'search'
                             ? 'Nessun post trovato.'
-                            : 'Qui c’è spazio per iniziare.'
+                            : 'Nessun post da mostrare.'
                     }
                   >
                     {showingSaved ? (
@@ -943,7 +950,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                         setNotice(
                           error instanceof Error
                             ? error.message
-                            : 'Caricamento non riuscito. Riprova.',
+                            : 'Post salvati non caricati. Controlla la connessione e riprova.',
                         );
                       } finally {
                         setBusy(false);
@@ -969,7 +976,11 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                           nextCursor: result.nextCursor,
                         });
                       } catch (e) {
-                        setNotice(e instanceof Error ? e.message : 'Caricamento non riuscito.');
+                        setNotice(
+                          e instanceof Error
+                            ? e.message
+                            : 'Post precedenti non caricati. Controlla la connessione e riprova.',
+                        );
                       } finally {
                         setBusy(false);
                       }
@@ -981,10 +992,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                 {combinedFeed.length > 0 && !state.nextCursor && (
                   <div className="feed-end">
                     <span>✳</span>
-                    <p>
-                      Sei in pari.
-                      <small>La piazza per ora è tranquilla. Puoi tornare più tardi.</small>
-                    </p>
+                    <p>Sei in pari.</p>
                   </div>
                 )}
               </>
@@ -1073,7 +1081,9 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                                   );
                                 } catch (e) {
                                   setNotice(
-                                    e instanceof Error ? e.message : 'Caricamento non riuscito.',
+                                    e instanceof Error
+                                      ? e.message
+                                      : 'Messaggi non caricati. Riapri la conversazione e riprova.',
                                   );
                                 }
                               }
@@ -1133,7 +1143,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                   </button>
                 </div>
                 {state.notifications.length === 0 && (
-                  <Empty title="Tutto tranquillo." kind="notifications">
+                  <Empty title="Nessuna notifica." kind="notifications">
                     Richieste di follow, risposte e mi piace compariranno qui.
                   </Empty>
                 )}
@@ -1383,7 +1393,11 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                         );
                         setNotice('Esportazione pronta.');
                       } catch (e) {
-                        setNotice(e instanceof Error ? e.message : 'Esportazione non riuscita.');
+                        setNotice(
+                          e instanceof Error
+                            ? e.message
+                            : 'Dati non esportati. Controlla la connessione e riprova.',
+                        );
                       }
                     }}
                   >
@@ -1426,7 +1440,11 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                         await request('auth/logout', {});
                         setState(null);
                       } catch (e) {
-                        setNotice(e instanceof Error ? e.message : 'Uscita non riuscita.');
+                        setNotice(
+                          e instanceof Error
+                            ? e.message
+                            : 'Uscita non completata. Controlla la connessione e riprova.',
+                        );
                       }
                   }}
                 >
@@ -1665,28 +1683,6 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
             )}
           </main>
           <aside className="right-rail">
-            <section className="community-note">
-              <h2>
-                Facciamo
-                <br />
-                come a casa
-              </h2>
-              <p>Un’idea al volo, un giorno storto, qualcosa che ti va di condividere.</p>
-              <div className="community-faces">
-                {profiles.slice(0, 4).map((p) => (
-                  <Avatar key={p.id} person={p} size="small" />
-                ))}
-                <span>{state.usage.members} persone, per ora.</span>
-              </div>
-              <button
-                onClick={() => {
-                  setQuery('');
-                  navigate('search');
-                }}
-              >
-                Incontra la community <ArrowUpRight size={17} />
-              </button>
-            </section>
             <section className="rail-section">
               <div className="section-top">
                 <h2>Ci sono anche</h2>
@@ -1735,20 +1731,6 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                 </p>
               )}
             </section>
-            <div className="quiet-note">
-              <span>Al tuo ritmo.</span>
-              <p>
-                I post delle persone che segui,
-                <br />
-                dal più recente. Tutto qui.
-              </p>
-            </div>
-            <footer className="rail-footer">
-              <Link href="/privacy">Privacy</Link>
-              <Link href="/privacy#regole">Regole</Link>
-              <button onClick={() => navigate('settings')}>I tuoi dati</button>
-              <p>SN · Fatto per stare insieme.</p>
-            </footer>
           </aside>
         </div>
       </div>
@@ -1927,7 +1909,13 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                   setDeleteOpen(false);
                 }
               } catch (e) {
-                setNotice(e instanceof Error ? e.message : 'Eliminazione non riuscita.');
+                setNotice(
+                  e instanceof Error
+                    ? e.message
+                    : demo
+                      ? 'Dati della demo non cancellati. Ricarica la pagina e riprova.'
+                      : 'Account non eliminato. Controlla la connessione e riprova.',
+                );
               } finally {
                 setBusy(false);
               }

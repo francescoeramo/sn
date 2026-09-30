@@ -417,13 +417,8 @@ small {
 .sidebar .wordmark {
   margin-left: 15px;
 }
-.sidebar-subtitle {
-  font-size: 8px;
-  letter-spacing: 2.05px;
-  color: #8b8793;
-  margin: 13px 0 34px 15px;
-}
 .sidebar nav {
+  margin-top: 34px;
   display: flex;
   flex-direction: column;
   gap: 7px;
@@ -523,41 +518,17 @@ small {
   align-items: center;
   gap: 22px;
 }
-.breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 11px;
-  color: #9c9aa0;
-  white-space: nowrap;
-}
-.breadcrumb span {
-  color: var(--muted);
-}
 .top-search {
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 9px;
   color: #94929d;
+  padding: 10px;
+  border-radius: 10px;
 }
-.top-search input {
-  width: 190px;
-  border: 0;
-  outline: 0;
-  background: none;
-  font-size: 11px;
-  padding: 8px 0;
-}
-.top-search kbd {
-  border: 1px solid #dedddf;
-  border-radius: 4px;
-  font-size: 10px;
-  width: 17px;
-  height: 17px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.top-search:hover {
+  color: var(--ink);
+  background: var(--surface-soft);
 }
 .beta-pill {
   font-size: 8px;
@@ -612,23 +583,6 @@ small {
   align-self: flex-end;
   opacity: 0.6;
 }
-.welcome-line {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 9px;
-}
-.welcome-line p {
-  font-size: 12px;
-  color: var(--muted);
-}
-.welcome-line > span {
-  display: flex;
-  gap: 5px;
-  align-items: center;
-  font-size: 10px;
-  color: #92919a;
-}
 .stories {
   display: flex;
   align-items: center;
@@ -672,25 +626,6 @@ small {
   height: 56px;
   font-size: 17px;
   border: 0;
-}
-.story-note {
-  margin-left: auto;
-  color: #9a91a5;
-  font-family: Georgia, serif;
-  font-style: italic;
-  font-size: 13px;
-  line-height: 1.5;
-  min-width: 83px;
-  align-self: center;
-  position: relative;
-  padding-right: 15px;
-}
-.story-note span {
-  position: absolute;
-  right: 0;
-  top: -8px;
-  font-size: 25px;
-  transform: rotate(20deg);
 }
 .quick-compose {
   background: var(--card);
@@ -1111,83 +1046,16 @@ small {
 .feed-end p {
   font-size: 11px;
 }
-.feed-end small {
-  font-size: 10px;
-  display: block;
-  color: #aaa5b0;
-}
 .right-rail {
   padding-top: 5px;
   min-width: 0;
 }
-.community-note {
-  background: #eae8f0;
-  border-radius: 16px;
-  padding: 22px 22px 0;
-  position: relative;
-  overflow: hidden;
-}
-.community-note > .eyebrow {
-  font-size: 7px;
-  letter-spacing: 1.35px;
-  color: #8c819c;
-}
-.community-note h2 {
-  font-size: 26px;
-  font-weight: 500;
-  letter-spacing: -1px;
-  line-height: 1.18;
-  color: #5a4d6c;
-  margin: 17px 0 13px;
-  position: relative;
-}
-.community-note h2 > span {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  font-size: 40px;
-  color: #9685ac;
-  transform: rotate(-12deg);
-}
-.community-note > p {
-  font-size: 11px;
-  color: #8c8097;
-  line-height: 1.85;
-  max-width: 180px;
-}
-.community-faces {
-  display: flex;
-  align-items: center;
-  margin: 20px 0;
-}
-.community-faces .avatar {
-  width: 27px;
-  height: 27px;
-  font-size: 9px;
-  border: 2px solid #eae8f0;
-  margin-left: -8px;
-}
-.community-faces .avatar:first-child {
-  margin-left: 0;
-}
-.community-faces > span:last-child {
-  font-size: 8px;
-  color: #9b90a6;
-  margin-left: 7px;
-}
-.community-note > button {
-  border-top: 1px solid #dbd6e3;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: 14px 0;
-  font-size: 10px;
-  color: #7b6b8e;
-}
 .rail-section {
   margin-top: 26px;
   padding: 0 3px;
+}
+.right-rail > .rail-section:first-child {
+  margin-top: 0;
 }
 .section-top {
   display: flex;
@@ -1266,37 +1134,6 @@ small {
 .rail-section > .eyebrow {
   font-size: 8px;
   letter-spacing: 1.4px;
-}
-.quiet-note {
-  margin: 28px 0 25px;
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-  padding: 22px 3px;
-}
-.quiet-note > span {
-  font-family: Georgia, serif;
-  font-style: italic;
-  font-size: 18px;
-  color: #8a8392;
-}
-.quiet-note p {
-  font-size: 10px;
-  color: #aaa3b1;
-  line-height: 1.9;
-  margin-top: 8px;
-}
-.rail-footer {
-  display: flex;
-  gap: 13px;
-  flex-wrap: wrap;
-  font-size: 9px;
-  color: #aaa3af;
-  padding: 0 3px;
-}
-.rail-footer p {
-  width: 100%;
-  font-size: 9px;
-  margin-top: -4px;
 }
 .mobile-nav,
 .mobile-wordmark,
@@ -1694,19 +1531,7 @@ label small {
 }
 .profile-cover {
   height: 140px;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  padding: 25px;
   overflow: hidden;
-}
-.profile-cover > span {
-  font-family: Georgia, serif;
-  font-style: italic;
-  font-size: 34px;
-  letter-spacing: -1px;
-  opacity: 0.6;
-  transform: rotate(-6deg);
 }
 .profile-details {
   padding: 0 24px 25px;
@@ -2486,66 +2311,6 @@ label small {
 .auth-story .wordmark {
   margin-bottom: 50px;
 }
-.auth-story > .eyebrow {
-  font-size: 9px;
-  margin-bottom: 20px;
-}
-.auth-story h1 {
-  font-size: 49px;
-  letter-spacing: -2.7px;
-  line-height: 1.14;
-  font-weight: 500;
-}
-.auth-story h1 em {
-  font-family: Georgia, serif;
-  letter-spacing: -2px;
-  font-weight: 400;
-  color: #8d78a7;
-}
-.auth-story > p {
-  font-size: 13px;
-  color: #92879e;
-  max-width: 320px;
-  line-height: 1.9;
-  margin-top: 25px;
-}
-.auth-art {
-  height: 155px;
-  position: relative;
-  max-width: 310px;
-  margin-top: 20px;
-}
-.auth-art span {
-  position: absolute;
-  border-radius: 20px 20px 20px 3px;
-  background: #dfd5ed;
-  color: #807090;
-  font-family: Georgia, serif;
-  font-size: 30px;
-  font-style: italic;
-  padding: 15px 25px;
-  transform: rotate(-9deg);
-  left: 20px;
-  top: 24px;
-}
-.auth-art span:nth-child(2) {
-  background: #dfe5d4;
-  color: #83906c;
-  left: 145px;
-  top: 60px;
-  transform: rotate(8deg);
-  font-size: 23px;
-  border-radius: 20px 20px 3px 20px;
-}
-.auth-art span:nth-child(3) {
-  background: none;
-  font-size: 65px;
-  padding: 0;
-  left: 217px;
-  top: -20px;
-  color: #c0a275;
-  font-style: normal;
-}
 .auth-caption {
   font-size: 10px;
   display: flex;
@@ -2847,9 +2612,6 @@ label small {
   .post-body {
     font-size: 13px;
   }
-  .community-note {
-    padding: 25px 25px 0;
-  }
 }
 @media (max-width: 1170px) {
   .sidebar {
@@ -2867,12 +2629,6 @@ label small {
   .topbar {
     padding: 0 26px;
   }
-  .top-search input {
-    width: 150px;
-  }
-  .breadcrumb {
-    font-size: 10px;
-  }
   .sidebar nav button {
     font-size: 12px;
     padding-left: 12px;
@@ -2886,18 +2642,6 @@ label small {
     text-overflow: ellipsis;
     overflow: hidden;
     white-space: nowrap;
-  }
-  .community-note {
-    padding: 20px 18px 0;
-  }
-  .community-note h2 {
-    font-size: 24px;
-  }
-  .community-faces > span:last-child {
-    font-size: 7px;
-  }
-  .story-note {
-    display: none;
   }
 }
 @media (max-width: 1000px) {
@@ -2915,15 +2659,9 @@ label small {
   .beta-pill {
     margin-left: auto;
   }
-  .welcome-line > span {
-    display: flex;
-  }
   .auth-screen {
     gap: 35px;
     padding: 40px;
-  }
-  .auth-story h1 {
-    font-size: 40px;
   }
 }
 @media (max-width: 720px) {
@@ -2937,9 +2675,6 @@ label small {
     height: 63px;
     padding: 0 19px;
     background: var(--surface-quiet);
-  }
-  .breadcrumb {
-    display: none;
   }
   .mobile-wordmark {
     display: block;
@@ -2970,12 +2705,6 @@ label small {
     font-size: 30px;
   }
   .page-heading .eyebrow {
-    font-size: 8px;
-  }
-  .welcome-line p {
-    font-size: 11px;
-  }
-  .welcome-line > span {
     font-size: 8px;
   }
   .stories {
@@ -3133,9 +2862,6 @@ label small {
   .profile-cover {
     height: 120px;
   }
-  .profile-cover > span {
-    font-size: 30px;
-  }
   .chat-log {
     min-height: 250px;
   }
@@ -3161,28 +2887,8 @@ label small {
     font-size: 50px;
     margin-bottom: 25px;
   }
-  .auth-story h1 {
-    font-size: 36px;
-    line-height: 1.12;
-    letter-spacing: -1.6px;
-  }
-  .auth-story h1 br:first-child {
-    display: none;
-  }
-  .auth-story > p {
-    font-size: 12px;
-    line-height: 1.7;
-    margin-top: 18px;
-  }
-  .auth-art {
-    display: none;
-  }
   .auth-caption {
     margin-top: 20px;
-  }
-  .auth-story > .eyebrow {
-    font-size: 8px;
-    margin-bottom: 13px;
   }
   .auth-card {
     padding: 25px;
@@ -3192,9 +2898,6 @@ label small {
   }
   .auth-card > p {
     font-size: 12px;
-  }
-  .auth-story h1 em {
-    letter-spacing: -1px;
   }
   .legal-page {
     margin: 0;
@@ -4232,7 +3935,6 @@ label small {
 :root[data-theme='dark'] .icon-button:hover,
 :root[data-theme='dark'] .sidebar nav button:hover,
 :root[data-theme='dark'] .comment-form,
-:root[data-theme='dark'] .community-note,
 :root[data-theme='dark'] .notification.unread,
 :root[data-theme='dark'] .legal-page .draft-note,
 :root[data-theme='dark'] .poll-choice button.selected,
@@ -4245,9 +3947,7 @@ label small {
   background: var(--track);
 }
 :root[data-theme='dark'] .chat-bubble.own,
-:root[data-theme='dark'] .demo-banner,
-:root[data-theme='dark'] .auth-art span,
-:root[data-theme='dark'] .auth-art span:nth-child(2) {
+:root[data-theme='dark'] .demo-banner {
   background: var(--lilac);
 }
 :root[data-theme='dark'] .story-stage,

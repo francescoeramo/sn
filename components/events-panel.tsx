@@ -93,7 +93,6 @@ export function EventsPanel({ state, demo, busy, now, onAction }: Props) {
       <header className="events-toolbar">
         <div>
           <h2 id="events-title">Prossimi incontri</h2>
-          <p>Un posto e un’ora, senza biglietti né mappe esterne.</p>
         </div>
         <button className="primary" onClick={() => (creating ? resetForm() : setCreating(true))}>
           {creating ? <X size={17} /> : <Plus size={17} />}
@@ -269,7 +268,11 @@ function EventRow({
         setPhotoStatus('');
       }
     } catch (error) {
-      setPhotoStatus(error instanceof Error ? error.message : 'Caricamento non riuscito.');
+      setPhotoStatus(
+        error instanceof Error
+          ? error.message
+          : 'Foto non aggiunta all’evento. Scegli di nuovo il file e riprova.',
+      );
     }
   }
   return (

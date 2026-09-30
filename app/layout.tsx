@@ -3,8 +3,8 @@ import { headers } from 'next/headers';
 import '@fontsource-variable/ibm-plex-sans/wght.css';
 import './globals.css';
 export const metadata: Metadata = {
-  title: 'SN · Ci troviamo qui',
-  description: 'Uno spazio per parlare, condividere e ritrovare i tuoi amici.',
+  title: 'SN',
+  description: 'Social privato su invito con feed cronologico.',
   robots: { index: false, follow: false },
 };
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

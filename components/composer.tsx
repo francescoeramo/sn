@@ -34,7 +34,7 @@ export function Composer({
   const [busy, setBusy] = useState(false);
   return (
     <Modal
-      title="Qualcosa da condividere"
+      title="Crea un post"
       onClose={() => {
         if (!busy) onClose();
       }}

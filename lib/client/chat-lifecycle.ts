@@ -1,6 +1,7 @@
 import type { Action, ChatSync } from '@/lib/core/types';
 import { loadDemo, mutateDemo } from './demo';
 import { chatRequest } from './chat-session';
+import { actionErrorMessage } from './action-feedback';
 export async function syncConversation(
   me: string,
   other: string,
@@ -25,14 +26,26 @@ export async function syncConversation(
 }
 export async function chatAction(action: Action, demo: boolean) {
   if (demo) {
-    await mutateDemo(action);
+    try {
+      await mutateDemo(action);
+    } catch (error) {
+      throw new Error(actionErrorMessage(action, error));
+    }
     return;
   }
-  const response = await fetch('/api/action', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(action),
-  });
-  const value = await response.json();
-  if (!response.ok) throw new Error(value.error ?? 'Operazione non riuscita.');
+  let response: Response;
+  try {
+    response = await fetch('/api/action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(action),
+    });
+  } catch (error) {
+    throw new Error(actionErrorMessage(action, error));
+  }
+  const value = await response.json().catch(() => ({}));
+  if (!response.ok)
+    throw new Error(
+      actionErrorMessage(action, new Error(value.error ?? 'Operazione non riuscita.')),
+    );
 }

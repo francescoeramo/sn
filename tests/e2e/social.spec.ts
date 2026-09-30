@@ -722,7 +722,7 @@ test('salvati: raccolta privata nel profilo, persistenza e rimozione', async ({
   await page.screenshot({ path: `artifacts/saved-${testInfo.project.name}.png`, fullPage: true });
   await page.getByRole('button', { name: 'Rimuovi dai salvati' }).click();
   await expect(page.locator('article')).toHaveCount(0);
-  await expect(page.getByText('Tieni da parte ciò che vuoi ritrovare.')).toBeVisible();
+  await expect(page.getByText('Nessun post salvato.')).toBeVisible();
   await page.reload();
   await expect(page.getByRole('button', { name: 'Rimuovi dai salvati' })).toHaveCount(0);
   await page

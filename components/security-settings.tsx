@@ -15,33 +15,51 @@ type AccountSession = {
 };
 
 async function mfaRequest(body?: unknown) {
-  const response = await fetch(
-    '/api/auth/mfa',
+  const fallback =
     body === undefined
-      ? { cache: 'no-store' }
-      : {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        },
-  );
-  const value = await response.json();
-  if (!response.ok) throw new Error(value.error ?? 'Operazione non riuscita.');
+      ? 'Verifica in due passaggi non caricata. Controlla la connessione e riprova.'
+      : 'Verifica in due passaggi non aggiornata. Controlla il codice e riprova.';
+  let response: Response;
+  try {
+    response = await fetch(
+      '/api/auth/mfa',
+      body === undefined
+        ? { cache: 'no-store' }
+        : {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          },
+    );
+  } catch {
+    throw new Error(fallback);
+  }
+  const value = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(value.error ?? fallback);
   return value;
 }
 async function sessionsRequest(body?: unknown): Promise<AccountSession[]> {
-  const response = await fetch(
-    '/api/auth/sessions',
+  const fallback =
     body === undefined
-      ? { cache: 'no-store' }
-      : {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        },
-  );
-  const value = await response.json();
-  if (!response.ok) throw new Error(value.error ?? 'Operazione non riuscita.');
+      ? 'Sessioni non caricate. Controlla la connessione e riprova.'
+      : 'Sessione non revocata. Controlla la connessione e riprova.';
+  let response: Response;
+  try {
+    response = await fetch(
+      '/api/auth/sessions',
+      body === undefined
+        ? { cache: 'no-store' }
+        : {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          },
+    );
+  } catch {
+    throw new Error(fallback);
+  }
+  const value = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(value.error ?? fallback);
   return value;
 }
 const sessionDate = (value: string) =>
@@ -74,7 +92,11 @@ export function SecuritySettings({ demo }: { demo: boolean }) {
     try {
       await action();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Operazione non riuscita.');
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : 'Impostazione di sicurezza non salvata. Riapri la sezione e riprova.',
+      );
     } finally {
       setBusy(false);
     }

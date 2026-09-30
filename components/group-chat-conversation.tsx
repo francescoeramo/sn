@@ -26,18 +26,30 @@ type OpenGroupMessage = ChatGroupMessagesState['messages'][number] & {
 };
 
 async function groupRequest<T>(path: string, body?: unknown): Promise<T> {
-  const response = await fetch(
-    `/api/chat/groups/${path}`,
-    body === undefined
-      ? { cache: 'no-store' }
-      : {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        },
-  );
-  const value = await response.json();
-  if (!response.ok) throw new Error(value.error ?? 'Chat di gruppo non disponibile.');
+  const fallback = path.startsWith('devices')
+    ? 'Dispositivi del gruppo non caricati. Riapri la chat e riprova.'
+    : path === 'message'
+      ? 'Messaggio non inviato. Il testo è ancora qui: riprova.'
+      : path === 'receipt'
+        ? 'Stato di lettura non aggiornato. Riapri la chat.'
+        : 'Messaggi del gruppo non caricati. Riapri la chat e riprova.';
+  let response: Response;
+  try {
+    response = await fetch(
+      `/api/chat/groups/${path}`,
+      body === undefined
+        ? { cache: 'no-store' }
+        : {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          },
+    );
+  } catch {
+    throw new Error(fallback);
+  }
+  const value = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(value.error ?? fallback);
   return value as T;
 }
 
@@ -180,13 +192,21 @@ export function GroupChatConversation({
     const initial = window.setTimeout(
       () =>
         void refresh().catch((cause) =>
-          setError(cause instanceof Error ? cause.message : 'Aggiornamento non riuscito.'),
+          setError(
+            cause instanceof Error
+              ? cause.message
+              : 'Messaggi del gruppo non aggiornati. Riapri la chat e riprova.',
+          ),
         ),
     );
     const timer = setInterval(
       () =>
         void refresh().catch((cause) =>
-          setError(cause instanceof Error ? cause.message : 'Aggiornamento non riuscito.'),
+          setError(
+            cause instanceof Error
+              ? cause.message
+              : 'Messaggi del gruppo non aggiornati. Riapri la chat e riprova.',
+          ),
         ),
       2500,
     );
@@ -245,7 +265,10 @@ export function GroupChatConversation({
       setBody('');
       await refresh();
     } catch (cause) {
-      const message = cause instanceof Error ? cause.message : 'Invio non riuscito.';
+      const message =
+        cause instanceof Error
+          ? cause.message
+          : 'Messaggio non inviato. Il testo è ancora qui: riprova.';
       setError(message);
       onNotice(`${message} Il testo è ancora qui.`);
     } finally {
@@ -302,7 +325,7 @@ export function GroupChatConversation({
         </div>
       ) : (
         <Empty title="Nessun messaggio nel gruppo." kind="messages">
-          Scrivi qualcosa quando hai davvero qualcosa da condividere.
+          Scrivi per iniziare la conversazione.
         </Empty>
       )}
 

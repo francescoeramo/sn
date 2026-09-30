@@ -19,18 +19,32 @@ import type { Message, MessageState } from '@/lib/core/types';
 import { isActive } from '@/lib/core/rules';
 import { asDataURL } from './media';
 export async function chatRequest(path: string, body?: unknown) {
-  const response = await fetch(
-    '/api/chat/' + path,
-    body === undefined
-      ? { cache: 'no-store' }
-      : {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        },
-  );
-  const value = await response.json();
-  if (!response.ok) throw new Error(value.error ?? 'Chat non disponibile.');
+  const fallback = path.startsWith('devices')
+    ? 'Dispositivi della chat non caricati. Riapri la conversazione e riprova.'
+    : path.startsWith('sync')
+      ? 'Messaggi non aggiornati. Riapri la conversazione e riprova.'
+      : path === 'device'
+        ? 'Browser non registrato per la chat. Ricarica la pagina e riprova.'
+        : path === 'delivered'
+          ? 'Consegna dei messaggi non confermata. Riapri la conversazione.'
+          : 'Chat non caricata. Riapri la conversazione e riprova.';
+  let response: Response;
+  try {
+    response = await fetch(
+      '/api/chat/' + path,
+      body === undefined
+        ? { cache: 'no-store' }
+        : {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          },
+    );
+  } catch {
+    throw new Error(fallback);
+  }
+  const value = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(value.error ?? fallback);
   return value;
 }
 export async function prepareSession(me: string, other: string, demo: boolean) {
@@ -129,7 +143,7 @@ export async function readConversation(
           bytes = unbase64(source.slice(source.indexOf(',') + 1)).buffer;
         else {
           const response = await fetch(source);
-          if (!response.ok) throw new Error('Allegato non disponibile.');
+          if (!response.ok) throw new Error('Allegato non caricato. Chiedi di inviarlo di nuovo.');
           bytes = await response.arrayBuffer();
         }
         const blob = await openAttachment(context, clear.media, bytes);

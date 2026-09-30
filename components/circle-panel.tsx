@@ -123,7 +123,11 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
         setCreating(false);
       }
     } catch (error) {
-      setImageStatus(error instanceof Error ? error.message : 'Caricamento non riuscito.');
+      setImageStatus(
+        error instanceof Error
+          ? error.message
+          : 'Immagine della cerchia non caricata. Scegli di nuovo il file e riprova.',
+      );
     }
   }
 
@@ -174,7 +178,11 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
       )
         setEditing(false);
     } catch (error) {
-      setImageStatus(error instanceof Error ? error.message : 'Caricamento non riuscito.');
+      setImageStatus(
+        error instanceof Error
+          ? error.message
+          : 'Immagine della cerchia non aggiornata. Scegli di nuovo il file e riprova.',
+      );
     }
   }
 
@@ -212,7 +220,7 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
           <CircleMark circle={selected} demo={demo} />
           <div>
             <h2 id="circle-title">{selected.name}</h2>
-            <p>{selected.description || 'Uno spazio privato tra persone che si conoscono.'}</p>
+            <p>{selected.description || 'Nessuna descrizione.'}</p>
             <span>
               {members.length} {members.length === 1 ? 'persona' : 'persone'}
             </span>
@@ -475,7 +483,7 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
             />
           ))}
           {!posts.length && (
-            <Empty kind="feed" title="Qui non avete ancora scritto.">
+            <Empty kind="feed" title="Nessun post nella cerchia.">
               Apri la conversazione con un post visibile solo alle persone di questa cerchia.
             </Empty>
           )}
@@ -527,7 +535,6 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
       <div className="circles-toolbar">
         <div>
           <h2>Spazi condivisi</h2>
-          <p>Post e conversazioni restano tra le persone invitate.</p>
         </div>
         <button className="primary" onClick={() => setCreating((value) => !value)}>
           <Plus size={17} /> Nuova cerchia
@@ -589,7 +596,7 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
               <CircleMark circle={circle} demo={demo} />
               <span>
                 <strong>{circle.name}</strong>
-                <small>{circle.description || 'Uno spazio privato tra voi.'}</small>
+                <small>{circle.description || 'Nessuna descrizione'}</small>
               </span>
               <span className="circle-count">
                 <Users size={15} /> {count}
@@ -599,8 +606,8 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
         })}
       </div>
       {!mine.length && !creating && (
-        <Empty kind="feed" title="Crea uno spazio per le persone che senti davvero.">
-          Le cerchie sono private, su invito e senza suggerimenti automatici.
+        <Empty kind="feed" title="Nessuna cerchia.">
+          Crea una cerchia privata e invita i tuoi contatti.
         </Empty>
       )}
     </section>

@@ -61,7 +61,7 @@ const ACTION_FAILURE: Record<Action['type'], string> = {
 };
 
 const GENERIC_ERROR =
-  /^(operazione non riuscita|operazione non riconosciuta|caricamento non riuscito|il servizio non risponde|controlla i campi|accesso negato|failed to fetch|load failed|networkerror)/i;
+  /^(operazione non riuscita|operazione non riconosciuta|richiesta non completata|caricamento non riuscito|il servizio non risponde|controlla i campi|accesso negato|failed to fetch|load failed|networkerror|(invito|cerchia|evento|album|post|messaggio|opzione|risposta|contenuto federato) non disponibile|nota già esaminata o non disponibile|segnalazione già esaminata o non disponibile)/i;
 
 export function actionErrorMessage(action: Action, error: unknown) {
   const message = error instanceof Error ? error.message.trim() : '';

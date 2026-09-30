@@ -132,7 +132,11 @@ export function ChatConversation({
         }
       } catch (error) {
         if (!cancelled)
-          setKeyError(error instanceof Error ? error.message : 'Aggiornamento non riuscito.');
+          setKeyError(
+            error instanceof Error
+              ? error.message
+              : 'Chiavi della chat non aggiornate. Riapri la conversazione e controlla i codici.',
+          );
       } finally {
         running = false;
       }
@@ -198,7 +202,11 @@ export function ChatConversation({
       await chatAction({ type: 'delete-message', message_id: id, everyone }, demo);
       setRefreshKey((k) => k + 1);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'Eliminazione non riuscita.');
+      setStatus(
+        error instanceof Error
+          ? error.message
+          : 'Messaggio non eliminato. Riapri la conversazione e riprova.',
+      );
     }
   }
   const visible = decoded
@@ -291,8 +299,8 @@ export function ChatConversation({
       )}
       <div className="chat-log" role="log" aria-label="Messaggi della conversazione" ref={log}>
         {!visible.length && (
-          <Empty title="Il primo messaggio è tuo." kind="messages">
-            Scrivi qualcosa o condividi un allegato. Puoi attivare «Chat temporanea» quando vuoi.
+          <Empty title="Nessun messaggio." kind="messages">
+            Scrivi per iniziare la conversazione.
           </Empty>
         )}
         {visible.map((m) => {
@@ -437,7 +445,7 @@ export function ChatConversation({
               if (pendingPacket.current && !editing) {
                 const pending = pendingPacket.current;
                 if (!(await onSend(pending.action)))
-                  throw new Error('Invio non riuscito. Puoi riprovare.');
+                  throw new Error('Messaggio non inviato. Il testo e l’allegato sono ancora qui.');
                 if (!demo && pending.row.encrypted?.context.retention === 'device')
                   await keepMessages(me.id, [pending.row]);
                 pendingPacket.current = null;
@@ -545,7 +553,11 @@ export function ChatConversation({
               }
             } catch (error) {
               setFailed(true);
-              setStatus(error instanceof Error ? error.message : 'Invio non riuscito.');
+              setStatus(
+                error instanceof Error
+                  ? error.message
+                  : 'Messaggio non inviato. Il testo e l’allegato sono ancora qui: riprova.',
+              );
             } finally {
               setBusy(false);
               sending.current = false;

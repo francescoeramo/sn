@@ -29,18 +29,27 @@ function demoGroups(me: Profile, eligible: Profile[]): ChatGroupsState {
 }
 
 async function groupsRequest(body?: unknown): Promise<ChatGroupsState> {
-  const response = await fetch(
-    '/api/chat/groups',
+  const fallback =
     body === undefined
-      ? { cache: 'no-store' }
-      : {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        },
-  );
-  const value = await response.json();
-  if (!response.ok) throw new Error(value.error ?? 'Operazione non riuscita.');
+      ? 'Gruppi non caricati. Controlla la connessione e riprova.'
+      : 'Gruppo non aggiornato. Riapri il gruppo e riprova.';
+  let response: Response;
+  try {
+    response = await fetch(
+      '/api/chat/groups',
+      body === undefined
+        ? { cache: 'no-store' }
+        : {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          },
+    );
+  } catch {
+    throw new Error(fallback);
+  }
+  const value = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(value.error ?? fallback);
   return value;
 }
 
@@ -170,7 +179,11 @@ export function GroupChatPanel({
           : (next.groups[0]?.id ?? null),
       );
     } catch (error) {
-      onNotice(error instanceof Error ? error.message : 'Operazione non riuscita.');
+      onNotice(
+        error instanceof Error
+          ? error.message
+          : 'Gruppo non aggiornato. Riapri il gruppo e riprova.',
+      );
     } finally {
       setBusy(false);
     }
