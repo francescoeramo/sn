@@ -13,7 +13,9 @@ const usage = `Uso:
 Il comando crea un archivio cifrato .tar.gz.gpg. La destinazione deve essere assoluta e fuori dal repository.`;
 
 if (process.argv.includes('--help')) {
-  console.log(usage);
+  // Scrive prima di terminare: console.log su una pipe può essere asincrono e
+  // perdere l'output quando il comando viene eseguito da un test o dalla CI.
+  writeFileSync(process.stdout.fd, `${usage}\n`);
   process.exit(0);
 }
 

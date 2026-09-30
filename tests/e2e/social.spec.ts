@@ -372,7 +372,9 @@ test('storie: sequenza completa dello stesso autore e segmenti separati', async 
     await page
       .locator('input[type=file]')
       .setInputFiles({ name: 'pixel.png', mimeType: 'image/png', buffer: png });
-    await page.getByLabel('Descrivi il contenuto').fill('Pixel per il test della storia');
+    await page
+      .getByLabel('Descrizione del contenuto (facoltativa)')
+      .fill('Pixel per il test della storia');
     await page.getByRole('button', { name: 'Pubblica', exact: true }).click();
     await expect(page.getByRole('dialog')).not.toBeVisible();
   }
@@ -749,7 +751,7 @@ test('avviso: testo, media e commenti si aprono solo su richiesta', async ({ pag
     mimeType: 'image/png',
     buffer: Buffer.from(png, 'base64'),
   });
-  await page.getByLabel('Descrivi il contenuto').fill('La scena finale');
+  await page.getByLabel('Descrizione del contenuto (facoltativa)').fill('La scena finale');
   await page.getByRole('button', { name: 'Pubblica', exact: true }).click();
   const post = page.locator('article').filter({ hasText: 'Spoiler sul film' });
   await expect(post).toBeVisible();
@@ -787,7 +789,9 @@ test('avviso delle storie: nessun media o autoplay prima della scelta', async ({
     mimeType: 'image/png',
     buffer: Buffer.from(png, 'base64'),
   });
-  await page.getByLabel('Descrivi il contenuto').fill('Immagine protetta da avviso');
+  await page
+    .getByLabel('Descrizione del contenuto (facoltativa)')
+    .fill('Immagine protetta da avviso');
   await page.getByRole('button', { name: 'Pubblica', exact: true }).click();
   await page.getByRole('button', { name: 'Francesco', exact: true }).click();
   await expect(page.getByText('Spoiler nella storia')).toBeVisible();
