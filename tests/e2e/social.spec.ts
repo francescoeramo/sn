@@ -904,13 +904,24 @@ test('chat: messaggi permanenti, modifica e due comandi di eliminazione', async 
   await page.getByRole('button', { name: 'Salva modifica', exact: true }).click();
   await expect(own).toContainText('Corretto');
   await expect(own).toContainText('Modificato');
+  await own.getByRole('button', { name: 'Elimina messaggio', exact: true }).click();
   await own.getByRole('button', { name: 'Elimina per tutti', exact: true }).click();
   await expect(page.getByRole('log')).not.toContainText('Corretto');
+  await page.getByRole('button', { name: 'Ripristina', exact: true }).click();
+  await expect(page.getByRole('log')).toContainText('Corretto');
+  await own.locator('summary').click();
+  await own.getByRole('button', { name: 'Elimina messaggio', exact: true }).click();
+  await own.getByRole('button', { name: 'Elimina per tutti', exact: true }).click();
+  await expect(page.getByText('Eliminazione per tutti tra 5 secondi.')).toBeVisible();
+  await expect(page.getByText('Eliminazione per tutti tra 5 secondi.')).toHaveCount(0, {
+    timeout: 6500,
+  });
   const incoming = page.locator('.chat-bubble').first();
   await incoming.locator('summary').click();
   await expect(
     incoming.getByRole('button', { name: 'Elimina per tutti', exact: true }),
   ).toHaveCount(0);
+  await incoming.getByRole('button', { name: 'Elimina messaggio', exact: true }).click();
   await incoming.getByRole('button', { name: 'Elimina per me', exact: true }).click();
   await expect(page.locator('.chat-bubble')).toHaveCount(0);
 });
@@ -1043,6 +1054,12 @@ test('espressioni: reazione privata, risposta citata e condivisione interna', as
   await post.getByRole('radio').first().check();
   await post.getByRole('button', { name: 'Condividi', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Condividi internamente' })).toHaveCount(0);
+  await page
+    .getByRole('button', { name: 'Messaggi', exact: true })
+    .filter({ visible: true })
+    .click();
+  await page.getByRole('button', { name: 'Giulia', exact: true }).click();
+  await expect(page.locator('.shared-post')).toContainText('Hai condiviso un post');
   await page.reload();
   const reloaded = page.locator('.post-card').filter({ hasText: 'Domanda seria' });
   await expect(reloaded.getByRole('button', { name: 'Reazione ❤️' })).toHaveAttribute(

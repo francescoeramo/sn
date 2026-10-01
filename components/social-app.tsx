@@ -285,7 +285,28 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
     lastActionError.current = '';
     try {
       const next = demo ? await mutateDemo(action) : await request('action', action);
-      setState(next);
+      if (action.type === 'share' && !demo) {
+        setState((current) =>
+          current
+            ? {
+                ...current,
+                shares: [
+                  ...(current.shares ?? []),
+                  {
+                    id: crypto.randomUUID(),
+                    user_id: current.me.id,
+                    target_type: action.target_type,
+                    target_id: action.target_id,
+                    destination_type: action.destination_type,
+                    destination_id: action.destination_id,
+                    note: action.note,
+                    created_at: new Date().toISOString(),
+                  },
+                ],
+              }
+            : current,
+        );
+      } else setState(next);
       setNotice(
         action.type === 'bookmark'
           ? action.saved
@@ -299,23 +320,25 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                 ? 'Decisione salvata.'
                 : action.type === 'report'
                   ? 'Segnalazione inviata.'
-                  : action.type === 'report-remote'
-                    ? 'Segnalazione inviata. Il contenuto resta visibile finché non viene esaminato.'
-                    : action.type === 'moderate-instance'
-                      ? action.blocked
-                        ? 'Istanza federata bloccata.'
-                        : 'Istanza federata sbloccata.'
-                      : action.type === 'moderate-account'
-                        ? action.disabled
-                          ? 'Account sospeso.'
-                          : 'Account ripristinato.'
-                        : action.type === 'profile'
-                          ? 'Profilo aggiornato.'
-                          : action.type === 'federation'
-                            ? action.enabled
-                              ? 'Federazione attivata.'
-                              : 'Federazione disattivata.'
-                            : '',
+                  : action.type === 'share'
+                    ? 'Post condiviso.'
+                    : action.type === 'report-remote'
+                      ? 'Segnalazione inviata. Il contenuto resta visibile finché non viene esaminato.'
+                      : action.type === 'moderate-instance'
+                        ? action.blocked
+                          ? 'Istanza federata bloccata.'
+                          : 'Istanza federata sbloccata.'
+                        : action.type === 'moderate-account'
+                          ? action.disabled
+                            ? 'Account sospeso.'
+                            : 'Account ripristinato.'
+                          : action.type === 'profile'
+                            ? 'Profilo aggiornato.'
+                            : action.type === 'federation'
+                              ? action.enabled
+                                ? 'Federazione attivata.'
+                                : 'Federazione disattivata.'
+                              : '',
       );
       return true;
     } catch (error) {
@@ -805,7 +828,11 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                     {focusProfile.is_private ? 'Profilo privato' : 'Profilo pubblico'}{' '}
                     {focusProfile.is_private && <LockKeyhole size={13} />}
                   </span>
-                  <p data-user-copy>{focusProfile.bio || 'Nessuna biografia.'}</p>
+                  {focusProfile.bio ? (
+                    <p data-user-copy>{focusProfile.bio}</p>
+                  ) : (
+                    <p className="profile-bio-placeholder">Nessuna bio qui</p>
+                  )}
                   {focusProfile.id === me.id ? (
                     <button className="secondary" onClick={() => navigate('settings')}>
                       Modifica profilo

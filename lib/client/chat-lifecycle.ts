@@ -22,6 +22,24 @@ export async function syncConversation(
         (m) => [me, other].includes(m.sender_id) && [me, other].includes(m.recipient_id),
       ) ?? [],
     hidden: s.hiddenMessages?.filter((h) => h.user_id === me) ?? [],
+    shares:
+      s.shares?.filter(
+        (share) =>
+          share.destination_type === 'chat' &&
+          ((share.user_id === me && share.destination_id === other) ||
+            (share.user_id === other && share.destination_id === me)),
+      ) ?? [],
+    sharedPosts:
+      s.posts.filter((post) =>
+        s.shares?.some(
+          (share) =>
+            share.target_type === 'post' &&
+            share.target_id === post.id &&
+            share.destination_type === 'chat' &&
+            ((share.user_id === me && share.destination_id === other) ||
+              (share.user_id === other && share.destination_id === me)),
+        ),
+      ) ?? [],
   };
 }
 export async function chatAction(action: Action, demo: boolean) {

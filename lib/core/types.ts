@@ -330,6 +330,8 @@ export type ChatSync = {
   states: MessageState[];
   hidden: { message_id: string }[];
   settings: ChatSettings | null;
+  shares: Share[];
+  sharedPosts: Post[];
 };
 export type Snapshot = {
   chatSettings?: ChatSettings[];

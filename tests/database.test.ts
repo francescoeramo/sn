@@ -247,6 +247,24 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
     await asUser(alice, 'update public.follows set accepted=true where follower_id=$1', [bob]);
     expect(await asUser(bob, 'select * from public.posts')).toHaveLength(1);
   });
+  it('non duplica la notifica se la stessa richiesta di follow viene inviata di nuovo', async () => {
+    await asUser(bob, 'delete from public.follows where follower_id=$1 and following_id=$2', [
+      bob,
+      alice,
+    ]);
+    await asUser(bob, 'insert into public.follows(follower_id,following_id) values($1,$2)', [
+      bob,
+      alice,
+    ]);
+    expect(
+      await asUser(
+        alice,
+        "select id from public.notifications where actor_id=$1 and kind='request'",
+        [bob],
+      ),
+    ).toHaveLength(1);
+    await asUser(alice, 'update public.follows set accepted=true where follower_id=$1', [bob]);
+  });
   it('non consente pubblicazione a nome di un altro utente', async () => {
     await expect(
       asUser(bob, "insert into public.posts(author_id,body) values($1,'Impersonazione')", [alice]),
@@ -2097,7 +2115,7 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
       [alice, postId, bob],
     );
     expect(await asUser(alice, 'select note from public.shares')).toEqual([{ note: 'Per te' }]);
-    expect(await asUser(bob, 'select * from public.shares')).toHaveLength(0);
+    expect(await asUser(bob, 'select note from public.shares')).toEqual([{ note: 'Per te' }]);
     await expect(
       asUser(
         alice,

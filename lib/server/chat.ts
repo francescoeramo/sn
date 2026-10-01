@@ -1,6 +1,6 @@
 import 'server-only';
 import { identity, checked } from './supabase';
-import type { ChatSync, ChatSettings, Message, MessageState } from '@/lib/core/types';
+import type { ChatSync, ChatSettings, Message, MessageState, Post, Share } from '@/lib/core/types';
 // Explicit pagination avoids silently dropping older receipts at the Data API row limit.
 export async function syncChat(other: string): Promise<ChatSync> {
   const { db, user } = await identity();
@@ -54,10 +54,30 @@ export async function syncChat(other: string): Promise<ChatSync> {
     messages.push(...batch);
     if (batch.length < 500) break;
   }
+  const shares = checked(
+    await db
+      .from('shares')
+      .select('*')
+      .eq('destination_type', 'chat')
+      .or(
+        `and(user_id.eq.${user.id},destination_id.eq.${other}),and(user_id.eq.${other},destination_id.eq.${user.id})`,
+      )
+      .order('created_at'),
+  ) as Share[];
+  const postIds = [
+    ...new Set(
+      shares.filter((share) => share.target_type === 'post').map((share) => share.target_id),
+    ),
+  ];
+  const sharedPosts = postIds.length
+    ? (checked(await db.from('posts').select('*, media:post_media(*)').in('id', postIds)) as Post[])
+    : [];
   return {
     settings: checked(settings) as ChatSettings | null,
     hidden,
     states,
     messages,
+    shares,
+    sharedPosts,
   };
 }

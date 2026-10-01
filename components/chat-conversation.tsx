@@ -12,6 +12,7 @@ import {
   Pencil,
   Trash2,
   AlertCircle,
+  Share2,
 } from 'lucide-react';
 import type { Action, Message, Profile, ChatSync } from '@/lib/core/types';
 import { EPHEMERAL_OPTIONS, isActive, relativeTime } from '@/lib/core/rules';
@@ -20,7 +21,7 @@ import { prepareSession, readConversation, type DecryptedMessage } from '@/lib/c
 import { rememberDevices, keepMessages } from '@/lib/client/chat-store';
 import { asDataURL, prepareChatMedia } from '@/lib/client/media';
 import { syncConversation, chatAction } from '@/lib/client/chat-lifecycle';
-import { Avatar, Empty } from './primitives';
+import { Avatar, Empty, Media } from './primitives';
 import { useLanguage } from './language-provider';
 
 export function ChatConversation({
@@ -57,6 +58,11 @@ export function ChatConversation({
   const [preview, setPreview] = useState('');
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState('');
+  const [deleteChoice, setDeleteChoice] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{
+    id: string;
+    everyone: boolean;
+  } | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const input = useRef<HTMLInputElement>(null);
   const log = useRef<HTMLDivElement>(null);
@@ -199,20 +205,33 @@ export function ChatConversation({
       setSettingsBusy(false);
     }
   }
-  async function deleteMessage(id: string, everyone: boolean) {
-    try {
-      await chatAction({ type: 'delete-message', message_id: id, everyone }, demo);
-      setRefreshKey((k) => k + 1);
-    } catch (error) {
-      setStatus(
-        error instanceof Error
-          ? error.message
-          : 'Messaggio non eliminato. Riapri la conversazione e riprova.',
-      );
-    }
-  }
+  useEffect(() => {
+    if (!pendingDelete) return;
+    const timer = window.setTimeout(async () => {
+      try {
+        await chatAction(
+          {
+            type: 'delete-message',
+            message_id: pendingDelete.id,
+            everyone: pendingDelete.everyone,
+          },
+          demo,
+        );
+        setRefreshKey((key) => key + 1);
+      } catch (error) {
+        setStatus(
+          error instanceof Error
+            ? error.message
+            : 'Messaggio non eliminato. Riapri la conversazione e riprova.',
+        );
+      } finally {
+        setPendingDelete(null);
+      }
+    }, 5000);
+    return () => window.clearTimeout(timer);
+  }, [pendingDelete, demo]);
   const visible = decoded
-    .filter((m) => isActive(m, now))
+    .filter((m) => isActive(m, now) && m.id !== pendingDelete?.id)
     .sort((a, b) => a.created_at.localeCompare(b.created_at));
   const lastId = visible.at(-1)?.id;
   useEffect(() => {
@@ -300,11 +319,30 @@ export function ChatConversation({
         </section>
       )}
       <div className="chat-log" role="log" aria-label="Messaggi della conversazione" ref={log}>
-        {!visible.length && (
+        {!visible.length && !sync?.shares.length && (
           <Empty title="Nessun messaggio." kind="messages">
             Scrivi per iniziare la conversazione.
           </Empty>
         )}
+        {sync?.shares.map((share) => {
+          const post = sync.sharedPosts.find((item) => item.id === share.target_id);
+          if (!post) return null;
+          const own = share.user_id === me.id;
+          return (
+            <article className={`chat-bubble shared-post ${own ? 'own' : ''}`} key={share.id}>
+              <div className="shared-post-label">
+                <Share2 size={14} />
+                {own ? 'Hai condiviso un post' : `${person.display_name} ha condiviso un post`}
+              </div>
+              {share.note && <p data-user-copy>{share.note}</p>}
+              <div className="shared-post-preview">
+                <Media post={post} demo={demo} />
+                {post.body && <p data-user-copy>{post.body}</p>}
+              </div>
+              <time dateTime={share.created_at}>{relativeTime(share.created_at, language)}</time>
+            </article>
+          );
+        })}
         {visible.map((m) => {
           const src = m.media_path
             ? demo || !!m.encrypted
@@ -391,14 +429,47 @@ export function ChatConversation({
                     Modifica messaggio
                   </button>
                 )}
-                <button type="button" onClick={() => void deleteMessage(m.id, false)}>
-                  <Trash2 size={14} />
-                  Elimina per me
-                </button>
-                {own && (
-                  <button type="button" onClick={() => void deleteMessage(m.id, true)}>
+                {deleteChoice === m.id ? (
+                  <div
+                    className="message-delete-confirm"
+                    role="group"
+                    aria-label="Conferma eliminazione"
+                  >
+                    <p>Scegli dove eliminare il messaggio. Avrai 5 secondi per ripristinarlo.</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPendingDelete({ id: m.id, everyone: false });
+                        setDeleteChoice(null);
+                      }}
+                    >
+                      <Trash2 size={14} />
+                      Elimina per me
+                    </button>
+                    {own && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPendingDelete({ id: m.id, everyone: true });
+                          setDeleteChoice(null);
+                        }}
+                      >
+                        <Trash2 size={14} />
+                        Elimina per tutti
+                      </button>
+                    )}
+                    <button type="button" onClick={() => setDeleteChoice(null)}>
+                      Annulla
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={Boolean(pendingDelete)}
+                    onClick={() => setDeleteChoice(m.id)}
+                  >
                     <Trash2 size={14} />
-                    Elimina per tutti
+                    Elimina messaggio
                   </button>
                 )}
               </details>
@@ -406,6 +477,18 @@ export function ChatConversation({
           );
         })}
       </div>
+      {pendingDelete && (
+        <div className="chat-undo" role="status">
+          <span>
+            {pendingDelete.everyone
+              ? 'Eliminazione per tutti tra 5 secondi.'
+              : 'Eliminazione per te tra 5 secondi.'}
+          </span>
+          <button type="button" onClick={() => setPendingDelete(null)}>
+            Ripristina
+          </button>
+        </div>
+      )}
       {keyError && <p role="alert">{keyError}</p>}
       {session && (
         <details className="chat-security">

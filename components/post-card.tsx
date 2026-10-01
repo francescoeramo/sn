@@ -76,9 +76,13 @@ export function PostCard({
       )
       .map((follow) => ({
         value: `chat:${follow.following_id}`,
-        label: `Chat con ${
-          state.profiles.find((p) => p.id === follow.following_id)?.display_name ?? 'una persona'
+        label:
+          state.profiles.find((p) => p.id === follow.following_id)?.display_name ?? 'Una persona',
+        detail: `@${
+          state.profiles.find((p) => p.id === follow.following_id)?.username ?? 'utente'
         }`,
+        person: state.profiles.find((p) => p.id === follow.following_id),
+        kind: 'chat' as const,
       })),
     ...(state.circles ?? [])
       .filter(
@@ -91,7 +95,13 @@ export function PostCard({
               member.status === 'active',
           ),
       )
-      .map((circle) => ({ value: `circle:${circle.id}`, label: `Canale ${circle.name}` })),
+      .map((circle) => ({
+        value: `circle:${circle.id}`,
+        label: circle.name,
+        detail: 'Canale privato',
+        person: undefined,
+        kind: 'circle' as const,
+      })),
   ];
   const pollResults = (state.pollResults ?? []).filter((result) => result.poll_id === post.id);
   const selectedOption = pollResults.find((result) => result.selected)?.option_id;
@@ -425,6 +435,7 @@ export function PostCard({
         <Modal title="Segnala questo post" onClose={() => setReport(false)}>
           <p>La segnalazione sarà letta dal moderatore della beta.</p>
           <form
+            className="share-sheet"
             onSubmit={async (e) => {
               e.preventDefault();
               if (
@@ -487,7 +498,7 @@ export function PostCard({
             }}
           >
             <fieldset className="share-destinations">
-              <legend>Scegli dove condividere</legend>
+              <legend>Invia a</legend>
               {shareDestinations.length ? (
                 shareDestinations.map((destination) => (
                   <label key={destination.value}>
@@ -498,7 +509,18 @@ export function PostCard({
                       checked={shareDestination === destination.value}
                       onChange={(event) => setShareDestination(event.target.value)}
                     />
-                    <span>{destination.label}</span>
+                    {destination.kind === 'chat' ? (
+                      <Avatar person={destination.person} size="small" />
+                    ) : (
+                      <span className="share-channel-icon" aria-hidden="true">
+                        <MessageCircle size={18} />
+                      </span>
+                    )}
+                    <span className="share-destination-copy">
+                      <strong data-user-copy>{destination.label}</strong>
+                      <small>{destination.detail}</small>
+                    </span>
+                    <span className="share-radio-mark" aria-hidden="true" />
                   </label>
                 ))
               ) : (
@@ -508,18 +530,21 @@ export function PostCard({
                 </p>
               )}
             </fieldset>
-            <label>
-              Nota personale
-              <textarea
-                value={shareNote}
-                maxLength={280}
-                rows={2}
-                onChange={(e) => setShareNote(e.target.value)}
-              />
-            </label>
-            <button className="primary" disabled={pending || !shareDestination}>
-              Condividi
-            </button>
+            <textarea
+              className="share-note"
+              aria-label="Messaggio facoltativo"
+              placeholder="Scrivi qualcosa…"
+              value={shareNote}
+              maxLength={280}
+              rows={3}
+              onChange={(e) => setShareNote(e.target.value)}
+            />
+            <div className="share-actions">
+              <small>{shareNote.length}/280</small>
+              <button className="primary" disabled={pending || !shareDestination}>
+                {pending ? 'Invio…' : 'Condividi'}
+              </button>
+            </div>
           </form>
         </Modal>
       )}

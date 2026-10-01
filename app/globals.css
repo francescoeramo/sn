@@ -1684,19 +1684,132 @@ label small {
   font-size: 9px;
 }
 .share-destinations {
-  margin: 18px 0;
+  display: grid;
+  gap: 8px;
+  margin: 22px 0 18px;
+  max-height: min(330px, 42dvh);
+  overflow-y: auto;
+  padding: 2px;
 }
 .share-destinations legend {
-  margin-bottom: 10px;
-  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 .share-destinations label {
-  min-height: 48px;
+  position: relative;
+  min-height: 62px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   margin: 0;
-  border-top: 1px solid var(--line);
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+  cursor: pointer;
+  transition:
+    border-color 160ms ease-out,
+    background 160ms ease-out,
+    transform 160ms ease-out;
+}
+.share-destinations label:hover {
+  border-color: #a997bd;
+  transform: translateY(-1px);
+}
+.share-destinations label:has(input:checked) {
+  border-color: var(--violet);
+  background: #f1ebf7;
+}
+.share-destinations input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.share-destinations label:has(input:focus-visible) {
+  outline: 3px solid #a894d2;
+  outline-offset: 2px;
+}
+.share-destination-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  flex: 1;
+}
+.share-destination-copy strong,
+.share-destination-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.share-destination-copy strong {
+  font-size: 13px;
+}
+.share-destination-copy small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.share-channel-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #e6dced;
+  color: #54435f;
+}
+.share-radio-mark {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  border: 1px solid #a99eb2;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 4px var(--surface-soft);
+}
+.share-destinations label:has(input:checked) .share-radio-mark {
+  border-color: var(--violet);
+  background: var(--violet);
+  box-shadow: inset 0 0 0 4px #f1ebf7;
+}
+.share-note {
+  width: 100%;
+  min-height: 92px;
+  resize: vertical;
+  padding: 13px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  font: inherit;
+  line-height: 1.5;
+}
+.share-note::placeholder {
+  color: #746b79;
+  opacity: 1;
+}
+.share-note:focus-visible {
+  outline: 3px solid #a894d2;
+  outline-offset: 2px;
+  border-color: transparent;
+}
+.share-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 12px;
+}
+.share-actions small {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.share-actions .primary {
+  min-width: 112px;
 }
 .composer-media-list {
   display: grid;
@@ -3477,6 +3590,80 @@ label small {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+.message-delete-confirm {
+  display: grid;
+  gap: 3px;
+}
+.message-delete-confirm p {
+  margin: 4px 0 6px;
+  color: #625a6a;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.chat-undo {
+  position: sticky;
+  bottom: 12px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 10px 12px;
+  padding: 11px 14px;
+  border-radius: 12px;
+  background: #393443;
+  color: #fff;
+  box-shadow: 0 8px 24px #2923342b;
+  font-size: 12px;
+}
+.chat-undo button {
+  color: #fff;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.shared-post {
+  display: grid;
+  gap: 9px;
+  align-self: flex-start;
+  max-width: min(420px, 88%);
+}
+.shared-post.own {
+  align-self: flex-end;
+}
+.shared-post-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #625a6a;
+  font-size: 11px;
+  font-weight: 700;
+}
+.shared-post-preview {
+  overflow: hidden;
+  border: 1px solid #d6cedd;
+  border-radius: 12px;
+  background: var(--card);
+}
+.shared-post-preview .post-carousel,
+.shared-post-preview .post-media {
+  width: 100%;
+  margin: 0;
+}
+.shared-post-preview > p {
+  margin: 0;
+  padding: 11px 12px;
+  font-size: 13px;
+}
+.shared-post > time {
+  justify-self: end;
+  color: #625a6a;
+  font-size: 11px;
+}
+.profile-bio-placeholder {
+  color: #756c7c;
+  font-style: italic;
+}
 .editing-message {
   display: flex;
   flex-wrap: wrap;
@@ -4141,6 +4328,12 @@ label small {
 :root[data-theme='dark'] .poll-choice button.selected,
 :root[data-theme='dark'] .poll-choice button:hover:not(:disabled) {
   background: var(--surface-soft);
+}
+:root[data-theme='dark'] .share-destinations label:has(input:checked) {
+  background: var(--lilac);
+}
+:root[data-theme='dark'] .share-destinations label:has(input:checked) .share-radio-mark {
+  box-shadow: inset 0 0 0 4px var(--lilac);
 }
 :root[data-theme='dark'] .chat-bubble,
 :root[data-theme='dark'] .content-warning,

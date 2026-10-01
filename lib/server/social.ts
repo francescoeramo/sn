@@ -159,8 +159,10 @@ export async function savedPage(before?: SavedCursor) {
   return savedPageFor(db, before);
 }
 
-export async function snapshot() {
-  const { db, user, profile } = await identity();
+type Identity = Awaited<ReturnType<typeof identity>>;
+
+export async function snapshot(existingIdentity?: Identity) {
+  const { db, user, profile } = existingIdentity ?? (await identity());
   const results = await Promise.all([
     db
       .from('profiles')
@@ -330,7 +332,7 @@ export async function snapshot() {
   };
 }
 
-export async function mutate(input: unknown) {
+export async function mutate(input: unknown, includeSnapshot = true) {
   const { db, user, profile } = await identity();
   const obj = z.object({ type: z.string() }).passthrough().parse(input);
   switch (obj.type) {
@@ -1034,7 +1036,7 @@ export async function mutate(input: unknown) {
     default:
       throw new ApiError('Operazione non riconosciuta.');
   }
-  return snapshot();
+  return includeSnapshot ? snapshot({ db, user, profile }) : { ok: true };
 }
 
 export async function exportData() {

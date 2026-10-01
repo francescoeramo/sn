@@ -113,7 +113,7 @@ export const loginCredentials = z.object({
 export const signupCredentials = loginCredentials.extend({
   password: securePassword,
   username,
-  invite: z.string().min(32).max(128),
+  invite: z.string().trim().min(32).max(128),
 });
 export const passwordResetRequest = z.object({ email: z.email().max(254) });
 export const mfaAction = z.discriminatedUnion('action', [

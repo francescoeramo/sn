@@ -319,6 +319,29 @@ export async function POST(request: NextRequest, { params }: Context) {
         await enforceAuthRate(data.email, 'signup');
         if (!process.env.PRIVACY_CONTACT_EMAIL)
           throw new ApiError('Le registrazioni della beta non sono ancora aperte.', 503);
+        const admin = adminDatabase();
+        const invite = await admin.rpc('signup_invite_status', {
+          candidate_token: data.invite,
+          candidate_email: data.email,
+        });
+        if (invite.error)
+          throw new ApiError('Non è stato possibile verificare il codice invito. Riprova.', 503);
+        if (invite.data === 'missing') throw new ApiError('Codice invito non riconosciuto.', 400);
+        if (invite.data === 'used')
+          throw new ApiError('Questo codice invito è già stato usato.', 409);
+        if (invite.data === 'expired')
+          throw new ApiError('Questo codice invito è scaduto. Chiedine uno nuovo.', 410);
+        if (invite.data === 'email_mismatch')
+          throw new ApiError('Il codice invito è stato creato per un altro indirizzo email.', 400);
+        const usernameTaken = await admin
+          .from('profiles')
+          .select('id')
+          .ilike('username', data.username)
+          .limit(1);
+        if (usernameTaken.error)
+          throw new ApiError('Non è stato possibile verificare il nome utente. Riprova.', 503);
+        if (usernameTaken.data.length)
+          throw new ApiError('Questo nome utente è già in uso. Scegline un altro.', 409);
         const result = await db.auth.signUp({
           email: data.email,
           password: data.password,
@@ -329,6 +352,11 @@ export async function POST(request: NextRequest, { params }: Context) {
         });
         if (result.error)
           throw new ApiError('Registrazione non riuscita. Verifica l’invito e i dati.', 400);
+        if (result.data.user?.identities?.length === 0)
+          throw new ApiError(
+            'Questa email è già associata a un account. Accedi oppure usa “Password dimenticata?”.',
+            409,
+          );
         return json({ confirmationRequired: !result.data.session });
       }
       const data = loginCredentials.parse(input);
@@ -399,7 +427,11 @@ export async function POST(request: NextRequest, { params }: Context) {
       return json(await sendChatGroupMessage(await body(request)));
     if (route === 'chat/groups/receipt')
       return json(await acknowledgeChatGroupMessage(await body(request)));
-    if (route === 'action') return json(await mutate(await body(request)));
+    if (route === 'action') {
+      const action = await body(request);
+      const compact = z.object({ type: z.string() }).passthrough().parse(action).type === 'share';
+      return json(await mutate(action, !compact));
+    }
     if (route === 'account/delete') {
       const data = z
         .object({ password: z.string().min(1).max(128), confirmation: z.literal('ELIMINA') })
