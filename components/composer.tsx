@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { ImagePlus, Film, Send, X, LockKeyhole, Plus, Trash2 } from 'lucide-react';
+import { ImagePlus, Film, Send, X, Plus, Trash2 } from 'lucide-react';
 import type { Action, Circle, Profile, Post } from '@/lib/core/types';
 import { prepareMedia, asDataURL } from '@/lib/client/media';
 import { Avatar, Modal } from './primitives';
@@ -44,11 +44,10 @@ export function Composer({
         <div>
           <strong data-user-copy>{me.display_name}</strong>
           <small>
-            <LockKeyhole size={12} />
             {circleIds.length
               ? circleIds.length === 1
-                ? 'Solo nella cerchia scelta'
-                : `Solo in ${circleIds.length} cerchie`
+                ? 'Solo nel canale scelto'
+                : `Solo in ${circleIds.length} canali`
               : me.is_private
                 ? 'Solo i follower approvati'
                 : 'Visibile nella community'}
@@ -140,8 +139,8 @@ export function Composer({
             <legend>Destinazione</legend>
             <p>
               {circleIds.length
-                ? 'Il post sarà visibile soltanto ai membri delle cerchie selezionate, fino a cinque.'
-                : 'Il post comparirà nella tua piazza con la privacy del profilo.'}
+                ? 'Il post sarà visibile soltanto ai membri dei canali selezionati, fino a cinque.'
+                : 'Il post comparirà nella Home con la privacy del profilo.'}
             </p>
             <label className="destination-public">
               <input
@@ -151,7 +150,7 @@ export function Composer({
                 disabled={busy}
               />
               <span>
-                <strong>La tua piazza</strong>
+                <strong>Home</strong>
                 <small>{me.is_private ? 'Follower approvati' : 'Community SN'}</small>
               </span>
             </label>

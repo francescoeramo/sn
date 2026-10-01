@@ -19,7 +19,7 @@ export function WelcomeOnboarding({
     }
   };
   return (
-    <Modal title={`Benvenuto, ${firstName}.`} onClose={() => void finish()}>
+    <Modal title={`Ciao ${firstName}, questa è la tua Home.`} onClose={() => void finish()}>
       <p className="onboarding-intro">
         SN è una beta privata costruita per condividere qualcosa con persone che conosci.
       </p>
@@ -48,7 +48,7 @@ export function WelcomeOnboarding({
       </div>
       <div className="onboarding-actions">
         <button className="primary" onClick={() => void finish()}>
-          Entra nella piazza
+          Vai alla Home
         </button>
         <button className="text-button" onClick={() => void finish(true)}>
           Controlla prima la privacy

@@ -89,9 +89,9 @@ export function DigestPanel({ state, busy, onAction }: Props) {
     <section className="panel" aria-labelledby="digest-title">
       <h2 id="digest-title">Digest scelto da te</h2>
       <p className="muted">
-        Al massimo cinque elementi recenti dalle cerchie, dalle persone e dagli argomenti che
-        scegli. Niente sponsorizzazioni, punteggi nascosti o tracciamento delle aperture:
-        conserviamo solo le preferenze e l’ultimo invio.
+        Al massimo cinque elementi recenti dai canali, dalle persone e dagli argomenti che scegli.
+        Niente sponsorizzazioni, punteggi nascosti o tracciamento delle aperture: conserviamo solo
+        le preferenze e l’ultimo invio.
       </p>
       <form
         key={`${prefs?.updated_at ?? 'default'}-${enabled}`}
@@ -163,7 +163,7 @@ export function DigestPanel({ state, busy, onAction }: Props) {
 
       <h3>Da dove pesca</h3>
       <p className="muted fine">
-        Prima cerchie, persone e argomenti scelti. Gli altri post seguono la data di pubblicazione.
+        Prima canali, persone e argomenti scelti. Gli altri post seguono la data di pubblicazione.
       </p>
       <div className="button-row">
         {myCircles.map((circle) => {

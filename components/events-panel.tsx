@@ -160,7 +160,7 @@ export function EventsPanel({ state, demo, busy, now, onAction }: Props) {
               <option value="">I tuoi follower approvati</option>
               {circles.map((circle) => (
                 <option key={circle.id} value={circle.id}>
-                  Cerchia · <span data-user-copy>{circle.name}</span>
+                  Canale · <span data-user-copy>{circle.name}</span>
                 </option>
               ))}
             </select>
@@ -187,7 +187,7 @@ export function EventsPanel({ state, demo, busy, now, onAction }: Props) {
       </div>
       {!events.length && !creating && (
         <Empty kind="feed" title="Nessun incontro in programma.">
-          Proponi un momento alle persone che segui o a una cerchia.
+          Proponi un momento alle persone che segui o a un canale.
         </Empty>
       )}
     </section>
@@ -293,7 +293,7 @@ function EventRow({
             <p>
               {circle ? (
                 <>
-                  Cerchia · <span data-user-copy>{circle.name}</span>
+                  Canale · <span data-user-copy>{circle.name}</span>
                 </>
               ) : (
                 <>

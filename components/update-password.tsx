@@ -35,7 +35,10 @@ export function UpdatePassword({ valid }: { valid: boolean }) {
   return (
     <section className="auth-card account-card">
       <h1>Scegli una nuova password.</h1>
-      <p>Usa almeno 12 caratteri. Dopo il cambio dovrai accedere di nuovo su ogni dispositivo.</p>
+      <p>
+        Usa almeno 8 caratteri, con una minuscola, una maiuscola e un numero. Dopo il cambio dovrai
+        accedere di nuovo su ogni dispositivo.
+      </p>
       <form
         onSubmit={async (event) => {
           event.preventDefault();
@@ -63,7 +66,7 @@ export function UpdatePassword({ valid }: { valid: boolean }) {
           <input
             name="password"
             type="password"
-            minLength={12}
+            minLength={8}
             maxLength={128}
             autoComplete="new-password"
             required
@@ -74,7 +77,7 @@ export function UpdatePassword({ valid }: { valid: boolean }) {
           <input
             name="confirmation"
             type="password"
-            minLength={12}
+            minLength={8}
             maxLength={128}
             autoComplete="new-password"
             required

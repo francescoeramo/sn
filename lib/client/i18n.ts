@@ -4,12 +4,29 @@ export const LANGUAGE_STORAGE_KEY = 'sn-language';
 
 // Product copy only: content supplied by people never enters this dictionary.
 const english: Record<string, string> = {
+  Canali: 'Channels',
+  Attività: 'Activities',
+  'Canale ·': 'Channel ·',
+  'Archivia canale': 'Archive channel',
+  'Crea il canale': 'Create channel',
+  'Crea un canale privato e invita i tuoi contatti.':
+    'Create a private channel and invite your contacts.',
+  'Elimina canale': 'Delete channel',
+  'Lascia canale': 'Leave channel',
+  'I tuoi canali': 'Your channels',
+  'Modifica canale': 'Edit channel',
+  'Nessun post nel canale.': 'No posts in this channel.',
+  'Nessun canale.': 'No channels.',
+  'Nuovo canale': 'New channel',
+  'Persone nel canale': 'People in the channel',
+  'Scrivi nel canale': 'Write in the channel',
+  'Solo nel canale scelto': 'Only in the selected channel',
+  'Tutti i canali': 'All channels',
   Esplora: 'Explore',
-  Cerchie: 'Circles',
   Eventi: 'Events',
   Collaborazioni: 'Collaborations',
   Notifiche: 'Notifications',
-  'Tutta la piazza': 'Everyone',
+  'Tutta la Home': 'Everyone',
   Aggiorna: 'Refresh',
   Foto: 'Photo',
   Video: 'Video',
@@ -29,7 +46,7 @@ const english: Record<string, string> = {
   'Visibile nella community': 'Visible to the community',
   'Community SN': 'SN community',
   'Storia · 24 h': 'Story · 24 h',
-  'Il post comparirà nella tua piazza con la privacy del profilo.':
+  'Il post comparirà nella Home con la privacy del profilo.':
     'The post will appear in your feed with your profile privacy setting.',
   'Testo e media restano nascosti finché chi legge sceglie di aprirli. L’avviso non cambia la privacy del post né le regole della community.':
     'Text and media stay hidden until the reader chooses to reveal them. The warning does not change the post’s privacy or the community rules.',
@@ -137,7 +154,7 @@ const english: Record<string, string> = {
   'Apri le collaborazioni': 'Open collaborations',
   'Apri moderazione': 'Open moderation',
   'Apri origine': 'Open source',
-  'Apriamo la piazza…': 'Opening your feed…',
+  'Apriamo la Home…': 'Opening Home…',
   'Apro la chat cifrata…': 'Opening the encrypted chat…',
   Archivia: 'Archive',
   'Archivia cerchia': 'Archive circle',
@@ -241,7 +258,7 @@ const english: Record<string, string> = {
   'Elimina post': 'Delete post',
   'Eliminare il post?': 'Delete this post?',
   'Email separata': 'Separate email consent',
-  'Entra nella piazza': 'Enter SN',
+  'Vai alla Home': 'Go to Home',
   'Es. Due persone sedute al mare': 'E.g. Two people sitting by the sea',
   'es. francesco': 'e.g. francesco',
   'Es. Spoiler sul finale': 'E.g. Ending spoiler',
@@ -302,7 +319,7 @@ const english: Record<string, string> = {
     'Sharing stays private, with no public copy or counter.',
   'La tua nota è in revisione': 'Your note is under review',
   'La tua nota non è stata approvata': 'Your note was not approved',
-  'La tua piazza': 'Your feed',
+  Home: 'Home',
   'La tua storia': 'Your story',
   'Lascia cerchia': 'Leave circle',
   'Le conversazioni iniziano con due parole.': 'Conversations start with a few words.',
@@ -509,7 +526,7 @@ const english: Record<string, string> = {
   'Preferisci dare un’occhiata? Prova la demo': 'Would you rather look around? Try the demo',
   'Profili inventati, modifiche solo in questo browser.':
     'Fictional profiles, changes stay in this browser.',
-  'post nella piazza': 'post in the feed',
+  'post nella Home': 'post in Home',
   'Si chiude': 'Closes',
   'Voto registrato': 'Vote recorded',
   'Sondaggio chiuso': 'Poll closed',
@@ -565,8 +582,9 @@ const italian = Object.fromEntries(
 );
 
 const patterns: Array<[RegExp, (...parts: string[]) => string]> = [
+  [/^Rimuovi (.+) dal canale$/, (name) => `Remove ${name} from the channel`],
   [/^(\d+) persone$/, (count) => `${count} people`],
-  [/^(\d+) post nella piazza$/, (count) => `${count} post${count === '1' ? '' : 's'} in the feed`],
+  [/^(\d+) post nella Home$/, (count) => `${count} post${count === '1' ? '' : 's'} in Home`],
   [/^Opzione (\d+)$/, (number) => `Option ${number}`],
   [/^Reazione (.+)$/, (reaction) => `${reaction} reaction`],
   [/^Rispondi a (.+)…$/, (name) => `Reply to ${name}…`],

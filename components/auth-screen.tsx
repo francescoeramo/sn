@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { ArrowUpRight, ArrowRight, LockKeyhole } from 'lucide-react';
+import { ArrowUpRight, ArrowRight, LockKeyhole, Check, X } from 'lucide-react';
 export function AuthScreen({
   configured,
   onLogin,
@@ -13,6 +13,7 @@ export function AuthScreen({
   const [factorId, setFactorId] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const [password, setPassword] = useState('');
   const signup = mode === 'signup';
   const recover = mode === 'recover';
   const mfa = mode === 'mfa';
@@ -134,11 +135,15 @@ export function AuthScreen({
                       name="username"
                       autoComplete="username"
                       required
-                      pattern="[a-z0-9_]{3,24}"
+                      pattern="[a-z0-9_.]{3,24}"
                       minLength={3}
                       maxLength={24}
-                      placeholder="es. francesco"
+                      placeholder="es. francesco.rossi"
+                      aria-describedby="username-help"
                     />
+                    <small id="username-help">
+                      3–24 caratteri: lettere minuscole, numeri, _ e .
+                    </small>
                   </label>
                   <label>
                     Codice invito
@@ -159,11 +164,32 @@ export function AuthScreen({
                     name="password"
                     type="password"
                     required
-                    minLength={12}
+                    minLength={signup ? 8 : 1}
                     maxLength={128}
                     autoComplete={signup ? 'new-password' : 'current-password'}
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    aria-describedby={signup ? 'password-requirements' : undefined}
                   />
-                  {signup && <small>Almeno 12 caratteri.</small>}
+                  {signup && (
+                    <ul
+                      id="password-requirements"
+                      className="password-requirements"
+                      aria-live="polite"
+                    >
+                      {[
+                        ['8 o più caratteri', password.length >= 8],
+                        ['Almeno una lettera minuscola', /[a-z]/.test(password)],
+                        ['Almeno una lettera maiuscola', /[A-Z]/.test(password)],
+                        ['Almeno un numero', /[0-9]/.test(password)],
+                      ].map(([label, valid]) => (
+                        <li className={valid ? 'valid' : ''} key={String(label)}>
+                          {valid ? <Check size={15} /> : <X size={15} />}
+                          {label}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </label>
               )}
               {mfa && (

@@ -9,6 +9,7 @@ import {
   localMediaInfo,
   passwordResetRequest,
   passwordUpdate,
+  signupCredentials,
   mfaAction,
   chatGroupActionInput,
   encryptedGroupMessageInput,
@@ -179,14 +180,30 @@ describe('Regole condivise', () => {
     expect(passwordResetRequest.safeParse({ email: 'non-valida' }).success).toBe(false);
     expect(
       passwordUpdate.safeParse({
-        password: 'una-password-lunga',
-        confirmation: 'una-password-lunga',
+        password: 'Password8',
+        confirmation: 'Password8',
       }).success,
     ).toBe(true);
     expect(
       passwordUpdate.safeParse({
-        password: 'una-password-lunga',
-        confirmation: 'password-diversa',
+        password: 'Password8',
+        confirmation: 'Password9',
+      }).success,
+    ).toBe(false);
+    expect(
+      signupCredentials.safeParse({
+        email: 'persona@example.test',
+        password: 'Password8',
+        username: 'persona.2_test',
+        invite: 'a'.repeat(32),
+      }).success,
+    ).toBe(true);
+    expect(
+      signupCredentials.safeParse({
+        email: 'persona@example.test',
+        password: 'tuttominuscolo8',
+        username: 'persona',
+        invite: 'a'.repeat(32),
       }).success,
     ).toBe(false);
   });

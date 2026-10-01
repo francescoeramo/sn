@@ -126,7 +126,7 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
       setImageStatus(
         error instanceof Error
           ? error.message
-          : 'Immagine della cerchia non caricata. Scegli di nuovo il file e riprova.',
+          : 'Immagine del canale non caricata. Scegli di nuovo il file e riprova.',
       );
     }
   }
@@ -181,7 +181,7 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
       setImageStatus(
         error instanceof Error
           ? error.message
-          : 'Immagine della cerchia non aggiornata. Scegli di nuovo il file e riprova.',
+          : 'Immagine del canale non aggiornata. Scegli di nuovo il file e riprova.',
       );
     }
   }
@@ -214,7 +214,7 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
     return (
       <section className="circle-detail" aria-labelledby="circle-title">
         <button className="text-button circle-back" onClick={() => setSelectedId(null)}>
-          <ArrowLeft size={17} /> Tutte le cerchie
+          <ArrowLeft size={17} /> Tutti i canali
         </button>
         <header className="circle-hero">
           <CircleMark circle={selected} demo={demo} />
@@ -233,12 +233,12 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
             </button>
             {myMembership?.role === 'admin' ? (
               <>
-                <button className="icon-button" aria-label="Modifica cerchia" onClick={openEditor}>
+                <button className="icon-button" aria-label="Modifica canale" onClick={openEditor}>
                   <Pencil size={18} />
                 </button>
                 <button
                   className="icon-button"
-                  aria-label="Archivia cerchia"
+                  aria-label="Archivia canale"
                   disabled={busy}
                   onClick={() => onAction({ type: 'archive-circle', circle_id: selected.id })}
                 >
@@ -248,7 +248,7 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
             ) : (
               <button
                 className="icon-button"
-                aria-label="Lascia cerchia"
+                aria-label="Lascia canale"
                 disabled={busy}
                 onClick={() => onAction({ type: 'leave-circle', circle_id: selected.id })}
               >
@@ -319,13 +319,13 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
                   className="text-button danger-text"
                   onClick={() => setConfirmingDelete(true)}
                 >
-                  <Trash2 size={16} /> Elimina cerchia
+                  <Trash2 size={16} /> Elimina canale
                 </button>
               ) : (
                 <div role="alert">
                   <p>
-                    La cerchia, gli inviti e i post pubblicati soltanto qui verranno eliminati. I
-                    post condivisi anche in altre cerchie resteranno disponibili lì.
+                    Il canale, gli inviti e i post pubblicati soltanto qui verranno eliminati. I
+                    post condivisi anche in altri canali resteranno disponibili lì.
                   </p>
                   <div className="button-row">
                     <button type="button" className="danger" disabled={busy} onClick={deleteCircle}>
@@ -348,7 +348,7 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
           <form className="circle-compose" onSubmit={publish}>
             <Avatar person={state.me} />
             <label>
-              <span className="sr-only">Scrivi nella cerchia</span>
+              <span className="sr-only">Scrivi nel canale</span>
               <textarea
                 autoFocus
                 maxLength={2200}
@@ -363,7 +363,7 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
             </button>
           </form>
         )}
-        <div className="circle-members" aria-label="Persone nella cerchia">
+        <div className="circle-members" aria-label="Persone nel canale">
           {members.map((member) => {
             const profile = state.profiles.find((person) => person.id === member.user_id);
             return profile ? (
@@ -398,7 +398,7 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
                     </button>
                     <button
                       className="icon-button danger-button"
-                      aria-label={`Rimuovi ${profile.display_name} dalla cerchia`}
+                      aria-label={`Rimuovi ${profile.display_name} dal canale`}
                       disabled={busy}
                       onClick={() =>
                         onAction({
@@ -485,8 +485,8 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
             />
           ))}
           {!posts.length && (
-            <Empty kind="feed" title="Nessun post nella cerchia.">
-              Apri la conversazione con un post visibile solo alle persone di questa cerchia.
+            <Empty kind="feed" title="Nessun post nel canale.">
+              Apri la conversazione con un post visibile solo alle persone di questo canale.
             </Empty>
           )}
         </div>
@@ -494,7 +494,7 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
     );
 
   return (
-    <section className="circles-overview" aria-label="Le tue cerchie">
+    <section className="circles-overview" aria-label="I tuoi canali">
       {invites.length > 0 && (
         <div className="circle-invitations">
           <h2>Inviti</h2>
@@ -539,7 +539,7 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
           <h2>Spazi condivisi</h2>
         </div>
         <button className="primary" onClick={() => setCreating((value) => !value)}>
-          <Plus size={17} /> Nuova cerchia
+          <Plus size={17} /> Nuovo canale
         </button>
       </div>
       {creating && (
@@ -580,7 +580,7 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
           )}
           <div className="button-row">
             <button className="primary" disabled={busy || !name.trim()}>
-              Crea la cerchia
+              Crea il canale
             </button>
             <button type="button" className="secondary" onClick={() => setCreating(false)}>
               Annulla
@@ -608,8 +608,8 @@ export function CirclePanel({ state, demo, busy, now, onAction, onProfile, onTag
         })}
       </div>
       {!mine.length && !creating && (
-        <Empty kind="feed" title="Nessuna cerchia.">
-          Crea una cerchia privata e invita i tuoi contatti.
+        <Empty kind="feed" title="Nessun canale.">
+          Crea un canale privato e invita i tuoi contatti.
         </Empty>
       )}
     </section>

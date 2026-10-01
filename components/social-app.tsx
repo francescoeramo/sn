@@ -30,6 +30,7 @@ import {
   CircleUserRound,
   CalendarDays,
   Handshake,
+  UsersRound,
 } from 'lucide-react';
 import type { Action, Snapshot, Post } from '@/lib/core/types';
 import { LIMITS, isActive, hashtags, relativeTime } from '@/lib/core/rules';
@@ -70,15 +71,10 @@ type View =
   | 'settings'
   | 'moderation';
 const navigation = [
-  { id: 'home', label: 'La tua piazza', icon: Home },
+  { id: 'home', label: 'Home', icon: Home },
   { id: 'search', label: 'Esplora', icon: Search },
   { id: 'reels', label: 'Reel', icon: Clapperboard },
   { id: 'messages', label: 'Messaggi', icon: MessageCircle },
-  { id: 'circles', label: 'Cerchie', icon: CircleUserRound },
-  { id: 'events', label: 'Eventi', icon: CalendarDays },
-  { id: 'collaborations', label: 'Collaborazioni', icon: Handshake },
-  { id: 'notifications', label: 'Notifiche', icon: Bell },
-  { id: 'profile', label: 'Il tuo profilo', icon: UserRound },
 ] as const;
 const auditLabels = {
   report_dismissed: 'Segnalazione archiviata',
@@ -112,7 +108,7 @@ function download(value: unknown, name: string) {
 }
 async function request(path: string, body?: unknown) {
   const fallback = path.startsWith('bootstrap')
-    ? 'Piazza non caricata. Controlla la connessione e riprova.'
+    ? 'Home non caricata. Controlla la connessione e riprova.'
     : path.startsWith('search')
       ? 'Ricerca non aggiornata. Controlla la connessione e riprova.'
       : path.startsWith('saved')
@@ -164,7 +160,10 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
   const [composer, setComposer] = useState<Post['kind'] | null>(null);
   const [story, setStory] = useState<Post | null>(null);
   const [conversation, setConversation] = useState<string | null>(null);
-  const [messageMode, setMessageMode] = useState<'people' | 'groups'>('people');
+  const [messageMode, setMessageMode] = useState<'people' | 'groups' | 'activities'>('people');
+  const [activityMode, setActivityMode] = useState<'channels' | 'events' | 'collaborations'>(
+    'channels',
+  );
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -190,7 +189,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
         setNotice(
           error instanceof Error
             ? error.message
-            : 'Piazza non caricata. Controlla la connessione e riprova.',
+            : 'Home non caricata. Controlla la connessione e riprova.',
         );
     } finally {
       setLoading(false);
@@ -458,7 +457,15 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
         ? 'Le tue impostazioni'
         : view === 'moderation'
           ? 'Moderazione'
-          : (navigation.find((n) => n.id === view)?.label ?? 'La tua piazza');
+          : view === 'circles'
+            ? 'Canali'
+            : view === 'events'
+              ? 'Eventi'
+              : view === 'collaborations'
+                ? 'Collaborazioni'
+                : view === 'notifications'
+                  ? 'Notifiche'
+                  : (navigation.find((n) => n.id === view)?.label ?? 'Home');
   const currentConversation = profiles.find((p) => p.id === conversation);
   return (
     <div className={`app-shell ${demo ? 'is-demo' : ''}`}>
@@ -486,7 +493,6 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
             >
               <item.icon size={23} strokeWidth={1.8} />
               <span>{item.label}</span>
-              {item.id === 'notifications' && unread > 0 && <span className="badge">{unread}</span>}
             </button>
           ))}
         </nav>
@@ -494,13 +500,6 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
           <Plus size={21} /> Crea un post
         </button>
         <div className="sidebar-bottom">
-          <button
-            className={view === 'settings' ? 'active utility-link' : 'utility-link'}
-            onClick={() => navigate('settings')}
-          >
-            <Settings size={20} />
-            Impostazioni
-          </button>
           {state.isAdmin && (
             <button className="utility-link" onClick={() => navigate('moderation')}>
               <ShieldCheck size={19} />
@@ -537,6 +536,14 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
             <i /> BETA PRIVATA
           </span>
           <button
+            className="top-action icon-button top-notifications"
+            aria-label={unread ? `Notifiche, ${unread} da leggere` : 'Notifiche'}
+            onClick={() => navigate('notifications')}
+          >
+            <Bell size={21} />
+            {unread > 0 && <span className="top-notification-badge">{unread}</span>}
+          </button>
+          <button
             className="mobile-settings icon-button"
             aria-label="Il tuo profilo"
             onClick={() => navigate('profile')}
@@ -552,13 +559,15 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
               <ShieldCheck size={21} />
             </button>
           )}
-          <button
-            className="mobile-settings icon-button"
-            aria-label="Impostazioni"
-            onClick={() => navigate('settings')}
-          >
-            <Settings size={21} />
-          </button>
+          {view === 'profile' && focusProfile?.id === me.id && (
+            <button
+              className="top-action icon-button"
+              aria-label="Impostazioni"
+              onClick={() => navigate('settings')}
+            >
+              <Settings size={21} />
+            </button>
+          )}
         </header>
         <div className="content-grid">
           <main id="main-content" className="feed-column">
@@ -622,7 +631,6 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                       <span>Storia</span>
                     </button>
                     <span className="compose-privacy">
-                      <LockKeyhole size={12} />
                       {me.is_private ? 'Ai tuoi follower' : 'Alla community'}
                     </span>
                   </div>
@@ -641,7 +649,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                       aria-pressed={filter === 'all'}
                       onClick={() => setFilter('all')}
                     >
-                      Tutta la piazza
+                      Tutta la Home
                     </button>
                   </div>
                   <span>
@@ -728,7 +736,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                         Nascondi
                       </button>
                     </div>
-                    <p className="muted fine">Hashtag presenti nella piazza, in ordine di uso.</p>
+                    <p className="muted fine">Hashtag presenti nella Home, in ordine di uso.</p>
                     <div className="button-row">
                       {trendingTags.map((tag) => (
                         <button key={tag} className="secondary" onClick={() => search(`#${tag}`)}>
@@ -1021,8 +1029,64 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                   >
                     Gruppi
                   </button>
+                  <button
+                    role="tab"
+                    aria-selected={messageMode === 'activities'}
+                    onClick={() => setMessageMode('activities')}
+                  >
+                    <UsersRound size={16} /> Attività
+                  </button>
                 </div>
-                {messageMode === 'groups' ? (
+                {messageMode === 'activities' ? (
+                  <div className="message-activities">
+                    <div className="activity-navigation" aria-label="Attività condivise">
+                      <button
+                        className={activityMode === 'channels' ? 'selected' : ''}
+                        aria-pressed={activityMode === 'channels'}
+                        onClick={() => setActivityMode('channels')}
+                      >
+                        <CircleUserRound size={18} /> Canali
+                      </button>
+                      <button
+                        className={activityMode === 'events' ? 'selected' : ''}
+                        aria-pressed={activityMode === 'events'}
+                        onClick={() => setActivityMode('events')}
+                      >
+                        <CalendarDays size={18} /> Eventi
+                      </button>
+                      <button
+                        className={activityMode === 'collaborations' ? 'selected' : ''}
+                        aria-pressed={activityMode === 'collaborations'}
+                        onClick={() => setActivityMode('collaborations')}
+                      >
+                        <Handshake size={18} /> Collaborazioni
+                      </button>
+                    </div>
+                    {activityMode === 'channels' && (
+                      <CirclePanel
+                        state={state}
+                        demo={demo}
+                        busy={busy}
+                        now={clock}
+                        onAction={act}
+                        onProfile={(id) => navigate('profile', id)}
+                        onTag={search}
+                      />
+                    )}
+                    {activityMode === 'events' && (
+                      <EventsPanel
+                        state={state}
+                        demo={demo}
+                        busy={busy}
+                        now={clock}
+                        onAction={act}
+                      />
+                    )}
+                    {activityMode === 'collaborations' && (
+                      <CollaborationPanel state={state} demo={demo} busy={busy} onAction={act} />
+                    )}
+                  </div>
+                ) : messageMode === 'groups' ? (
                   <GroupChatPanel
                     demo={demo}
                     me={me}
@@ -1201,7 +1265,14 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                           </button>
                         )}
                         {(n.kind === 'event_update' || n.kind === 'event_cancelled') && (
-                          <button className="text-button" onClick={() => navigate('events')}>
+                          <button
+                            className="text-button"
+                            onClick={() => {
+                              setMessageMode('activities');
+                              setActivityMode('events');
+                              navigate('messages');
+                            }}
+                          >
                             Apri gli eventi
                           </button>
                         )}
@@ -1727,7 +1798,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                       <strong>#{tag}</strong>
                       <small>
                         {visiblePosts.filter((p) => hashtags(p.body).includes(tag)).length} post
-                        nella piazza
+                        nella Home
                       </small>
                     </span>
                     <ArrowUpRight size={15} />
@@ -1743,25 +1814,40 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
         </div>
       </div>
       <nav className="mobile-nav" aria-label="Navigazione mobile">
-        {navigation
-          .filter((n) => n.id !== 'profile')
-          .map((n) => (
-            <button
-              key={n.id}
-              className={view === n.id ? 'active' : ''}
-              onClick={() => navigate(n.id)}
-              aria-label={n.label}
-            >
-              <n.icon size={22} />
-              {n.id === 'notifications' && unread > 0 && <i />}
-            </button>
-          ))}
+        <button
+          className={view === 'home' ? 'active' : ''}
+          onClick={() => navigate('home')}
+          aria-label="Home"
+        >
+          <Home size={22} />
+        </button>
+        <button
+          className={view === 'search' ? 'active' : ''}
+          onClick={() => navigate('search')}
+          aria-label="Esplora"
+        >
+          <Search size={22} />
+        </button>
         <button
           aria-label="Crea un post"
           className="mobile-create"
           onClick={() => setComposer('post')}
         >
           <Plus size={23} />
+        </button>
+        <button
+          className={view === 'messages' ? 'active' : ''}
+          onClick={() => navigate('messages')}
+          aria-label="Messaggi"
+        >
+          <MessageCircle size={22} />
+        </button>
+        <button
+          className={view === 'profile' ? 'active' : ''}
+          onClick={() => navigate('profile')}
+          aria-label="Il tuo profilo"
+        >
+          <UserRound size={22} />
         </button>
       </nav>
       {notice && (

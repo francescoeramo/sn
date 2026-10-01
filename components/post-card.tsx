@@ -8,7 +8,6 @@ import {
   Send,
   Flag,
   Trash2,
-  LockKeyhole,
   SmilePlus,
   Share2,
   CornerDownRight,
@@ -92,7 +91,7 @@ export function PostCard({
               member.status === 'active',
           ),
       )
-      .map((circle) => ({ value: `circle:${circle.id}`, label: `Cerchia ${circle.name}` })),
+      .map((circle) => ({ value: `circle:${circle.id}`, label: `Canale ${circle.name}` })),
   ];
   const pollResults = (state.pollResults ?? []).filter((result) => result.poll_id === post.id);
   const selectedOption = pollResults.find((result) => result.selected)?.option_id;
@@ -116,8 +115,7 @@ export function PostCard({
             <strong data-user-copy>{author?.display_name ?? 'Utente'}</strong>
             <small>
               @{author?.username ?? 'utente'} <span>·</span>{' '}
-              {relativeTime(post.created_at, language)}{' '}
-              {author?.is_private && <LockKeyhole size={11} />}
+              {relativeTime(post.created_at, language)}
             </small>
           </span>
         </button>

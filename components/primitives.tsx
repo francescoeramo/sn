@@ -136,7 +136,7 @@ export function LoadingShell() {
   return (
     <main className="loading-screen" aria-busy="true">
       <p className="sr-only" role="status">
-        Apriamo la piazza…
+        Apriamo la Home…
       </p>
       <div className="loading-shell" aria-hidden="true">
         <header>

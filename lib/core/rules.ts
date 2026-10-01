@@ -32,11 +32,11 @@ export const postInput = z
   )
   .refine(
     (v) => !v.circle_ids?.length || v.kind === 'post',
-    'Nelle cerchie puoi condividere post e sondaggi.',
+    'Nei canali puoi condividere post e sondaggi.',
   )
   .refine(
     (v) => !v.circle_ids || new Set(v.circle_ids).size === v.circle_ids.length,
-    'Scegli ogni cerchia una sola volta.',
+    'Scegli ogni canale una sola volta.',
   )
   .refine(
     (v) =>
@@ -77,14 +77,22 @@ export const messageInput = z
       .default(0),
   })
   .refine((v) => v.body.length > 0 || v.media_path, 'Scrivi un messaggio o allega un file.');
-export const credentials = z.object({
+const username = z.string().regex(/^[a-z0-9_.]{3,24}$/);
+const securePassword = z
+  .string()
+  .min(8)
+  .max(128)
+  .regex(/[a-z]/, 'Inserisci almeno una lettera minuscola.')
+  .regex(/[A-Z]/, 'Inserisci almeno una lettera maiuscola.')
+  .regex(/[0-9]/, 'Inserisci almeno un numero.');
+export const loginCredentials = z.object({
   email: z.email().max(254),
-  password: z.string().min(12).max(128),
-  username: z
-    .string()
-    .regex(/^[a-z0-9_]{3,24}$/)
-    .optional(),
-  invite: z.string().min(32).max(128).optional(),
+  password: z.string().min(1).max(128),
+});
+export const signupCredentials = loginCredentials.extend({
+  password: securePassword,
+  username,
+  invite: z.string().min(32).max(128),
 });
 export const passwordResetRequest = z.object({ email: z.email().max(254) });
 export const mfaAction = z.discriminatedUnion('action', [
@@ -98,8 +106,8 @@ export const mfaAction = z.discriminatedUnion('action', [
 ]);
 export const passwordUpdate = z
   .object({
-    password: z.string().min(12).max(128),
-    confirmation: z.string().min(12).max(128),
+    password: securePassword,
+    confirmation: z.string().min(8).max(128),
   })
   .refine((value) => value.password === value.confirmation, {
     message: 'Le password non coincidono.',

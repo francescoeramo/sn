@@ -1140,6 +1140,28 @@ small {
 .mobile-settings {
   display: none;
 }
+.top-action {
+  display: flex;
+}
+.top-notifications {
+  position: relative;
+}
+.top-notification-badge {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  min-width: 17px;
+  height: 17px;
+  display: grid;
+  place-items: center;
+  padding: 0 4px;
+  border: 2px solid var(--surface-quiet);
+  border-radius: 9px;
+  background: var(--violet);
+  color: #fff;
+  font-size: 9px;
+  line-height: 1;
+}
 .toast {
   position: fixed;
   bottom: 25px;
@@ -1422,6 +1444,23 @@ label small {
   margin: 12px 0;
   line-height: 1.6;
 }
+.password-requirements {
+  list-style: none;
+  display: grid;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 0;
+  color: #8a6670;
+  font-size: 11px;
+}
+.password-requirements li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.password-requirements li.valid {
+  color: #55724d;
+}
 .empty {
   text-align: center;
   display: flex;
@@ -1599,9 +1638,38 @@ label small {
   border-bottom: 1px solid var(--line);
 }
 .message-mode button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 8px 1px;
   color: var(--muted);
   font-size: 12px;
+}
+.message-activities {
+  padding-top: 18px;
+}
+.activity-navigation {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 22px;
+}
+.activity-navigation button {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px;
+  border-radius: 12px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 11px;
+}
+.activity-navigation button.selected {
+  background: var(--lilac);
+  color: #5c4788;
+  font-weight: 600;
 }
 .message-mode button[aria-selected='true'] {
   color: var(--ink);

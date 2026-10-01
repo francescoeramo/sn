@@ -144,7 +144,7 @@ export function webfingerAccount(resource: string | null, origin: string) {
   if (separator < 1) return null;
   const username = account.slice(0, separator);
   const host = account.slice(separator + 1).toLowerCase();
-  if (!/^[a-z0-9_]{3,24}$/.test(username) || host !== new URL(origin).host.toLowerCase())
+  if (!/^[a-z0-9_.]{3,24}$/.test(username) || host !== new URL(origin).host.toLowerCase())
     return null;
   return username;
 }

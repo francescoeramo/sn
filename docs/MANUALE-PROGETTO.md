@@ -68,7 +68,7 @@ Il client non deve poter assegnarsi ruoli, scrivere notifiche o modificare campi
 
 `app/api/[...path]/route.ts` è il punto d’ingresso per le API `/api/*` (runtime Node, route dinamica, corpo JSON limitato a 24 KB per le richieste ordinarie). Le scritture controllano `Origin` confrontandolo con `APP_ORIGIN`, validano input con Zod e rispondono senza cache. I media hanno un flusso dedicato e limiti propri. `lib/server/supabase.ts` crea il client SSR basato su cookie HttpOnly, autentica con `auth.getUser()`, applica il livello AAL2 quando la 2FA è abilitata e rifiuta profili disabilitati. Il client con chiave segreta è separato (`adminDatabase`) e non va usato per aggirare RLS nelle operazioni utente.
 
-Login, signup e recupero hanno rate limit applicativo tramite RPC e chiave HMAC dell’email; signup è subordinato a invito valido e ai controlli del trigger Auth. Password: 12–128 caratteri. Il recupero PKCE va completato nello stesso browser. TOTP è facoltativa; le sessioni possono essere elencate/revocate. L’assegnazione del moderatore è in `private.admins`, mai in `user_metadata`.
+Login, signup e recupero hanno rate limit applicativo tramite RPC e chiave HMAC dell’email; signup è subordinato a invito valido e ai controlli del trigger Auth. Le nuove password richiedono 8–128 caratteri, almeno una minuscola, una maiuscola e un numero. Il recupero PKCE va completato nello stesso browser. TOTP è facoltativa; le sessioni possono essere elencate/revocate. L’assegnazione del moderatore è in `private.admins`, mai in `user_metadata`.
 
 ### API principali
 

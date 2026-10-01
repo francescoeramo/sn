@@ -12,7 +12,8 @@ import { z } from 'zod';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { BodyTooLarge, readLimited } from '@/lib/core/http';
 import {
-  credentials,
+  loginCredentials,
+  signupCredentials,
   LIMITS,
   fileKind,
   chatFileKind,
@@ -302,12 +303,11 @@ export async function POST(request: NextRequest, { params }: Context) {
       return json(checked(await db.rpc('my_sessions')));
     }
     if (route === 'auth/login' || route === 'auth/signup') {
-      const data = credentials.parse(await body(request));
-      await enforceAuthRate(data.email, route === 'auth/signup' ? 'signup' : 'login');
+      const input = await body(request);
       const db = await database();
       if (route === 'auth/signup') {
-        if (!data.invite || !data.username)
-          throw new ApiError('Inserisci nome utente e codice invito.');
+        const data = signupCredentials.parse(input);
+        await enforceAuthRate(data.email, 'signup');
         if (!process.env.PRIVACY_CONTACT_EMAIL)
           throw new ApiError('Le registrazioni della beta non sono ancora aperte.', 503);
         const result = await db.auth.signUp({
@@ -322,6 +322,8 @@ export async function POST(request: NextRequest, { params }: Context) {
           throw new ApiError('Registrazione non riuscita. Verifica l’invito e i dati.', 400);
         return json({ confirmationRequired: !result.data.session });
       }
+      const data = loginCredentials.parse(input);
+      await enforceAuthRate(data.email, 'login');
       const started = Date.now();
       const result = await db.auth.signInWithPassword({
         email: data.email,

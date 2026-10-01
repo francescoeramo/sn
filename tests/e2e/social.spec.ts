@@ -86,7 +86,7 @@ test('eventi: modifica i dettagli e apre l’album dopo l’inizio', async ({ pa
   await expect(reloaded).toContainText('Parco nord');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
-test('cerchie: mini-feed privato persistente e separato dalla piazza', async ({ page }) => {
+test('canali: mini-feed privato persistente e separato dalla Home', async ({ page }) => {
   await page.goto('/demo');
   await page
     .getByRole('button', { name: 'Cerchie', exact: true })
@@ -111,10 +111,10 @@ test('cerchie: mini-feed privato persistente e separato dalla piazza', async ({ 
     page.locator('article').filter({ hasText: 'Ci vediamo sabato alle undici?' }),
   ).toBeVisible();
   await page
-    .getByRole('button', { name: 'La tua piazza', exact: true })
+    .getByRole('button', { name: 'Home', exact: true })
     .filter({ visible: true })
     .press('Enter');
-  await expect(page.getByRole('heading', { name: 'La tua piazza.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Home.' })).toBeVisible();
   await expect(
     page.locator('article:visible').filter({ hasText: 'Ci vediamo sabato alle undici?' }),
   ).toHaveCount(0);
@@ -184,7 +184,7 @@ test('demo: pubblicazione, commento, persistenza e ricerca', async ({ page }) =>
       external.push(r.url());
   });
   await page.goto('/demo');
-  await expect(page.getByRole('heading', { name: 'La tua piazza.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Home.' })).toBeVisible();
   await page.getByRole('button', { name: 'Che cosa vuoi raccontare?' }).click();
   await page.getByLabel('Testo del post').fill('Ci vediamo al parco #amici');
   await page.getByRole('button', { name: 'Pubblica', exact: true }).click();
@@ -234,7 +234,7 @@ test('messaggi: separa persone e gestione gruppi', async ({ page }) => {
 });
 test('notifiche: apre le chat di gruppo dal nuovo messaggio', async ({ page }) => {
   await page.goto('/demo');
-  await expect(page.getByRole('heading', { name: 'La tua piazza.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Home.' })).toBeVisible();
   await page.evaluate(async () => {
     await new Promise<void>((resolve, reject) => {
       const request = indexedDB.open('sn-demo', 1);
@@ -366,7 +366,7 @@ test('federazione: segnala una Nota e la nasconde dai feed locali', async ({ pag
   await unblock.getByLabel('Motivo della decisione').fill('Verifica completata: riapertura.');
   await unblock.getByRole('button', { name: 'Sblocca istanza' }).click();
   await expect(instance).toHaveCount(0);
-  await page.getByRole('button', { name: 'La tua piazza', exact: true }).click();
+  await page.getByRole('button', { name: 'Home', exact: true }).click();
   await expect(page.locator('article.remote-post')).toHaveCount(0);
   await page.reload();
   await expect(page.locator('article.remote-post')).toHaveCount(0);
@@ -694,7 +694,7 @@ test('note della comunità: proposta, revisione motivata e post originale conser
     'Nota approvata',
   );
   await page
-    .getByRole('button', { name: 'La tua piazza', exact: true })
+    .getByRole('button', { name: 'Home', exact: true })
     .filter({ visible: true })
     .evaluate((button: HTMLButtonElement) => button.click());
   await expect(page.locator('.context-note')).toContainText(
