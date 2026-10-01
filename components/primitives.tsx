@@ -1,6 +1,6 @@
 'use client';
 import Image from 'next/image';
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import {
   Bell,
   Bookmark,
@@ -10,6 +10,8 @@ import {
   ShieldCheck,
   Sprout,
   X,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import type { Profile, Post } from '@/lib/core/types';
 import { initials } from '@/lib/core/rules';
@@ -35,16 +37,33 @@ export function Media({
   demo?: boolean;
   priority?: boolean;
 }) {
-  if (!post.media_path) return null;
-  const src = demo ? post.media_path : `/api/media?path=${encodeURIComponent(post.media_path)}`;
-  return post.media_type?.startsWith('video/') ? (
+  const [active, setActive] = useState(0);
+  const items = post.media?.length
+    ? post.media.toSorted((a, b) => a.position - b.position)
+    : post.media_path
+      ? [
+          {
+            id: post.id,
+            post_id: post.id,
+            media_path: post.media_path,
+            media_type: post.media_type,
+            alt: post.alt,
+            caption: '',
+            position: 0,
+          },
+        ]
+      : [];
+  if (!items.length) return null;
+  const item = items[Math.min(active, items.length - 1)];
+  const src = demo ? item.media_path : `/api/media?path=${encodeURIComponent(item.media_path)}`;
+  const media = item.media_type?.startsWith('video/') ? (
     <video
       className="post-media video"
       controls
       preload="none"
       playsInline
       src={src}
-      aria-label={post.alt || 'Video del post'}
+      aria-label={item.alt || 'Video del post'}
     >
       <track kind="captions" />
     </video>
@@ -52,12 +71,48 @@ export function Media({
     <Image
       className="post-media"
       src={src}
-      alt={post.alt || 'Immagine condivisa'}
+      alt={item.alt || 'Immagine condivisa'}
       width={960}
       height={660}
       loading={priority ? 'eager' : 'lazy'}
       unoptimized
     />
+  );
+  return (
+    <div
+      className="post-carousel"
+      aria-roledescription={items.length > 1 ? 'carosello' : undefined}
+    >
+      {media}
+      {item.caption && (
+        <p className="post-media-caption" data-user-copy>
+          {item.caption}
+        </p>
+      )}
+      {items.length > 1 && (
+        <>
+          <button
+            className="carousel-control previous"
+            aria-label="Contenuto precedente"
+            disabled={active === 0}
+            onClick={() => setActive((current) => Math.max(0, current - 1))}
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <button
+            className="carousel-control next"
+            aria-label="Contenuto successivo"
+            disabled={active === items.length - 1}
+            onClick={() => setActive((current) => Math.min(items.length - 1, current + 1))}
+          >
+            <ChevronRight size={20} />
+          </button>
+          <span className="carousel-position" aria-live="polite">
+            {active + 1} / {items.length}
+          </span>
+        </>
+      )}
+    </div>
   );
 }
 export function Modal({

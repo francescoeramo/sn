@@ -1002,6 +1002,42 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
     const postId = posted[0].create_circle_post;
     expect(await asUser(bob, 'select * from public.posts where id=$1', [postId])).toHaveLength(1);
     expect(await asUser(eve, 'select * from public.posts where id=$1', [postId])).toHaveLength(0);
+    const carouselPaths = [`${alice}/${crypto.randomUUID()}`, `${alice}/${crypto.randomUUID()}`];
+    for (const path of carouselPaths) {
+      await asUser(
+        alice,
+        "insert into public.media_assets(path,owner_id,bytes,mime) values($1,$2,100,'image/png')",
+        [path, alice],
+      );
+      await asUser(
+        alice,
+        `insert into storage.objects(bucket_id,name,metadata) values('media',$1,'{"size":100,"mimetype":"image/png"}')`,
+        [path],
+      );
+    }
+    const carousel = await asUser<{ create_circle_post_with_media: string }>(
+      alice,
+      `select public.create_circle_post_with_media(
+        array[$1]::uuid[],'Due fotografie','',jsonb_build_array(
+          jsonb_build_object('media_path',$2::text,'media_type','image/png','alt','Prima','caption','Mattina'),
+          jsonb_build_object('media_path',$3::text,'media_type','image/png','alt','Seconda','caption','Sera')
+        ))`,
+      [circleId, ...carouselPaths],
+    );
+    const carouselId = carousel[0].create_circle_post_with_media;
+    expect(
+      await asUser<{ media_path: string; caption: string; position: number }>(
+        bob,
+        'select media_path,caption,position from public.post_media where post_id=$1 order by position',
+        [carouselId],
+      ),
+    ).toEqual([
+      { media_path: carouselPaths[0], caption: 'Mattina', position: 0 },
+      { media_path: carouselPaths[1], caption: 'Sera', position: 1 },
+    ]);
+    await expect(
+      asUser(eve, 'select * from public.post_media where post_id=$1', [carouselId]),
+    ).resolves.toHaveLength(0);
     const polled = await asUser<{ create_circle_poll: string }>(
       alice,
       "select public.create_circle_poll(array[$1]::uuid[],'Che cosa portiamo?','',array['Pane','Frutta'],86400)",
@@ -1095,9 +1131,17 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
     );
   });
   it('modifica i dettagli solo all’organizzatore e apre l’album dopo l’inizio', async () => {
-    await asUser(bob, 'insert into public.follows(follower_id,following_id) values($1,$2) on conflict do nothing', [bob, alice]);
+    await asUser(
+      bob,
+      'insert into public.follows(follower_id,following_id) values($1,$2) on conflict do nothing',
+      [bob, alice],
+    );
     await asUser(alice, 'update public.follows set accepted=true where follower_id=$1', [bob]);
-    await asUser(alice, 'insert into public.follows(follower_id,following_id) values($1,$2) on conflict do nothing', [alice, bob]);
+    await asUser(
+      alice,
+      'insert into public.follows(follower_id,following_id) values($1,$2) on conflict do nothing',
+      [alice, bob],
+    );
     await asUser(bob, 'update public.follows set accepted=true where follower_id=$1', [alice]);
 
     const circle = await asUser<{ create_circle: string }>(
@@ -1169,9 +1213,9 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
     );
 
     // Solo l'autore o l'organizzatore possono rimuovere una foto.
-    await expect(asUser(bob, 'select public.remove_event_photo($1)', [alicePhotoId])).rejects.toThrow(
-      'Accesso negato',
-    );
+    await expect(
+      asUser(bob, 'select public.remove_event_photo($1)', [alicePhotoId]),
+    ).rejects.toThrow('Accesso negato');
     await asUser(bob, 'select public.remove_event_photo($1)', [bobPhotoId]);
     expect(
       await asUser(bob, 'select id from public.event_photos where event_id=$1', [eventId]),
@@ -1214,11 +1258,11 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
     await expect(
       asUser(alice, 'select public.add_event_photo($1,$2,null)', [futureId, aliceShot]),
     ).rejects.toThrow('Album non disponibile');
-    await asUser(alice, "select public.update_event($1,'Pranzo','Tavolata','Casa',$2,null,$3,null)", [
-      futureId,
-      later,
-      circleId,
-    ]);
+    await asUser(
+      alice,
+      "select public.update_event($1,'Pranzo','Tavolata','Casa',$2,null,$3,null)",
+      [futureId, later, circleId],
+    );
     expect(
       await asUser<{ kind: string }>(
         bob,
@@ -1943,16 +1987,19 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
     }
   });
   it('tiene private le reazioni e limita risposte, menzioni e condivisioni', async () => {
-    await asUser(alice, "insert into public.posts(author_id,body) values($1,'Espressivo')", [alice]);
+    await asUser(alice, "insert into public.posts(author_id,body) values($1,'Espressivo')", [
+      alice,
+    ]);
     const [{ id: postId }] = await asUser<{ id: string }>(
       alice,
       "select id from public.posts where author_id=$1 and body='Espressivo' order by created_at desc limit 1",
       [alice],
     );
-    await asUser(alice, "insert into public.reactions(user_id,target_type,target_id,emoji) values($1,'post',$2,'❤️')", [
+    await asUser(
       alice,
-      postId,
-    ]);
+      "insert into public.reactions(user_id,target_type,target_id,emoji) values($1,'post',$2,'❤️')",
+      [alice, postId],
+    );
     expect(
       await asUser(alice, 'select emoji from public.reactions where target_id=$1', [postId]),
     ).toEqual([{ emoji: '❤️' }]);
@@ -1967,22 +2014,25 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
     ).toEqual([{ emoji: '👍' }]);
     expect(await asUser(bob, 'select * from public.reactions')).toHaveLength(0);
     await expect(
-      asUser(eve, "insert into public.reactions(user_id,target_type,target_id,emoji) values($1,'post',$2,'👍')", [
+      asUser(
         eve,
-        postId,
-      ]),
+        "insert into public.reactions(user_id,target_type,target_id,emoji) values($1,'post',$2,'👍')",
+        [eve, postId],
+      ),
     ).rejects.toThrow('row-level security');
     await expect(
-      asUser(alice, "insert into public.reactions(user_id,target_type,target_id,emoji) values($1,'post',$2,'🔥')", [
+      asUser(
         alice,
-        postId,
-      ]),
+        "insert into public.reactions(user_id,target_type,target_id,emoji) values($1,'post',$2,'🔥')",
+        [alice, postId],
+      ),
     ).rejects.toThrow();
 
-    await asUser(alice, "insert into public.comments(author_id,post_id,body,quote) values($1,$2,'Primo','')", [
+    await asUser(
       alice,
-      postId,
-    ]);
+      "insert into public.comments(author_id,post_id,body,quote) values($1,$2,'Primo','')",
+      [alice, postId],
+    );
     const [{ id: parentId }] = await asUser<{ id: string }>(
       alice,
       'select id from public.comments where post_id=$1 order by created_at desc limit 1',
@@ -2023,13 +2073,20 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
       ),
     ).toHaveLength(1);
     expect(
-      await asUser<{ kind: string }>(bob, "select kind from public.notifications where kind='mention'"),
+      await asUser<{ kind: string }>(
+        bob,
+        "select kind from public.notifications where kind='mention'",
+      ),
     ).toHaveLength(1);
-    await asUser(bob, "insert into public.mention_preferences(user_id,mentions_enabled) values($1,false) on conflict(user_id) do update set mentions_enabled=false", [
+    await asUser(
       bob,
-    ]);
+      'insert into public.mention_preferences(user_id,mentions_enabled) values($1,false) on conflict(user_id) do update set mentions_enabled=false',
+      [bob],
+    );
     const before = await asUser(bob, "select * from public.notifications where kind='mention'");
-    await asUser(alice, "insert into public.posts(author_id,body) values($1,'Ancora @bob')", [alice]);
+    await asUser(alice, "insert into public.posts(author_id,body) values($1,'Ancora @bob')", [
+      alice,
+    ]);
     expect(await asUser(bob, "select * from public.notifications where kind='mention'")).toEqual(
       before,
     );
@@ -2113,15 +2170,15 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
       asUser(eve, 'select public.add_album_item($1,$2,$3)', [postId, paths.eve, 'x']),
     ).rejects.toThrow('Album non disponibile');
     await expect(
-      asUser(
+      asUser(bob, 'insert into public.album_items(post_id,media_path,added_by) values($1,$2,$3)', [
+        postId,
+        paths.bob2,
         bob,
-        'insert into public.album_items(post_id,media_path,added_by) values($1,$2,$3)',
-        [postId, paths.bob2, bob],
-      ),
+      ]),
     ).rejects.toThrow('permission denied');
-    await expect(
-      asUser(eve, 'select public.remove_album_item($1)', [itemId]),
-    ).rejects.toThrow('Accesso negato');
+    await expect(asUser(eve, 'select public.remove_album_item($1)', [itemId])).rejects.toThrow(
+      'Accesso negato',
+    );
 
     await asUser(alice, 'select public.close_album($1)', [postId]);
     await expect(

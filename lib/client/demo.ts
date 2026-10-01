@@ -104,7 +104,7 @@ export function seed(): Snapshot {
         organizer_id: uid(1),
         circle_id: uid(501),
         title: 'Pranzo della domenica',
-        description: 'Ognuno porta qualcosa. Decidiamo il menu nella cerchia.',
+        description: 'Ognuno porta qualcosa. Decidiamo il menu nel canale.',
         location: 'Casa di Francesco',
         starts_at: new Date(Date.now() + 3 * 86400000).toISOString(),
         ends_at: new Date(Date.now() + 3 * 86400000 + 3 * 3600000).toISOString(),
@@ -479,11 +479,11 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
         );
       if (!admin || !mutual) throw new Error('Puoi invitare solo contatti reciproci.');
       if (s.circleMembers.filter((member) => member.circle_id === value.circle_id).length >= 20)
-        throw new Error('La cerchia ha già 20 persone.');
+        throw new Error('Il canale ha già 20 persone.');
       const current = s.circleMembers.find(
         (member) => member.circle_id === value.circle_id && member.user_id === value.user_id,
       );
-      if (current?.status === 'active') throw new Error('Questa persona è già nella cerchia.');
+      if (current?.status === 'active') throw new Error('Questa persona è già nel canale.');
       s.circleMembers = s.circleMembers.filter((member) => member !== current);
       s.circleMembers.push({
         circle_id: value.circle_id,
@@ -522,7 +522,7 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
       );
       if (!admin) throw new Error('Accesso negato.');
       const circle = s.circles.find((item) => item.id === value.circle_id && !item.archived_at);
-      if (!circle) throw new Error('Cerchia non disponibile.');
+      if (!circle) throw new Error('Canale non disponibile.');
       circle.name = value.name;
       circle.description = value.description;
       circle.image_path = value.image_path;
@@ -553,7 +553,7 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
             item.circle_id === value.circle_id && item.status === 'active' && item.role === 'admin',
         ).length === 1
       )
-        throw new Error('La cerchia deve avere almeno un admin.');
+        throw new Error('Il canale deve avere almeno un admin.');
       member.role = value.role;
       break;
     }
@@ -578,7 +578,7 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
             item.circle_id === value.circle_id && item.status === 'active' && item.role === 'admin',
         ).length === 1
       )
-        throw new Error('La cerchia deve avere almeno un admin.');
+        throw new Error('Il canale deve avere almeno un admin.');
       s.circleMembers = s.circleMembers.filter((item) => item !== member);
       break;
     }
@@ -664,7 +664,7 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
             member.status === 'active',
         )
       )
-        throw new Error('Cerchia non disponibile.');
+        throw new Error('Canale non disponibile.');
       s.events.push({
         id,
         organizer_id: me,
@@ -743,7 +743,7 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
             member.status === 'active',
         )
       )
-        throw new Error('Cerchia non disponibile.');
+        throw new Error('Canale non disponibile.');
       const substantial =
         value.starts_at !== event.starts_at ||
         value.ends_at !== event.ends_at ||
@@ -1098,23 +1098,31 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
     }
     case 'post': {
       const media = action.media_path;
-      if (media !== null) {
+      const allMedia = action.media?.map((item) => item.media_path) ?? (media ? [media] : []);
+      for (const mediaItem of allMedia) {
         if (
-          media.length > Math.ceil((LIMITS.file * 4) / 3) + 100 ||
+          mediaItem.length > Math.ceil((LIMITS.file * 4) / 3) + 100 ||
           !/^data:(?:image\/(?:jpeg|png|webp)|video\/(?:mp4|webm|quicktime));base64,[A-Za-z0-9+/]*={0,2}$/.test(
-            media,
+            mediaItem,
           )
         ) {
           throw new Error('Scegli un’immagine o un video entro 3 MB.');
         }
-        const encoded = media.slice(media.indexOf(',') + 1);
+        const encoded = mediaItem.slice(mediaItem.indexOf(',') + 1);
         const bytes =
           Math.floor((encoded.length * 3) / 4) -
           (encoded.endsWith('==') ? 2 : encoded.endsWith('=') ? 1 : 0);
         if (bytes > LIMITS.file) throw new Error('Il file supera 3 MB.');
       }
       // The shared schema validates post fields; data URLs are local to this adapter, never API paths.
-      const parsed = postInput.parse({ ...action, media_path: media ? 'demo-media' : null });
+      const parsed = postInput.parse({
+        ...action,
+        media_path: media ? 'demo-media' : null,
+        media: action.media?.map((item, position) => ({
+          ...item,
+          media_path: `demo-media-${position}`,
+        })),
+      });
       const { poll, ...p } = {
         ...parsed,
         media_path: media,
@@ -1144,6 +1152,19 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
           : null,
         created_at: now,
         expires_at: p.kind === 'story' ? new Date(Date.now() + 86400000).toISOString() : null,
+        media: action.media?.map((item, position) => ({
+          id: crypto.randomUUID(),
+          post_id: id,
+          media_path: item.media_path,
+          media_type:
+            item.media_type ??
+            (item.media_path.startsWith('data:')
+              ? item.media_path.slice(5, item.media_path.indexOf(';'))
+              : null),
+          alt: item.alt,
+          caption: item.caption,
+          position,
+        })),
       });
       for (const circle_id of parsed.circle_ids ?? [])
         s.circlePosts.push({ circle_id, post_id: id, added_by: me, created_at: now });
@@ -1376,6 +1397,8 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
         display_name: action.display_name,
         bio: action.bio,
         is_private: action.is_private,
+        connections_visibility:
+          action.connections_visibility ?? s.me.connections_visibility ?? 'everyone',
         federation_enabled: action.is_private ? false : s.me.federation_enabled,
       };
       s.profiles = s.profiles.map((p) => (p.id === me ? s.me : p));
@@ -1606,7 +1629,7 @@ export function buildDemoDigest(s: Snapshot, me: string): DigestItem[] {
       const circle = (s.circles ?? []).find((c) => c.id === source.source_id && !c.archived_at);
       if (!circle) continue;
       for (const link of (s.circlePosts ?? []).filter((cp) => cp.circle_id === circle.id))
-        candidates.push({ post_id: link.post_id, reason: `Cerchia ${circle.name}`, priority: 1 });
+        candidates.push({ post_id: link.post_id, reason: `Canale ${circle.name}`, priority: 1 });
     } else if (source.source_type === 'person') {
       const person = s.profiles.find((p) => p.id === source.source_id);
       if (!person) continue;

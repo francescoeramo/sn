@@ -1,19 +1,53 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
+
+async function openSettings(page: Page) {
+  await page
+    .locator('.my-account:visible, button[aria-label="Il tuo profilo"]:visible')
+    .first()
+    .click();
+  await page
+    .getByRole('button', { name: 'Impostazioni', exact: true })
+    .filter({ visible: true })
+    .click();
+}
+
+async function openActivity(page: Page, name: 'Canali' | 'Eventi' | 'Collaborazioni') {
+  await page
+    .getByRole('button', { name: 'Messaggi', exact: true })
+    .filter({ visible: true })
+    .click();
+  await page.getByRole('tab', { name: 'Attività' }).click();
+  await page.getByRole('button', { name, exact: true }).click();
+}
+
+async function openComposer(page: Page) {
+  await page
+    .getByRole('button', { name: 'Crea un post', exact: true })
+    .filter({ visible: true })
+    .click();
+}
 test('lingua: cambia subito, resta salvata e non traduce i contenuti delle persone', async ({
   page,
 }) => {
   await page.goto('/demo');
-  await page.getByRole('button', { name: 'Impostazioni', exact: true }).click();
+  await openSettings(page);
   await page.getByRole('switch', { name: 'Usa SN in inglese' }).check();
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await expect(page.getByRole('heading', { name: 'Your settings.' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Save changes' })).toBeVisible();
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-  await expect(page.getByRole('heading', { name: 'Your feed.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Home.' })).toBeVisible();
   await expect(page.getByText(/Domanda seria: qual è il piatto/)).toBeVisible();
   await expect(page.getByRole('button', { name: 'Create a post' })).toBeVisible();
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await page
+    .locator('.my-account:visible, button[aria-label="Your profile"]:visible')
+    .first()
+    .click();
+  await page
+    .getByRole('button', { name: 'Settings', exact: true })
+    .filter({ visible: true })
+    .click();
   await page.getByRole('switch', { name: 'Use SN in English' }).uncheck();
   await expect(page.locator('html')).toHaveAttribute('lang', 'it');
   await expect(page.getByRole('heading', { name: 'Le tue impostazioni.' })).toBeVisible();
@@ -21,13 +55,13 @@ test('lingua: cambia subito, resta salvata e non traduce i contenuti delle perso
 
 test('eventi: crea un incontro privato e conserva la risposta', async ({ page }) => {
   await page.goto('/demo');
-  await page.getByRole('button', { name: 'Eventi', exact: true }).filter({ visible: true }).click();
-  await expect(page.getByRole('heading', { name: 'Eventi.' })).toBeVisible();
+  await openActivity(page, 'Eventi');
+  await expect(page.getByRole('region', { name: 'Prossimi incontri' })).toBeVisible();
   await page.getByRole('button', { name: 'Nuovo evento' }).click();
   await page.getByLabel('Titolo').fill('Cinema in cortile');
   await page.getByLabel('Inizio').fill('2099-06-12T20:30');
   await page.getByLabel(/Luogo/).fill('Cortile di Marco');
-  await page.getByLabel('Chi può vederlo').selectOption({ label: 'Cerchia · Tavolo lungo' });
+  await page.getByLabel('Chi può vederlo').selectOption({ label: 'Canale · Tavolo lungo' });
   await page.getByRole('button', { name: 'Crea evento' }).click();
   const event = page.locator('article').filter({ hasText: 'Cinema in cortile' });
   await expect(event).toBeVisible();
@@ -40,7 +74,7 @@ test('eventi: crea un incontro privato e conserva la risposta', async ({ page })
   await event.getByRole('button', { name: 'Pubblica aggiornamento' }).click();
   await expect(event.getByText('Portate una sedia pieghevole.')).toBeVisible();
   await page.reload();
-  await page.getByRole('button', { name: 'Eventi', exact: true }).filter({ visible: true }).click();
+  await openActivity(page, 'Eventi');
   await expect(page.locator('article').filter({ hasText: 'Cinema in cortile' })).toContainText(
     'Cortile di Marco',
   );
@@ -54,7 +88,7 @@ test('eventi: modifica i dettagli e apre l’album dopo l’inizio', async ({ pa
   const pad = (part: number) => String(part).padStart(2, '0');
   const startedInput = `${started.getFullYear()}-${pad(started.getMonth() + 1)}-${pad(started.getDate())}T${pad(started.getHours())}:${pad(started.getMinutes())}`;
   await page.goto('/demo');
-  await page.getByRole('button', { name: 'Eventi', exact: true }).filter({ visible: true }).click();
+  await openActivity(page, 'Eventi');
   await page.getByRole('button', { name: 'Nuovo evento' }).click();
   await page.getByLabel('Titolo').fill('Biciclettata');
   await page.getByLabel('Inizio').fill(startedInput);
@@ -81,31 +115,25 @@ test('eventi: modifica i dettagli e apre l’album dopo l’inizio', async ({ pa
   await event.getByRole('button', { name: 'Rimuovi foto dall’album' }).click();
   await expect(event.locator('.event-album-grid img')).toHaveCount(0);
   await page.reload();
-  await page.getByRole('button', { name: 'Eventi', exact: true }).filter({ visible: true }).click();
+  await openActivity(page, 'Eventi');
   const reloaded = page.locator('article').filter({ hasText: 'Biciclettata' });
   await expect(reloaded).toContainText('Parco nord');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 test('canali: mini-feed privato persistente e separato dalla Home', async ({ page }) => {
   await page.goto('/demo');
-  await page
-    .getByRole('button', { name: 'Cerchie', exact: true })
-    .filter({ visible: true })
-    .click();
-  await expect(page.getByRole('heading', { name: 'Cerchie.' })).toBeVisible();
+  await openActivity(page, 'Canali');
+  await expect(page.getByRole('region', { name: 'I tuoi canali' })).toBeVisible();
   await page.getByRole('button', { name: /Tavolo lungo/ }).click();
   await expect(page.getByRole('heading', { name: 'Tavolo lungo' })).toBeVisible();
   await page.getByRole('button', { name: 'Scrivi qui' }).click();
-  await page.getByLabel('Scrivi nella cerchia').fill('Ci vediamo sabato alle undici?');
+  await page.getByLabel('Scrivi nel canale').fill('Ci vediamo sabato alle undici?');
   await page.getByRole('button', { name: 'Pubblica', exact: true }).click();
   await expect(
     page.locator('article').filter({ hasText: 'Ci vediamo sabato alle undici?' }),
   ).toBeVisible();
   await page.reload();
-  await page
-    .getByRole('button', { name: 'Cerchie', exact: true })
-    .filter({ visible: true })
-    .click();
+  await openActivity(page, 'Canali');
   await page.getByRole('button', { name: /Tavolo lungo/ }).click();
   await expect(
     page.locator('article').filter({ hasText: 'Ci vediamo sabato alle undici?' }),
@@ -120,14 +148,11 @@ test('canali: mini-feed privato persistente e separato dalla Home', async ({ pag
   ).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
-test('cerchie: un admin rinomina lo spazio e gestisce i membri', async ({ page }) => {
+test('canali: un admin rinomina lo spazio e gestisce i membri', async ({ page }) => {
   await page.goto('/demo');
-  await page
-    .getByRole('button', { name: 'Cerchie', exact: true })
-    .filter({ visible: true })
-    .click();
+  await openActivity(page, 'Canali');
   await page.getByRole('button', { name: /Tavolo lungo/ }).click();
-  await page.getByRole('button', { name: 'Modifica cerchia' }).click();
+  await page.getByRole('button', { name: 'Modifica canale' }).click();
   await page.getByLabel('Nome').fill('Tavolo del sabato');
   await page.getByLabel(/Descrizione/).fill('Cene e gite decise insieme.');
   await page.getByLabel(/Immagine/).setInputFiles({
@@ -145,31 +170,25 @@ test('cerchie: un admin rinomina lo spazio e gestisce i membri', async ({ page }
   await expect(
     page.getByRole('button', { name: 'Rimuovi Giulia Rossi dagli admin' }),
   ).toBeVisible();
-  await page.getByRole('button', { name: 'Rimuovi Giulia Rossi dalla cerchia' }).click();
+  await page.getByRole('button', { name: 'Rimuovi Giulia Rossi dal canale' }).click();
   await expect(page.getByRole('button', { name: 'Nomina Giulia Rossi admin' })).toHaveCount(0);
   await page.reload();
-  await page
-    .getByRole('button', { name: 'Cerchie', exact: true })
-    .filter({ visible: true })
-    .click();
+  await openActivity(page, 'Canali');
   await page.getByRole('button', { name: /Tavolo del sabato/ }).click();
   await expect(page.getByText('Cene e gite decise insieme.')).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
-test('cerchie: il composer pubblica nella destinazione scelta', async ({ page }) => {
+test('canali: il composer pubblica nella destinazione scelta', async ({ page }) => {
   await page.goto('/demo');
-  await page.getByRole('button', { name: 'Che cosa vuoi raccontare?' }).click();
+  await openComposer(page);
   await page.getByLabel('Testo del post').fill('Una proposta soltanto per il gruppo.');
   await page.getByLabel('Tavolo lungo').check();
-  await expect(page.getByText('Solo nella cerchia scelta')).toBeVisible();
+  await expect(page.getByText(/soltanto ai membri dei canali selezionati/)).toBeVisible();
   await page.getByRole('button', { name: 'Pubblica', exact: true }).click();
   await expect(
     page.locator('article:visible').filter({ hasText: 'Una proposta soltanto per il gruppo.' }),
   ).toHaveCount(0);
-  await page
-    .getByRole('button', { name: 'Cerchie', exact: true })
-    .filter({ visible: true })
-    .click();
+  await openActivity(page, 'Canali');
   await page.getByRole('button', { name: /Tavolo lungo/ }).click();
   await expect(
     page.locator('article').filter({ hasText: 'Una proposta soltanto per il gruppo.' }),
@@ -185,7 +204,7 @@ test('demo: pubblicazione, commento, persistenza e ricerca', async ({ page }) =>
   });
   await page.goto('/demo');
   await expect(page.getByRole('heading', { name: 'Home.' })).toBeVisible();
-  await page.getByRole('button', { name: 'Che cosa vuoi raccontare?' }).click();
+  await openComposer(page);
   await page.getByLabel('Testo del post').fill('Ci vediamo al parco #amici');
   await page.getByRole('button', { name: 'Pubblica', exact: true }).click();
   const post = page.locator('article').filter({ hasText: 'Ci vediamo al parco' });
@@ -211,6 +230,35 @@ test('demo: pubblicazione, commento, persistenza e ricerca', async ({ page }) =>
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   expect(errors).toEqual([]);
   expect(external).toEqual([]);
+});
+
+test('post: carousel con descrizioni indipendenti', async ({ page }) => {
+  await page.goto('/demo');
+  await openComposer(page);
+  await page.getByLabel('Testo del post').fill('Due momenti della giornata');
+  const png = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+    'base64',
+  );
+  await page.locator('input[type="file"]').setInputFiles([
+    { name: 'mattina.png', mimeType: 'image/png', buffer: png },
+    { name: 'sera.png', mimeType: 'image/png', buffer: png },
+  ]);
+  const items = page.locator('.composer-media-item');
+  await expect(items).toHaveCount(2);
+  await items.nth(0).getByLabel('Descrizione').fill('La mattina');
+  await items.nth(1).getByLabel('Descrizione').fill('La sera');
+  await page.getByRole('button', { name: 'Pubblica', exact: true }).click();
+  const post = page.locator('.post-card').filter({ hasText: 'Due momenti della giornata' });
+  await expect(post.getByText('La mattina')).toBeVisible();
+  await expect(post.getByText('1 / 2')).toBeVisible();
+  await post.getByRole('button', { name: 'Contenuto successivo' }).click();
+  await expect(post.getByText('La sera')).toBeVisible();
+  await expect(post.getByText('2 / 2')).toBeVisible();
+  await page.reload();
+  await expect(
+    page.locator('.post-card').filter({ hasText: 'Due momenti della giornata' }),
+  ).toBeVisible();
 });
 test('messaggi: separa persone e gestione gruppi', async ({ page }) => {
   await page.goto('/demo');
@@ -330,7 +378,7 @@ test('feed calmo: like senza contatori pubblici e traguardo finale', async ({ pa
   const card = page.locator('article').first();
   await expect(card.getByRole('button', { name: 'Mi piace', exact: true })).toHaveText('Mi piace');
   await expect(card.locator('.author-interactions')).toHaveCount(0);
-  await expect(page.getByText('Sei in pari.', { exact: false })).toBeVisible();
+  await expect(page.getByLabel('Fine dei post disponibili')).toBeVisible();
 });
 
 test('federazione: segnala una Nota e la nasconde dai feed locali', async ({ page }) => {
@@ -366,7 +414,7 @@ test('federazione: segnala una Nota e la nasconde dai feed locali', async ({ pag
   await unblock.getByLabel('Motivo della decisione').fill('Verifica completata: riapertura.');
   await unblock.getByRole('button', { name: 'Sblocca istanza' }).click();
   await expect(instance).toHaveCount(0);
-  await page.getByRole('button', { name: 'Home', exact: true }).click();
+  await page.getByRole('button', { name: 'Home', exact: true }).press('Enter');
   await expect(page.locator('article.remote-post')).toHaveCount(0);
   await page.reload();
   await expect(page.locator('article.remote-post')).toHaveCount(0);
@@ -393,7 +441,8 @@ test('storie: sequenza completa dello stesso autore e segmenti separati', async 
       .locator('input[type=file]')
       .setInputFiles({ name: 'pixel.png', mimeType: 'image/png', buffer: png });
     await page
-      .getByLabel('Descrizione del contenuto (facoltativa)')
+      .locator('.composer-media-item')
+      .getByLabel('Descrizione')
       .fill('Pixel per il test della storia');
     await page.getByRole('button', { name: 'Pubblica', exact: true }).click();
     await expect(page.getByRole('dialog')).not.toBeVisible();
@@ -428,21 +477,17 @@ test('storie video: autoplay e passaggio al prossimo autore a fine media', async
 });
 test('privacy, esportazione demo e modifica del profilo', async ({ page, isMobile }) => {
   await page.goto('/demo');
-  await page
-    .getByRole('button', { name: 'Impostazioni', exact: true })
-    .filter({ visible: true })
-    .click();
+  await openSettings(page);
   await page.getByLabel('Nome visualizzato').fill('Francesco Test');
+  await page.getByLabel('Visibilità di follower e seguiti').selectOption('preview');
   await page.getByRole('button', { name: 'Salva modifiche' }).click();
   await expect(page.getByRole('status')).toContainText('Profilo aggiornato');
   await page.getByRole('button', { name: 'Attiva federazione' }).click();
   await expect(page.getByRole('status')).toContainText('Federazione attivata');
   await page.reload();
-  await page
-    .getByRole('button', { name: 'Impostazioni', exact: true })
-    .filter({ visible: true })
-    .click();
+  await openSettings(page);
   await expect(page.getByLabel('Nome visualizzato')).toHaveValue('Francesco Test');
+  await expect(page.getByLabel('Visibilità di follower e seguiti')).toHaveValue('preview');
   await expect(page.getByRole('button', { name: 'Disattiva federazione' })).toBeVisible();
   await page.getByLabel('Account privato', { exact: false }).check();
   await page.getByRole('button', { name: 'Salva modifiche' }).click();
@@ -666,10 +711,7 @@ test('note della comunità: proposta, revisione motivata e post originale conser
   await dialog.getByRole('button', { name: 'Invia alla revisione' }).click();
   await expect(post.getByText('La tua nota è in revisione')).toBeVisible();
   await expect(post.locator('.context-note')).toHaveCount(0);
-  await page
-    .getByRole('button', { name: 'Impostazioni', exact: true })
-    .filter({ visible: true })
-    .click();
+  await openSettings(page);
   await page.getByRole('button', { name: 'Apri moderazione', exact: true }).click();
   const accounts = page.getByRole('region', { name: 'Gestione account' });
   await accounts.getByRole('button', { name: 'Sospendi' }).first().click();
@@ -735,7 +777,10 @@ test('salvati: raccolta privata nel profilo, persistenza e rimozione', async ({
     'true',
   );
   await page.reload();
-  await page.getByRole('button', { name: 'Il tuo profilo', exact: true }).click();
+  await page
+    .locator('.my-account:visible, button[aria-label="Il tuo profilo"]:visible')
+    .first()
+    .click();
   await page.getByRole('button', { name: 'Salvati', exact: true }).click();
   await expect(page.locator('article')).toHaveCount(1);
   await expect(
@@ -758,7 +803,7 @@ test('salvati: raccolta privata nel profilo, persistenza e rimozione', async ({
 
 test('avviso: testo, media e commenti si aprono solo su richiesta', async ({ page }, testInfo) => {
   await page.goto('/demo');
-  await page.getByRole('button', { name: 'Che cosa vuoi raccontare?' }).click();
+  await openComposer(page);
   await page.getByLabel('Testo del post').fill('Il finale è una sorpresa #finale');
   await page.getByLabel('Avviso di contenuto (facoltativo)').fill('Spoiler sul film');
   const png = await page.evaluate(() => {
@@ -771,7 +816,11 @@ test('avviso: testo, media e commenti si aprono solo su richiesta', async ({ pag
     mimeType: 'image/png',
     buffer: Buffer.from(png, 'base64'),
   });
-  await page.getByLabel('Descrizione del contenuto (facoltativa)').fill('La scena finale');
+  await page.locator('.composer-media-item').getByLabel('Descrizione').fill('La scena finale');
+  await page
+    .locator('.composer-media-item')
+    .getByLabel('Testo alternativo')
+    .fill('La scena finale');
   await page.getByRole('button', { name: 'Pubblica', exact: true }).click();
   const post = page.locator('article').filter({ hasText: 'Spoiler sul film' });
   await expect(post).toBeVisible();
@@ -810,7 +859,12 @@ test('avviso delle storie: nessun media o autoplay prima della scelta', async ({
     buffer: Buffer.from(png, 'base64'),
   });
   await page
-    .getByLabel('Descrizione del contenuto (facoltativa)')
+    .locator('.composer-media-item')
+    .getByLabel('Descrizione')
+    .fill('Immagine protetta da avviso');
+  await page
+    .locator('.composer-media-item')
+    .getByLabel('Testo alternativo')
     .fill('Immagine protetta da avviso');
   await page.getByRole('button', { name: 'Pubblica', exact: true }).click();
   await page.getByRole('button', { name: 'Francesco', exact: true }).click();
@@ -884,7 +938,7 @@ test('sondaggi: creazione, voto unico e risultati persistenti', async ({ page })
     page.locator('article').filter({ hasText: 'Domanda seria' }).getByText('Voto registrato'),
   ).toBeVisible();
 
-  await page.getByRole('button', { name: 'Che cosa vuoi raccontare?' }).click();
+  await openComposer(page);
   await page.getByRole('button', { name: 'Sondaggio', exact: true }).click();
   await page.getByLabel('Testo del post').fill('Cinema o passeggiata?');
   await page.getByPlaceholder('Opzione 1').fill('Cinema');
@@ -898,10 +952,7 @@ test('sondaggi: creazione, voto unico e risultati persistenti', async ({ page })
 
 test('tema: scelta scura persistente senza lampo iniziale', async ({ page }) => {
   await page.goto('/demo');
-  await page
-    .getByRole('button', { name: 'Impostazioni', exact: true })
-    .filter({ visible: true })
-    .click();
+  await openSettings(page);
   await page.getByRole('button', { name: 'Scuro', exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   expect(
@@ -909,10 +960,7 @@ test('tema: scelta scura persistente senza lampo iniziale', async ({ page }) => 
   ).toBe('rgb(24, 23, 28)');
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await page
-    .getByRole('button', { name: 'Impostazioni', exact: true })
-    .filter({ visible: true })
-    .click();
+  await openSettings(page);
   await expect(page.getByRole('button', { name: 'Scuro', exact: true })).toHaveAttribute(
     'aria-pressed',
     'true',
@@ -921,10 +969,7 @@ test('tema: scelta scura persistente senza lampo iniziale', async ({ page }) => 
 
 test('digest: attivazione, motivi spiegati e persistenza', async ({ page }) => {
   await page.goto('/demo');
-  await page
-    .getByRole('button', { name: 'Impostazioni', exact: true })
-    .filter({ visible: true })
-    .click();
+  await openSettings(page);
   const digest = page.locator('section').filter({
     has: page.getByRole('heading', { name: 'Digest scelto da te' }),
   });
@@ -932,28 +977,22 @@ test('digest: attivazione, motivi spiegati e persistenza', async ({ page }) => {
   await digest.getByRole('button', { name: 'Salva preferenze' }).click();
   await digest.getByRole('button', { name: /Tavolo lungo/ }).click();
   await digest.getByRole('button', { name: 'Aggiorna adesso' }).click();
-  await expect(digest.getByText('Cerchia Tavolo lungo')).toBeVisible();
+  await expect(digest.getByText('Canale Tavolo lungo')).toBeVisible();
   const items = await digest.locator('.digest-items li').count();
   expect(items).toBeGreaterThan(0);
   expect(items).toBeLessThanOrEqual(5);
   await page.reload();
-  await page
-    .getByRole('button', { name: 'Impostazioni', exact: true })
-    .filter({ visible: true })
-    .click();
+  await openSettings(page);
   const reloaded = page.locator('section').filter({
     has: page.getByRole('heading', { name: 'Digest scelto da te' }),
   });
-  await expect(reloaded.getByText('Cerchia Tavolo lungo')).toBeVisible();
+  await expect(reloaded.getByText('Canale Tavolo lungo')).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
 test('collaborazioni: invita un contatto, aggiunge media e chiude l’album', async ({ page }) => {
   await page.goto('/demo');
-  await page
-    .getByRole('button', { name: 'Collaborazioni', exact: true })
-    .filter({ visible: true })
-    .click();
+  await openActivity(page, 'Collaborazioni');
   const panel = page.locator('article').filter({ hasText: 'Sto preparando un album condiviso' });
   await expect(panel.getByText('Collaboratore')).toBeVisible();
   await panel.getByRole('button', { name: 'Invita un contatto' }).click();
@@ -974,10 +1013,7 @@ test('collaborazioni: invita un contatto, aggiunge media e chiude l’album', as
   await panel.getByRole('button', { name: 'Chiudi album' }).click();
   await expect(panel.getByText('Album chiuso dall’autore.')).toBeVisible();
   await page.reload();
-  await page
-    .getByRole('button', { name: 'Collaborazioni', exact: true })
-    .filter({ visible: true })
-    .click();
+  await openActivity(page, 'Collaborazioni');
   const reloaded = page.locator('article').filter({ hasText: 'Sto preparando un album condiviso' });
   await expect(reloaded.getByText('Sul treno')).toBeVisible();
   await expect(reloaded.getByText('Album chiuso dall’autore.')).toBeVisible();
@@ -987,6 +1023,8 @@ test('collaborazioni: invita un contatto, aggiunge media e chiude l’album', as
 test('espressioni: reazione privata, risposta citata e condivisione interna', async ({ page }) => {
   await page.goto('/demo');
   const post = page.locator('.post-card').filter({ hasText: 'Domanda seria' });
+  await expect(post.getByRole('button', { name: 'Reazione 👎' })).toBeVisible();
+  await expect(post.getByRole('button', { name: 'Reazione 😠' })).toBeVisible();
   await post.getByRole('button', { name: 'Reazione ❤️' }).click();
   await expect(post.getByRole('button', { name: 'Reazione ❤️' })).toHaveAttribute(
     'aria-pressed',
@@ -1002,7 +1040,7 @@ test('espressioni: reazione privata, risposta citata e condivisione interna', as
   await expect(post.getByText('Risposta con citazione')).toBeVisible();
   await expect(post.locator('.comment-quote').first()).toBeVisible();
   await post.getByRole('button', { name: 'Condividi internamente' }).click();
-  await post.getByLabel('Destinazione').selectOption({ index: 1 });
+  await post.getByRole('radio').first().check();
   await post.getByRole('button', { name: 'Condividi', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Condividi internamente' })).toHaveCount(0);
   await page.reload();
@@ -1030,10 +1068,7 @@ test('esplora: percorsi spiegati e sezioni nascondibili', async ({ page }) => {
     .getByRole('button', { name: 'Nascondi' })
     .click();
   await expect(page.getByRole('heading', { name: 'Chi seguono i tuoi contatti' })).toHaveCount(0);
-  await page
-    .getByRole('button', { name: 'Impostazioni', exact: true })
-    .filter({ visible: true })
-    .click();
+  await openSettings(page);
   const discovery = page.locator('section').filter({
     has: page.getByRole('heading', { name: 'Scoperta' }),
   });

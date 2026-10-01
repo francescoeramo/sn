@@ -2,15 +2,15 @@ import type { Action } from '@/lib/core/types';
 
 const ACTION_FAILURE: Record<Action['type'], string> = {
   'complete-onboarding': 'Introduzione non chiusa. Riprova.',
-  'create-circle': 'Cerchia non creata. Controlla nome e immagine.',
+  'create-circle': 'Canale non creato. Controlla nome e immagine.',
   'invite-circle': 'Invito non inviato. Scegli un contatto reciproco.',
   'respond-circle': 'Risposta non salvata. Riapri l’invito e riprova.',
-  'update-circle': 'Cerchia non aggiornata. Controlla nome e immagine.',
+  'update-circle': 'Canale non aggiornato. Controlla nome e immagine.',
   'set-circle-role': 'Ruolo non cambiato. Verifica di essere amministratore.',
   'remove-circle-member': 'Persona non rimossa. Verifica di essere amministratore.',
-  'leave-circle': 'Non hai lasciato la cerchia. Assegna prima un altro amministratore.',
-  'archive-circle': 'Cerchia non archiviata. Riprova dalla gestione della cerchia.',
-  'delete-circle': 'Cerchia non eliminata. Digita la conferma richiesta.',
+  'leave-circle': 'Non hai lasciato il canale. Assegna prima un altro amministratore.',
+  'archive-circle': 'Canale non archiviato. Riprova dalla gestione del canale.',
+  'delete-circle': 'Canale non eliminato. Digita la conferma richiesta.',
   'create-event': 'Evento non creato. Controlla titolo, luogo e data.',
   'respond-event': 'Risposta all’evento non salvata. Riprova.',
   'cancel-event': 'Evento non annullato. Verifica di esserne l’organizzatore.',
@@ -61,7 +61,7 @@ const ACTION_FAILURE: Record<Action['type'], string> = {
 };
 
 const GENERIC_ERROR =
-  /^(operazione non riuscita|operazione non riconosciuta|richiesta non completata|caricamento non riuscito|il servizio non risponde|controlla i campi|accesso negato|failed to fetch|load failed|networkerror|(invito|cerchia|evento|album|post|messaggio|opzione|risposta|contenuto federato) non disponibile|nota già esaminata o non disponibile|segnalazione già esaminata o non disponibile)/i;
+  /^(operazione non riuscita|operazione non riconosciuta|richiesta non completata|caricamento non riuscito|il servizio non risponde|controlla i campi|accesso negato|failed to fetch|load failed|networkerror|(invito|canale|cerchia|evento|album|post|messaggio|opzione|risposta|contenuto federato) non disponibile|nota già esaminata o non disponibile|segnalazione già esaminata o non disponibile)/i;
 
 export function actionErrorMessage(action: Action, error: unknown) {
   const message = error instanceof Error ? error.message.trim() : '';

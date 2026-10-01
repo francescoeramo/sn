@@ -591,6 +591,11 @@ small {
   overflow-x: auto;
   scrollbar-width: none;
 }
+.home-section-break {
+  height: 25px;
+  margin: 8px 0 24px;
+  border-bottom: 1px solid var(--line);
+}
 .story-button {
   display: flex;
   flex-direction: column;
@@ -828,6 +833,49 @@ small {
   max-height: 590px;
   min-height: 220px;
   background: #292934;
+}
+.post-carousel {
+  position: relative;
+  margin-top: 14px;
+}
+.post-media-caption {
+  margin: 11px 20px 0;
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.carousel-control {
+  position: absolute;
+  top: min(45%, 240px);
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #211d28d9;
+  color: #fff;
+}
+.carousel-control.previous {
+  left: 27px;
+}
+.carousel-control.next {
+  right: 27px;
+}
+.carousel-control:disabled {
+  opacity: 0.28;
+}
+.carousel-position {
+  position: absolute;
+  top: 12px;
+  right: 30px;
+  padding: 5px 8px;
+  border-radius: 10px;
+  background: #211d28d9;
+  color: #fff;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
 }
 .post-actions {
   padding: 15px 20px 13px;
@@ -1593,6 +1641,91 @@ label small {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+.profile-connections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 0 24px 24px;
+}
+.profile-connections details {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+.profile-connections summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  color: var(--violet-dark);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.connection-list {
+  display: grid;
+  gap: 5px;
+}
+.connection-list button {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  text-align: left;
+}
+.connection-list strong,
+.connection-list small {
+  display: block;
+}
+.connection-list strong {
+  font-size: 11px;
+}
+.connection-list small {
+  color: var(--muted);
+  font-size: 9px;
+}
+.share-destinations {
+  margin: 18px 0;
+}
+.share-destinations legend {
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+.share-destinations label {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  border-top: 1px solid var(--line);
+}
+.composer-media-list {
+  display: grid;
+  gap: 12px;
+  margin: 14px 0;
+}
+.composer-media-item {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+}
+.composer-media-item > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.composer-media-item label {
+  margin-top: 10px;
+}
+@media (max-width: 560px) {
+  .profile-connections {
+    grid-template-columns: 1fr;
+    padding-inline: 17px;
+  }
+  .carousel-control {
+    width: 44px;
+    height: 44px;
+  }
 }
 .profile-details p {
   font-size: 12px;
@@ -3378,7 +3511,7 @@ label small {
   line-height: 1.6;
 }
 
-/* Cerchie: spazi privati, leggibili come conversazioni e non come dashboard. */
+/* Canali: spazi privati, leggibili come conversazioni e non come dashboard. */
 .circles-overview,
 .circle-detail {
   display: grid;

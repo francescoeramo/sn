@@ -12,9 +12,6 @@ import {
   Settings,
   Plus,
   ArrowUpRight,
-  ImagePlus,
-  Video,
-  Clock3,
   ChevronRight,
   LockKeyhole,
   RefreshCw,
@@ -32,7 +29,7 @@ import {
   Handshake,
   UsersRound,
 } from 'lucide-react';
-import type { Action, Snapshot, Post } from '@/lib/core/types';
+import type { Action, Snapshot, Post, Profile } from '@/lib/core/types';
 import { LIMITS, isActive, hashtags, relativeTime } from '@/lib/core/rules';
 import { loadDemo, mutateDemo, clearDemo, seed } from '@/lib/client/demo';
 import { Avatar, Empty, LoadingShell, Modal } from './primitives';
@@ -155,7 +152,11 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
   const [view, setView] = useState<View>('home');
   const [profileId, setProfileId] = useState<string | null>(null);
   const [profileTab, setProfileTab] = useState<'posts' | 'saved'>('posts');
-  const [filter, setFilter] = useState<'following' | 'all'>('following');
+  const [profileConnections, setProfileConnections] = useState<{
+    followers: Profile[];
+    following: Profile[];
+    visibility: 'everyone' | 'nobody' | 'preview';
+  } | null>(null);
   const [query, setQuery] = useState('');
   const [composer, setComposer] = useState<Post['kind'] | null>(null);
   const [story, setStory] = useState<Post | null>(null);
@@ -261,6 +262,22 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
       clearTimeout(timer);
     };
   }, [demo, query, view]);
+  useEffect(() => {
+    if (demo || view !== 'profile' || !state) return;
+    const targetId = profileId ?? state.me.id;
+    let cancelled = false;
+    request(`profile/connections?id=${encodeURIComponent(targetId)}`)
+      .then((connections) => {
+        if (!cancelled) setProfileConnections(connections);
+      })
+      .catch((error) => {
+        if (!cancelled)
+          setNotice(error instanceof Error ? error.message : 'Collegamenti non caricati.');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [demo, profileId, state, view]);
   async function act(action: Action) {
     if (!state || locked.current) return false;
     locked.current = true;
@@ -352,6 +369,25 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
     (p) => p.kind === 'story' && (followed.has(p.author_id) || p.author_id === me.id),
   );
   const focusProfile = profiles.find((p) => p.id === (profileId ?? me.id));
+  const visibleProfileConnections = (() => {
+    if (!demo || !focusProfile) return profileConnections;
+    const visibility =
+      focusProfile.id === me.id ? 'everyone' : (focusProfile.connections_visibility ?? 'everyone');
+    const followers = state.follows
+      .filter((follow) => follow.following_id === focusProfile.id && follow.accepted)
+      .flatMap((follow) => profiles.filter((profile) => profile.id === follow.follower_id));
+    const following = state.follows
+      .filter((follow) => follow.follower_id === focusProfile.id && follow.accepted)
+      .flatMap((follow) => profiles.filter((profile) => profile.id === follow.following_id));
+    return {
+      visibility,
+      followers:
+        visibility === 'nobody'
+          ? []
+          : followers.slice(0, visibility === 'preview' ? 10 : undefined),
+      following: visibility === 'everyone' ? following : [],
+    };
+  })();
   const terms = query.trim().toLocaleLowerCase('it');
   const showingSaved = view === 'profile' && focusProfile?.id === me.id && profileTab === 'saved';
   const hiddenSections = new Set(
@@ -429,7 +465,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
               ? p.author_id === focusProfile?.id
               : view === 'search'
                 ? p.body.toLocaleLowerCase('it').includes(terms)
-                : filter === 'all' || p.author_id === me.id || followed.has(p.author_id)),
+                : p.author_id === me.id || followed.has(p.author_id)),
       );
   const remoteFeed =
     view === 'home' || view === 'search'
@@ -611,51 +647,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                       </button>
                     ))}
                 </section>
-                <section className="quick-compose">
-                  <button className="compose-prompt" onClick={() => setComposer('post')}>
-                    <Avatar person={me} />
-                    <span>Che cosa vuoi raccontare?</span>
-                    <Plus size={20} />
-                  </button>
-                  <div className="compose-tools">
-                    <button onClick={() => setComposer('post')}>
-                      <ImagePlus size={17} />
-                      <span>Foto</span>
-                    </button>
-                    <button onClick={() => setComposer('reel')}>
-                      <Video size={17} />
-                      <span>Video</span>
-                    </button>
-                    <button onClick={() => setComposer('story')}>
-                      <Clock3 size={17} />
-                      <span>Storia</span>
-                    </button>
-                    <span className="compose-privacy">
-                      {me.is_private ? 'Ai tuoi follower' : 'Alla community'}
-                    </span>
-                  </div>
-                </section>
-                <div className="feed-tabs">
-                  <div>
-                    <button
-                      className={filter === 'following' ? 'selected' : ''}
-                      aria-pressed={filter === 'following'}
-                      onClick={() => setFilter('following')}
-                    >
-                      Seguiti
-                    </button>
-                    <button
-                      className={filter === 'all' ? 'selected' : ''}
-                      aria-pressed={filter === 'all'}
-                      onClick={() => setFilter('all')}
-                    >
-                      Tutta la Home
-                    </button>
-                  </div>
-                  <span>
-                    <span className="tiny-dot" /> I più recenti
-                  </span>
-                </div>
+                <div className="home-section-break" aria-hidden="true" />
               </>
             )}
             {view === 'search' && (
@@ -809,7 +801,9 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                   <Avatar person={focusProfile} size="large" />
                   <h2 data-user-copy>{focusProfile.display_name}</h2>
                   <span className="muted">
-                    @{focusProfile.username} {focusProfile.is_private && <LockKeyhole size={13} />}
+                    @{focusProfile.username} ·{' '}
+                    {focusProfile.is_private ? 'Profilo privato' : 'Profilo pubblico'}{' '}
+                    {focusProfile.is_private && <LockKeyhole size={13} />}
                   </span>
                   <p data-user-copy>{focusProfile.bio || 'Nessuna biografia.'}</p>
                   {focusProfile.id === me.id ? (
@@ -844,6 +838,62 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                     </div>
                   )}
                 </div>
+                {visibleProfileConnections && (
+                  <div className="profile-connections">
+                    {visibleProfileConnections.visibility === 'nobody' &&
+                    focusProfile.id !== me.id ? (
+                      <p className="muted fine">
+                        Questa persona non mostra follower e profili seguiti.
+                      </p>
+                    ) : (
+                      <>
+                        <details>
+                          <summary>{visibleProfileConnections.followers.length} follower</summary>
+                          <div className="connection-list">
+                            {visibleProfileConnections.followers.map((profile) => (
+                              <button
+                                key={profile.id}
+                                onClick={() => navigate('profile', profile.id)}
+                              >
+                                <Avatar person={profile} size="small" />
+                                <span>
+                                  <strong data-user-copy>{profile.display_name}</strong>
+                                  <small>@{profile.username}</small>
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        </details>
+                        {visibleProfileConnections.visibility === 'everyone' && (
+                          <details>
+                            <summary>{visibleProfileConnections.following.length} seguiti</summary>
+                            <div className="connection-list">
+                              {visibleProfileConnections.following.map((profile) => (
+                                <button
+                                  key={profile.id}
+                                  onClick={() => navigate('profile', profile.id)}
+                                >
+                                  <Avatar person={profile} size="small" />
+                                  <span>
+                                    <strong data-user-copy>{profile.display_name}</strong>
+                                    <small>@{profile.username}</small>
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          </details>
+                        )}
+                        {visibleProfileConnections.visibility === 'preview' &&
+                          focusProfile.id !== me.id && (
+                            <p className="muted fine">
+                              Sono visibili gli ultimi 10 follower. I profili seguiti restano
+                              privati.
+                            </p>
+                          )}
+                      </>
+                    )}
+                  </div>
+                )}
               </section>
             )}
             {view === 'profile' && focusProfile?.id === me.id && (
@@ -1001,9 +1051,8 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                   </button>
                 )}
                 {combinedFeed.length > 0 && !state.nextCursor && (
-                  <div className="feed-end">
-                    <span>✳</span>
-                    <p>Sei in pari.</p>
+                  <div className="feed-end" aria-label="Fine dei post disponibili">
+                    <Check size={18} />
                   </div>
                 )}
               </>
@@ -1329,6 +1378,8 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                         display_name: String(f.get('display_name')),
                         bio: String(f.get('bio')),
                         is_private: f.get('is_private') === 'on',
+                        connections_visibility: String(f.get('connections_visibility')) as
+                          'everyone' | 'nobody' | 'preview',
                       });
                     }}
                   >
@@ -1354,6 +1405,23 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                         </small>
                       </span>
                       <input name="is_private" type="checkbox" defaultChecked={me.is_private} />
+                    </label>
+                    <label>
+                      Visibilità di follower e seguiti
+                      <select
+                        name="connections_visibility"
+                        defaultValue={me.connections_visibility ?? 'everyone'}
+                      >
+                        <option value="everyone">Mostra follower e seguiti a tutti</option>
+                        <option value="nobody">Non mostrarli a nessuno</option>
+                        <option value="preview">
+                          Mostra a tutti gli ultimi 10 follower; nascondi i seguiti
+                        </option>
+                      </select>
+                      <small>
+                        Questa scelta è indipendente dal fatto che il profilo sia pubblico o
+                        privato.
+                      </small>
                     </label>
                     <button className="primary" disabled={busy}>
                       Salva modifiche <Check size={17} />

@@ -486,21 +486,28 @@ export function PostCard({
               }
             }}
           >
-            <label>
-              Destinazione
-              <select
-                value={shareDestination}
-                required
-                onChange={(e) => setShareDestination(e.target.value)}
-              >
-                <option value="">Scegli dove condividere</option>
-                {shareDestinations.map((destination) => (
-                  <option key={destination.value} value={destination.value}>
-                    {destination.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <fieldset className="share-destinations">
+              <legend>Scegli dove condividere</legend>
+              {shareDestinations.length ? (
+                shareDestinations.map((destination) => (
+                  <label key={destination.value}>
+                    <input
+                      type="radio"
+                      name="share-destination"
+                      value={destination.value}
+                      checked={shareDestination === destination.value}
+                      onChange={(event) => setShareDestination(event.target.value)}
+                    />
+                    <span>{destination.label}</span>
+                  </label>
+                ))
+              ) : (
+                <p className="form-message">
+                  Non hai ancora chat reciproche o canali disponibili. Apri un profilo per iniziare
+                  una conversazione oppure entra in un canale.
+                </p>
+              )}
+            </fieldset>
             <label>
               Nota personale
               <textarea

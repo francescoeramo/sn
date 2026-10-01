@@ -73,7 +73,7 @@ async function savedPageFor(db: Database, before?: SavedCursor): Promise<SavedPa
   let query = db
     .from('bookmarks')
     .select(
-      'created_at,post_id,post:posts!inner(*,notes:community_notes(*),poll:polls(*,options:poll_options(*)))',
+      'created_at,post_id,post:posts!inner(*,media:post_media(*),notes:community_notes(*),poll:polls(*,options:poll_options(*)))',
     )
     .order('created_at', { ascending: false })
     .order('post_id', { ascending: false })
@@ -164,12 +164,16 @@ export async function snapshot() {
   const results = await Promise.all([
     db
       .from('profiles')
-      .select('id,username,display_name,bio,is_private,federation_enabled,color,created_at')
+      .select(
+        'id,username,display_name,bio,is_private,connections_visibility,federation_enabled,color,created_at',
+      )
       .order('created_at')
       .limit(20),
     db
       .from('posts')
-      .select('*, notes:community_notes(*), poll:polls(*,options:poll_options(*))')
+      .select(
+        '*, media:post_media(*), notes:community_notes(*), poll:polls(*,options:poll_options(*))',
+      )
       .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
       .order('created_at', { ascending: false })
       .limit(40),
@@ -201,11 +205,7 @@ export async function snapshot() {
     db.from('event_photos').select('*').order('created_at', { ascending: true }).limit(1000),
     db.from('digest_preferences').select('*').limit(1),
     db.from('digest_sources').select('*').order('created_at', { ascending: true }).limit(200),
-    db
-      .from('digest_deliveries')
-      .select('*')
-      .order('generated_at', { ascending: false })
-      .limit(10),
+    db.from('digest_deliveries').select('*').order('generated_at', { ascending: false }).limit(10),
     db.from('collaborative_posts').select('*').order('created_at', { ascending: false }).limit(200),
     db.from('collaborators').select('*').order('created_at', { ascending: true }).limit(1000),
     db.from('album_items').select('*').order('created_at', { ascending: true }).limit(1000),
@@ -672,6 +672,15 @@ export async function mutate(input: unknown) {
             duration_seconds: v.poll.duration,
           }),
         );
+      else if (v.circle_ids?.length && v.media?.length)
+        checked(
+          await db.rpc('create_circle_post_with_media', {
+            target_circles: v.circle_ids,
+            post_body: v.body,
+            warning: v.content_warning,
+            media_items: v.media,
+          }),
+        );
       else if (v.circle_ids?.length)
         checked(
           await db.rpc('create_circle_post', {
@@ -703,9 +712,23 @@ export async function mutate(input: unknown) {
               media_path: v.media_path,
               alt: v.alt,
             })
-            .select('activity_key')
+            .select('id,activity_key')
             .single(),
         );
+        if (v.media?.length)
+          checked(
+            await db.from('post_media').insert(
+              v.media.map((item, position) => ({
+                post_id: post.id,
+                owner_id: user.id,
+                media_path: item.media_path,
+                media_type: item.media_type ?? null,
+                alt: item.alt,
+                caption: item.caption,
+                position,
+              })),
+            ),
+          );
         const federated = await publicPostBy(post.activity_key);
         if (federated && process.env.APP_ORIGIN)
           await enqueueFederatedActivity(
@@ -881,6 +904,7 @@ export async function mutate(input: unknown) {
           display_name: z.string().trim().min(1).max(60),
           bio: z.string().trim().max(300),
           is_private: z.boolean(),
+          connections_visibility: z.enum(['everyone', 'nobody', 'preview']).default('everyone'),
         })
         .parse(obj);
       checked(
@@ -1046,6 +1070,7 @@ export async function exportData() {
     ['collaborative_posts', ''],
     ['collaborators', ''],
     ['album_items', ''],
+    ['post_media', 'owner_id'],
     ['reactions', 'user_id'],
     ['mention_preferences', 'user_id'],
     ['mentions', ''],

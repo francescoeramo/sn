@@ -160,7 +160,7 @@ export function EventsPanel({ state, demo, busy, now, onAction }: Props) {
               <option value="">I tuoi follower approvati</option>
               {circles.map((circle) => (
                 <option key={circle.id} value={circle.id}>
-                  Canale · <span data-user-copy>{circle.name}</span>
+                  Canale · {circle.name}
                 </option>
               ))}
             </select>

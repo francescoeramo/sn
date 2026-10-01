@@ -175,6 +175,28 @@ describe('Regole condivise', () => {
       postInput.safeParse({ ...base, poll: { options: ['Una sola'], duration: null } }).success,
     ).toBe(false);
   });
+  it('limita la descrizione delle storie e accetta carousel con didascalie distinte', () => {
+    expect(
+      postInput.safeParse({
+        body: 'x'.repeat(129),
+        kind: 'story',
+        media_path: '/media/story',
+        alt: '',
+      }).success,
+    ).toBe(false);
+    expect(
+      postInput.safeParse({
+        body: '',
+        kind: 'post',
+        media_path: '/media/uno',
+        alt: '',
+        media: [
+          { media_path: '/media/uno', alt: 'Uno', caption: 'Prima descrizione' },
+          { media_path: '/media/due', alt: 'Due', caption: 'Seconda descrizione' },
+        ],
+      }).success,
+    ).toBe(true);
+  });
   it('valida recupero e conferma della nuova password', () => {
     expect(passwordResetRequest.safeParse({ email: 'persona@example.test' }).success).toBe(true);
     expect(passwordResetRequest.safeParse({ email: 'non-valida' }).success).toBe(false);
@@ -570,7 +592,7 @@ describe('Digest scelto dall’utente', () => {
     const items = buildDemoDigest(state, state.me.id);
     expect(items.length).toBeGreaterThan(0);
     expect(items.length).toBeLessThanOrEqual(5);
-    expect(items[0].reason).toMatch(/^Cerchia /);
+    expect(items[0].reason).toMatch(/^Canale /);
     for (const item of items) expect(item.reason.length).toBeGreaterThan(0);
   });
   it('rigenera lo stesso periodo senza ripetere invii precedenti', () => {

@@ -13,6 +13,17 @@ export const postInput = z
     content_warning: z.string().trim().max(160).default(''),
     kind: z.enum(['post', 'story', 'reel']),
     media_path: z.string().max(200).nullable(),
+    media: z
+      .array(
+        z.object({
+          media_path: z.string().max(200),
+          media_type: z.string().max(80).nullable().optional(),
+          alt: z.string().trim().max(300),
+          caption: z.string().trim().max(2200),
+        }),
+      )
+      .max(10)
+      .optional(),
     alt: z.string().trim().max(300),
     circle_ids: z.array(userId).max(5).optional(),
     poll: z
@@ -24,8 +35,18 @@ export const postInput = z
       })
       .optional(),
   })
-  .refine((v) => v.body.length > 0 || v.media_path, 'Scrivi qualcosa o allega un file.')
-  .refine((v) => v.kind === 'post' || v.media_path, 'Storie e reel richiedono un file.')
+  .refine(
+    (v) => v.body.length > 0 || v.media_path || v.media?.length,
+    'Scrivi qualcosa o allega un file.',
+  )
+  .refine(
+    (v) => v.kind === 'post' || v.media_path || v.media?.length,
+    'Storie e reel richiedono un file.',
+  )
+  .refine(
+    (v) => v.kind !== 'story' || v.body.length <= 128,
+    'La descrizione della storia può contenere al massimo 128 caratteri.',
+  )
   .refine(
     (v) => !v.poll || (v.kind === 'post' && !v.media_path && v.body.length > 0),
     'Il sondaggio richiede una domanda senza allegati.',
@@ -382,7 +403,7 @@ export const albumItemInput = z.object({
 });
 export const albumItemIdInput = z.object({ item_id: userId });
 
-export const REACTIONS = ['❤️', '😂', '👍', '🎉', '😮', '🙏'] as const;
+export const REACTIONS = ['❤️', '😂', '👍', '👎', '😠', '🎉', '😮', '🙏'] as const;
 export const reactionInput = z.object({
   target_type: z.enum(['post', 'comment', 'message']),
   target_id: userId,

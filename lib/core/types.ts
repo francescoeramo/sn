@@ -5,10 +5,20 @@ export type Profile = {
   display_name: string;
   bio: string;
   is_private: boolean;
+  connections_visibility?: 'everyone' | 'nobody' | 'preview';
   federation_enabled: boolean;
   color: string;
   created_at: string;
   onboarded_at?: string | null;
+};
+export type PostMedia = {
+  id: string;
+  post_id: string;
+  media_path: string;
+  media_type: string | null;
+  alt: string;
+  caption: string;
+  position: number;
 };
 export type Post = {
   content_warning?: string;
@@ -23,6 +33,7 @@ export type Post = {
   alt: string;
   created_at: string;
   expires_at: string | null;
+  media?: PostMedia[];
 };
 export type RemotePost = {
   id: string;
@@ -424,7 +435,12 @@ export type Action =
       channel: DigestPreferences['channel'];
       email_consent: boolean;
     }
-  | { type: 'digest-source'; source_type: DigestSource['source_type']; source_id: string; enabled: boolean }
+  | {
+      type: 'digest-source';
+      source_type: DigestSource['source_type'];
+      source_id: string;
+      enabled: boolean;
+    }
   | { type: 'digest-refresh' }
   | { type: 'open-collaboration'; post_id: string }
   | { type: 'invite-collaborator'; post_id: string; user_id: string }
@@ -468,6 +484,12 @@ export type Action =
       body: string;
       kind: Post['kind'];
       media_path: string | null;
+      media?: Array<{
+        media_path: string;
+        media_type?: string | null;
+        alt: string;
+        caption: string;
+      }>;
       alt: string;
       content_warning?: string;
       poll?: { options: string[]; duration: number | null };
@@ -489,7 +511,13 @@ export type Action =
       media_type?: string | null;
       ttl?: number;
     }
-  | { type: 'profile'; display_name: string; bio: string; is_private: boolean }
+  | {
+      type: 'profile';
+      display_name: string;
+      bio: string;
+      is_private: boolean;
+      connections_visibility?: 'everyone' | 'nobody' | 'preview';
+    }
   | { type: 'federation'; enabled: boolean }
   | { type: 'read-notifications' }
   | { type: 'delete-post'; post_id: string }

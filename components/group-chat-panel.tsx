@@ -324,7 +324,7 @@ export function GroupChatPanel({
                 <option value="">Scegli…</option>
                 {candidates.map((person) => (
                   <option value={person.id} key={person.id}>
-                    <span data-user-copy>{person.display_name}</span>
+                    {person.display_name}
                   </option>
                 ))}
               </select>

@@ -24,12 +24,13 @@ export function Composer({
   const [mode, setMode] = useState<Post['kind'] | 'poll'>(initialKind);
   const kind: Post['kind'] = mode === 'poll' ? 'post' : mode;
   const [body, setBody] = useState('');
-  const [alt, setAlt] = useState('');
   const [warning, setWarning] = useState('');
   const [pollOptions, setPollOptions] = useState(['', '']);
   const [pollDuration, setPollDuration] = useState<number | null>(null);
   const [circleIds, setCircleIds] = useState<string[]>([]);
-  const [file, setFile] = useState<File | null>(null);
+  const [mediaItems, setMediaItems] = useState<Array<{ file: File; caption: string; alt: string }>>(
+    [],
+  );
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
   return (
@@ -62,7 +63,9 @@ export function Composer({
             className={mode === k ? 'selected' : ''}
             onClick={() => {
               setMode(k);
-              if (k === 'poll') setFile(null);
+              if (k === 'poll') setMediaItems([]);
+              if ((k === 'story' || k === 'reel') && mediaItems.length > 1)
+                setMediaItems((current) => current.slice(0, 1));
               if (k === 'story' || k === 'reel') setCircleIds([]);
             }}
           >
@@ -82,12 +85,14 @@ export function Composer({
           setBusy(true);
           setStatus('');
           try {
-            let path: string | null = null;
-            if (file) {
-              const prepared = await prepareMedia(file, setStatus);
+            const uploaded = [];
+            for (const [index, item] of mediaItems.entries()) {
+              setStatus(`Preparazione allegato ${index + 1} di ${mediaItems.length}…`);
+              const prepared = await prepareMedia(item.file, setStatus);
+              let path: string;
               if (demo) path = await asDataURL(prepared);
               else {
-                setStatus('Caricamento…');
+                setStatus(`Caricamento allegato ${index + 1} di ${mediaItems.length}…`);
                 const form = new FormData();
                 form.append('file', prepared);
                 const response = await fetch('/api/upload', { method: 'POST', body: form });
@@ -95,13 +100,20 @@ export function Composer({
                 if (!response.ok) throw new Error(result.error);
                 path = result.path;
               }
+              uploaded.push({
+                media_path: path,
+                media_type: prepared.type,
+                alt: item.alt,
+                caption: item.caption,
+              });
             }
             const ok = await onPost({
               type: 'post',
               body,
               kind,
-              media_path: path,
-              alt,
+              media_path: uploaded[0]?.media_path ?? null,
+              alt: uploaded[0]?.alt ?? '',
+              media: uploaded.length ? uploaded : undefined,
               content_warning: warning,
               poll: mode === 'poll' ? { options: pollOptions, duration: pollDuration } : undefined,
               circle_ids: circleIds.length ? circleIds : undefined,
@@ -127,13 +139,13 @@ export function Composer({
           className="compose-text"
           value={body}
           onChange={(e) => setBody(e.target.value)}
-          maxLength={2200}
-          placeholder={
-            mode === 'poll' ? 'Che cosa vuoi chiedere?' : 'Che cosa succede dalle tue parti?'
-          }
+          maxLength={mode === 'story' ? 128 : 2200}
+          placeholder="Descrizione"
           rows={5}
         />
-        <small className="counter">{body.length} / 2200</small>
+        <small className="counter">
+          {body.length} / {mode === 'story' ? 128 : 2200}
+        </small>
         {(mode === 'post' || mode === 'poll') && circles.length > 0 && (
           <fieldset className="destination-picker">
             <legend>Destinazione</legend>
@@ -264,33 +276,85 @@ export function Composer({
         {mode !== 'poll' && (
           <label className="file-picker">
             <ImagePlus size={21} />
-            <span data-user-copy={file ? true : undefined}>
-              {file ? file.name : 'Aggiungi foto o video'}
+            <span data-user-copy={mediaItems.length ? true : undefined}>
+              {mediaItems.length
+                ? `${mediaItems.length} contenut${mediaItems.length === 1 ? 'o' : 'i'} selezionat${mediaItems.length === 1 ? 'o' : 'i'}`
+                : 'Aggiungi foto o video'}
             </span>
             <Film size={19} />
             <input
               type="file"
+              multiple={mode === 'post'}
               accept="image/jpeg,image/png,image/webp,image/heic,image/heif,image/avif,image/gif,video/mp4,video/webm,video/quicktime,.heic,.heif,.mov"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              onChange={(e) => {
+                const selected = Array.from(e.target.files ?? []);
+                setMediaItems(
+                  selected.slice(0, mode === 'post' ? 10 : 1).map((file) => ({
+                    file,
+                    caption: '',
+                    alt: '',
+                  })),
+                );
+              }}
               disabled={busy}
             />
           </label>
         )}
-        {file && (
-          <>
-            <button className="text-button" type="button" onClick={() => setFile(null)}>
-              <X size={14} /> Rimuovi allegato
-            </button>
-            <label>
-              Descrizione del contenuto (facoltativa)
-              <input
-                value={alt}
-                onChange={(e) => setAlt(e.target.value)}
-                maxLength={300}
-                placeholder="Es. Due persone sedute al mare"
-              />
-            </label>
-          </>
+        {mediaItems.length > 0 && (
+          <div className="composer-media-list" aria-label="Contenuti del post">
+            {mediaItems.map((item, index) => (
+              <section className="composer-media-item" key={`${item.file.name}-${index}`}>
+                <div>
+                  <strong>
+                    {index + 1}. <span data-user-copy>{item.file.name}</span>
+                  </strong>
+                  <button
+                    className="icon-button"
+                    type="button"
+                    aria-label={`Rimuovi ${item.file.name}`}
+                    onClick={() =>
+                      setMediaItems((current) =>
+                        current.filter((_, itemIndex) => itemIndex !== index),
+                      )
+                    }
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+                <label>
+                  Descrizione
+                  <textarea
+                    value={item.caption}
+                    onChange={(event) =>
+                      setMediaItems((current) =>
+                        current.map((entry, itemIndex) =>
+                          itemIndex === index ? { ...entry, caption: event.target.value } : entry,
+                        ),
+                      )
+                    }
+                    maxLength={2200}
+                    rows={2}
+                    placeholder="Descrivi questo elemento"
+                  />
+                </label>
+                <label>
+                  Testo alternativo
+                  <input
+                    value={item.alt}
+                    onChange={(event) =>
+                      setMediaItems((current) =>
+                        current.map((entry, itemIndex) =>
+                          itemIndex === index ? { ...entry, alt: event.target.value } : entry,
+                        ),
+                      )
+                    }
+                    maxLength={300}
+                    placeholder="Es. Due persone sedute al mare"
+                  />
+                </label>
+              </section>
+            ))}
+          </div>
         )}
         <p className="muted fine">
           {mode === 'poll'
@@ -306,8 +370,9 @@ export function Composer({
           className="primary full"
           disabled={
             busy ||
-            (!body.trim() && !file) ||
-            (kind !== 'post' && !file) ||
+            (!body.trim() && !mediaItems.length) ||
+            (kind !== 'post' && !mediaItems.length) ||
+            (mode === 'story' && body.length > 128) ||
             (mode === 'poll' && pollOptions.some((option) => !option.trim()))
           }
         >
