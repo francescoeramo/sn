@@ -735,6 +735,8 @@ small {
   margin-bottom: 19px;
   overflow: visible;
   animation: arrive 0.22s ease-out;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 620px;
 }
 .post-header {
   display: flex;
@@ -1857,25 +1859,71 @@ label small {
   flex-shrink: 0;
   margin-top: 2px;
 }
-.conversation-tabs {
-  display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  padding: 20px 0;
+.conversation-list {
+  display: grid;
+  padding: 8px 0 14px;
 }
-.conversation-tabs button {
+.conversation-list > button {
   display: flex;
   align-items: center;
-  gap: 5px;
-  border-radius: 20px;
-  padding: 4px 10px 4px 4px;
-  font-size: 11px;
-  border: 1px solid #eeebf2;
+  gap: 13px;
+  width: 100%;
+  min-height: 72px;
+  padding: 9px 8px;
+  border-radius: 12px;
+  text-align: left;
+}
+.conversation-list > button:hover,
+.conversation-list > button.selected {
+  background: var(--surface-soft);
+}
+.conversation-list .avatar {
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  font-size: 15px;
+}
+.conversation-copy {
+  min-width: 0;
+  flex: 1;
+}
+.conversation-copy strong,
+.conversation-copy small {
+  display: block;
+}
+.conversation-copy strong {
+  margin-bottom: 3px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+.conversation-copy small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
-.conversation-tabs button.selected {
-  background: var(--lilac);
-  border-color: #d8cbe9;
+.conversation-copy small.unread {
+  color: var(--ink);
+  font-weight: 600;
+}
+.conversation-copy time {
+  color: var(--muted);
+  font-weight: 400;
+}
+.conversation-unread {
+  min-width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--violet);
+  color: var(--card);
+  font-size: 10px;
+  font-weight: 700;
 }
 .message-mode {
   display: flex;
@@ -3101,8 +3149,8 @@ label small {
     right: 0;
     height: 68px;
     padding: 0 13px max(0px, env(safe-area-inset-bottom));
-    border-top: 1px solid #e3dfe9;
-    background: #fffefa;
+    border-top: 1px solid var(--line);
+    background: var(--surface-quiet);
     display: flex;
     align-items: center;
     justify-content: space-around;
@@ -3160,6 +3208,17 @@ label small {
   .panel,
   .messages-panel {
     padding: 20px 17px;
+  }
+  .messages-panel {
+    margin-inline: -17px;
+    padding-inline: 12px;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+  .conversation-list > button {
+    min-height: 76px;
+    padding-inline: 7px;
   }
   .panel > h2 {
     font-size: 17px;
@@ -3640,10 +3699,29 @@ label small {
   font-weight: 700;
 }
 .shared-post-preview {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
   overflow: hidden;
   border: 1px solid #d6cedd;
   border-radius: 12px;
   background: var(--card);
+  color: var(--ink);
+  text-align: left;
+}
+.shared-post-preview:hover {
+  border-color: var(--violet);
+}
+.shared-post-open {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  border-radius: inherit;
+}
+.shared-post-open:focus-visible {
+  outline: 3px solid var(--violet);
+  outline-offset: -3px;
 }
 .shared-post-preview .post-carousel,
 .shared-post-preview .post-media {

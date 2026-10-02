@@ -51,7 +51,12 @@ export function PostCard({
   const [pending, setPending] = useState(false);
   const author = state.profiles.find((p) => p.id === post.author_id);
   const likes = state.likes.filter((l) => l.post_id === post.id);
-  const liked = likes.some((l) => l.user_id === state.me.id);
+  const serverLiked = likes.some((l) => l.user_id === state.me.id);
+  const [optimisticLike, setOptimisticLike] = useState<{
+    basedOn: boolean;
+    value: boolean;
+  } | null>(null);
+  const liked = optimisticLike?.basedOn === serverLiked ? optimisticLike.value : serverLiked;
   const comments = state.comments
     .filter((c) => c.post_id === post.id)
     .sort((a, b) => a.created_at.localeCompare(b.created_at));
@@ -115,6 +120,11 @@ export function PostCard({
     } finally {
       setPending(false);
     }
+  };
+  const toggleLike = async () => {
+    const previous = liked;
+    setOptimisticLike({ basedOn: serverLiked, value: !previous });
+    if (!(await act({ type: 'like', post_id: post.id }))) setOptimisticLike(null);
   };
   return (
     <article className="post-card">
@@ -249,7 +259,7 @@ export function PostCard({
           aria-label={liked ? 'Togli mi piace' : 'Mi piace'}
           aria-pressed={liked}
           disabled={pending || concealed}
-          onClick={() => act({ type: 'like', post_id: post.id })}
+          onClick={toggleLike}
         >
           <Heart
             key={liked ? 'liked' : 'plain'}

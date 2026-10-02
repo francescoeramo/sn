@@ -31,6 +31,7 @@ export function ChatConversation({
   demo,
   allowed,
   onSend,
+  onOpenPost,
 }: {
   me: Profile;
   person: Profile;
@@ -38,6 +39,7 @@ export function ChatConversation({
   demo: boolean;
   allowed: boolean;
   onSend: (action: Action) => Promise<boolean>;
+  onOpenPost: (post: ChatSync['sharedPosts'][number]) => void;
 }) {
   const language = useLanguage();
   const [session, setSession] = useState<Awaited<ReturnType<typeof prepareSession>> | null>(null);
@@ -338,6 +340,12 @@ export function ChatConversation({
               <div className="shared-post-preview">
                 <Media post={post} demo={demo} />
                 {post.body && <p data-user-copy>{post.body}</p>}
+                <button
+                  type="button"
+                  className="shared-post-open"
+                  aria-label="Apri il post condiviso"
+                  onClick={() => onOpenPost(post)}
+                />
               </div>
               <time dateTime={share.created_at}>{relativeTime(share.created_at, language)}</time>
             </article>

@@ -1060,6 +1060,9 @@ test('espressioni: reazione privata, risposta citata e condivisione interna', as
     .click();
   await page.getByRole('button', { name: 'Giulia', exact: true }).click();
   await expect(page.locator('.shared-post')).toContainText('Hai condiviso un post');
+  await page.getByRole('button', { name: 'Apri il post condiviso' }).click();
+  await expect(page.getByRole('heading', { name: 'Post.' })).toBeVisible();
+  await expect(page.locator('.post-card').filter({ hasText: 'Domanda seria' })).toBeVisible();
   await page.reload();
   const reloaded = page.locator('.post-card').filter({ hasText: 'Domanda seria' });
   await expect(reloaded.getByRole('button', { name: 'Reazione ❤️' })).toHaveAttribute(

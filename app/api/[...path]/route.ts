@@ -429,7 +429,9 @@ export async function POST(request: NextRequest, { params }: Context) {
       return json(await acknowledgeChatGroupMessage(await body(request)));
     if (route === 'action') {
       const action = await body(request);
-      const compact = z.object({ type: z.string() }).passthrough().parse(action).type === 'share';
+      const compact = ['share', 'like'].includes(
+        z.object({ type: z.string() }).passthrough().parse(action).type,
+      );
       return json(await mutate(action, !compact));
     }
     if (route === 'account/delete') {

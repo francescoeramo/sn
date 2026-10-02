@@ -1,7 +1,8 @@
 'use client';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { startTransition, useCallback, useEffect, useRef, useState } from 'react';
 import {
   Home,
   Search,
@@ -31,29 +32,42 @@ import {
 } from 'lucide-react';
 import type { Action, Snapshot, Post, Profile } from '@/lib/core/types';
 import { LIMITS, isActive, hashtags, relativeTime } from '@/lib/core/rules';
-import { loadDemo, mutateDemo, clearDemo, seed } from '@/lib/client/demo';
 import { Avatar, Empty, LoadingShell, Modal } from './primitives';
-import { deviceFor, localMessages, clearUserChat } from '@/lib/client/chat-store';
-import { chatRequest } from '@/lib/client/chat-session';
-import { publicDevice } from '@/lib/crypto/chat';
-import { ChatConversation } from './chat-conversation';
-import { StoryPlayer } from './story-player';
 import { AuthScreen } from './auth-screen';
-import { Composer } from './composer';
-import { NotesReview } from './community-notes';
 import { PostCard } from './post-card';
-import { RemotePostCard } from './remote-post-card';
-import { SecuritySettings } from './security-settings';
-import { WelcomeOnboarding } from './welcome-onboarding';
-import { ThemeSettings } from './theme-settings';
-import { LanguageSettings } from './language-settings';
 import { useLanguage } from './language-provider';
-import { GroupChatPanel } from './group-chat-panel';
-import { CirclePanel } from './circle-panel';
-import { EventsPanel } from './events-panel';
-import { DigestPanel } from './digest-panel';
-import { CollaborationPanel } from './collaboration-panel';
 import { actionErrorMessage } from '@/lib/client/action-feedback';
+
+const ChatConversation = dynamic(() =>
+  import('./chat-conversation').then((module) => module.ChatConversation),
+);
+const StoryPlayer = dynamic(() => import('./story-player').then((module) => module.StoryPlayer));
+const Composer = dynamic(() => import('./composer').then((module) => module.Composer));
+const RemotePostCard = dynamic(() =>
+  import('./remote-post-card').then((module) => module.RemotePostCard),
+);
+const NotesReview = dynamic(() => import('./community-notes').then((module) => module.NotesReview));
+const SecuritySettings = dynamic(() =>
+  import('./security-settings').then((module) => module.SecuritySettings),
+);
+const ThemeSettings = dynamic(() =>
+  import('./theme-settings').then((module) => module.ThemeSettings),
+);
+const LanguageSettings = dynamic(() =>
+  import('./language-settings').then((module) => module.LanguageSettings),
+);
+const WelcomeOnboarding = dynamic(() =>
+  import('./welcome-onboarding').then((module) => module.WelcomeOnboarding),
+);
+const GroupChatPanel = dynamic(() =>
+  import('./group-chat-panel').then((module) => module.GroupChatPanel),
+);
+const CirclePanel = dynamic(() => import('./circle-panel').then((module) => module.CirclePanel));
+const EventsPanel = dynamic(() => import('./events-panel').then((module) => module.EventsPanel));
+const DigestPanel = dynamic(() => import('./digest-panel').then((module) => module.DigestPanel));
+const CollaborationPanel = dynamic(() =>
+  import('./collaboration-panel').then((module) => module.CollaborationPanel),
+);
 
 type View =
   | 'home'
@@ -64,6 +78,7 @@ type View =
   | 'events'
   | 'collaborations'
   | 'notifications'
+  | 'post'
   | 'profile'
   | 'settings'
   | 'moderation';
@@ -161,6 +176,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
   const [composer, setComposer] = useState<Post['kind'] | null>(null);
   const [story, setStory] = useState<Post | null>(null);
   const [conversation, setConversation] = useState<string | null>(null);
+  const [focusedPostId, setFocusedPostId] = useState<string | null>(null);
   const [messageMode, setMessageMode] = useState<'people' | 'groups' | 'activities'>('people');
   const [activityMode, setActivityMode] = useState<'channels' | 'events' | 'collaborations'>(
     'channels',
@@ -178,9 +194,13 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
   const lastActionError = useRef('');
   const refresh = useCallback(async () => {
     try {
-      const next = demo ? await loadDemo() : await request('bootstrap');
+      const next = demo
+        ? await import('@/lib/client/demo').then((module) => module.loadDemo())
+        : await request('bootstrap');
       if (!demo) {
-        const local = await localMessages(next.me.id);
+        const local = await import('@/lib/client/chat-store').then((module) =>
+          module.localMessages(next.me.id),
+        );
         next.messages = [...new Map([...local, ...next.messages].map((m) => [m.id, m])).values()];
       }
       setState(next);
@@ -199,7 +219,9 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
   useEffect(() => {
     if (!configured) return;
     let cancelled = false;
-    const pending = demo ? loadDemo() : request('bootstrap');
+    const pending = demo
+      ? import('@/lib/client/demo').then((module) => module.loadDemo())
+      : request('bootstrap');
     pending
       .then((next) => {
         if (!cancelled) {
@@ -231,8 +253,15 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
   }, [view, demo, refresh]);
   useEffect(() => {
     if (demo || view !== 'messages' || !state?.me.id) return;
-    deviceFor(state.me.id)
-      .then((device) => chatRequest('device', publicDevice(device)))
+    Promise.all([
+      import('@/lib/client/chat-store'),
+      import('@/lib/client/chat-session'),
+      import('@/lib/crypto/chat'),
+    ])
+      .then(async ([store, session, crypto]) => {
+        const device = await store.deviceFor(state.me.id);
+        return session.chatRequest('device', crypto.publicDevice(device));
+      })
       .catch((error) => setNotice(error.message));
   }, [demo, view, state?.me.id]);
   useEffect(() => {
@@ -279,13 +308,35 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
     };
   }, [demo, profileId, state, view]);
   async function act(action: Action) {
-    if (!state || locked.current) return false;
-    locked.current = true;
-    setBusy(true);
+    const immediate = action.type === 'like';
+    if (!state || (!immediate && locked.current)) return false;
+    if (!immediate) {
+      locked.current = true;
+      setBusy(true);
+    }
     lastActionError.current = '';
     try {
-      const next = demo ? await mutateDemo(action) : await request('action', action);
-      if (action.type === 'share' && !demo) {
+      const next = demo
+        ? await import('@/lib/client/demo').then((module) => module.mutateDemo(action))
+        : await request('action', action);
+      if (immediate && !demo) {
+        startTransition(() => {
+          setState((current) => {
+            if (!current) return current;
+            const present = current.likes.some(
+              (like) => like.user_id === current.me.id && like.post_id === action.post_id,
+            );
+            return {
+              ...current,
+              likes: present
+                ? current.likes.filter(
+                    (like) => !(like.user_id === current.me.id && like.post_id === action.post_id),
+                  )
+                : [...current.likes, { user_id: current.me.id, post_id: action.post_id }],
+            };
+          });
+        });
+      } else if (action.type === 'share' && !demo) {
         setState((current) =>
           current
             ? {
@@ -347,14 +398,28 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
       setNotice(message);
       return false;
     } finally {
-      locked.current = false;
-      setBusy(false);
+      if (!immediate) {
+        locked.current = false;
+        setBusy(false);
+      }
     }
   }
   function navigate(next: View, id?: string) {
     setView(next);
+    if (next !== 'post') setFocusedPostId(null);
     setProfileId(id ?? null);
     setProfileTab('posts');
+    setNotice('');
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }
+  function openSharedPost(post: Post) {
+    setState((current) =>
+      current && !current.posts.some((item) => item.id === post.id)
+        ? { ...current, posts: [post, ...current.posts] }
+        : current,
+    );
+    setFocusedPostId(post.id);
+    setView('post');
     setNotice('');
     window.scrollTo({ top: 0, behavior: 'instant' });
   }
@@ -477,18 +542,21 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
           }),
         )
     : state.saved.posts.filter((p) => isActive(p, clock) && savedIds.has(p.id));
+  const localFeedSource = view === 'post' ? visiblePosts : regularPosts;
   const feed = showingSaved
     ? savedPosts.filter((p) => p.kind !== 'story')
-    : regularPosts.filter(
+    : localFeedSource.filter(
         (p) =>
           p.kind !== 'story' &&
-          (view === 'reels'
-            ? p.kind === 'reel'
-            : view === 'profile'
-              ? p.author_id === focusProfile?.id
-              : view === 'search'
-                ? p.body.toLocaleLowerCase('it').includes(terms)
-                : p.author_id === me.id || followed.has(p.author_id)),
+          (view === 'post'
+            ? p.id === focusedPostId
+            : view === 'reels'
+              ? p.kind === 'reel'
+              : view === 'profile'
+                ? p.author_id === focusProfile?.id
+                : view === 'search'
+                  ? p.body.toLocaleLowerCase('it').includes(terms)
+                  : p.author_id === me.id || followed.has(p.author_id)),
       );
   const remoteFeed =
     view === 'home' || view === 'search'
@@ -510,22 +578,70 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
     .filter((p) => p.id !== me.id && !followed.has(p.id))
     .slice(0, 3);
   const title =
-    view === 'profile'
-      ? (focusProfile?.display_name ?? 'Profilo')
-      : view === 'settings'
-        ? 'Le tue impostazioni'
-        : view === 'moderation'
-          ? 'Moderazione'
-          : view === 'circles'
-            ? 'Canali'
-            : view === 'events'
-              ? 'Eventi'
-              : view === 'collaborations'
-                ? 'Collaborazioni'
-                : view === 'notifications'
-                  ? 'Notifiche'
-                  : (navigation.find((n) => n.id === view)?.label ?? 'Home');
+    view === 'post'
+      ? 'Post'
+      : view === 'profile'
+        ? (focusProfile?.display_name ?? 'Profilo')
+        : view === 'settings'
+          ? 'Le tue impostazioni'
+          : view === 'moderation'
+            ? 'Moderazione'
+            : view === 'circles'
+              ? 'Canali'
+              : view === 'events'
+                ? 'Eventi'
+                : view === 'collaborations'
+                  ? 'Collaborazioni'
+                  : view === 'notifications'
+                    ? 'Notifiche'
+                    : (navigation.find((n) => n.id === view)?.label ?? 'Home');
   const currentConversation = profiles.find((p) => p.id === conversation);
+  const conversationPeople =
+    view === 'messages'
+      ? profiles
+          .filter(
+            (person) =>
+              person.id !== me.id &&
+              (state.messages.some(
+                (message) => message.sender_id === person.id || message.recipient_id === person.id,
+              ) ||
+                followed.has(person.id)),
+          )
+          .map((person) => {
+            const directMessages = state.messages
+              .filter(
+                (message) =>
+                  (message.sender_id === person.id && message.recipient_id === me.id) ||
+                  (message.sender_id === me.id && message.recipient_id === person.id),
+              )
+              .toSorted((a, b) => b.created_at.localeCompare(a.created_at));
+            const directShares = (state.shares ?? [])
+              .filter(
+                (share) =>
+                  share.destination_type === 'chat' &&
+                  ((share.user_id === me.id && share.destination_id === person.id) ||
+                    (share.user_id === person.id && share.destination_id === me.id)),
+              )
+              .toSorted((a, b) => b.created_at.localeCompare(a.created_at));
+            const latestMessage = directMessages[0];
+            const latestShare = directShares[0];
+            const latestAt =
+              latestShare && (!latestMessage || latestShare.created_at > latestMessage.created_at)
+                ? latestShare.created_at
+                : latestMessage?.created_at;
+            const preview =
+              latestShare && latestShare.created_at === latestAt
+                ? latestShare.note || 'Post condiviso'
+                : latestMessage?.body || 'Inizia una conversazione';
+            const unread = directMessages.filter(
+              (message) =>
+                message.recipient_id === me.id &&
+                !(state.messageStates ?? []).find((item) => item.id === message.id)?.read_at,
+            ).length;
+            return { person, latestAt, preview, unread };
+          })
+          .toSorted((a, b) => (b.latestAt ?? '').localeCompare(a.latestAt ?? ''))
+      : [];
   return (
     <div className={`app-shell ${demo ? 'is-demo' : ''}`}>
       {demo && (
@@ -947,8 +1063,13 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                 )}
               </>
             )}
-            {['home', 'search', 'profile', 'reels'].includes(view) && (
+            {['home', 'search', 'profile', 'reels', 'post'].includes(view) && (
               <>
+                {view === 'post' && (
+                  <button className="text-button post-back" onClick={() => navigate('messages')}>
+                    Torna ai messaggi
+                  </button>
+                )}
                 {combinedFeed.map((item, index) =>
                   item.kind === 'local' ? (
                     <PostCard
@@ -1086,10 +1207,6 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
             )}
             {view === 'messages' && (
               <section className="messages-panel">
-                <p className="privacy-note">
-                  <LockKeyhole size={15} /> I nuovi messaggi e allegati sono cifrati end-to-end. Le
-                  chiavi restano nei browser autorizzati.
-                </p>
                 <div className="message-mode" role="tablist" aria-label="Tipo di conversazione">
                   <button
                     role="tab"
@@ -1187,55 +1304,64 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                   />
                 ) : (
                   <>
-                    <div className="conversation-tabs">
-                      {profiles
-                        .filter(
-                          (p) =>
-                            p.id !== me.id &&
-                            (state.messages.some(
-                              (m) => m.sender_id === p.id || m.recipient_id === p.id,
-                            ) ||
-                              followed.has(p.id)),
-                        )
-                        .map((p) => (
-                          <button
-                            key={p.id}
-                            className={conversation === p.id ? 'selected' : ''}
-                            onClick={async () => {
-                              setConversation(p.id);
-                              if (!demo) {
-                                try {
-                                  const messages = await request(`messages?user=${p.id}`);
-                                  setState((s) =>
-                                    s
-                                      ? {
-                                          ...s,
-                                          messages: [
-                                            ...s.messages.filter(
-                                              (m) =>
-                                                !messages.some(
-                                                  (n: { id: string }) => n.id === m.id,
-                                                ),
-                                            ),
-                                            ...messages,
-                                          ],
-                                        }
-                                      : s,
-                                  );
-                                } catch (e) {
-                                  setNotice(
-                                    e instanceof Error
-                                      ? e.message
-                                      : 'Messaggi non caricati. Riapri la conversazione e riprova.',
-                                  );
-                                }
+                    <div className="conversation-list" aria-label="Conversazioni">
+                      {conversationPeople.map(({ person, latestAt, preview, unread }) => (
+                        <button
+                          key={person.id}
+                          className={conversation === person.id ? 'selected' : ''}
+                          aria-label={person.display_name.split(' ')[0]}
+                          onClick={async () => {
+                            setConversation(person.id);
+                            if (!demo) {
+                              try {
+                                const messages = await request(`messages?user=${person.id}`);
+                                setState((s) =>
+                                  s
+                                    ? {
+                                        ...s,
+                                        messages: [
+                                          ...s.messages.filter(
+                                            (m) =>
+                                              !messages.some((n: { id: string }) => n.id === m.id),
+                                          ),
+                                          ...messages,
+                                        ],
+                                      }
+                                    : s,
+                                );
+                              } catch (e) {
+                                setNotice(
+                                  e instanceof Error
+                                    ? e.message
+                                    : 'Messaggi non caricati. Riapri la conversazione e riprova.',
+                                );
                               }
-                            }}
-                          >
-                            <Avatar person={p} size="small" />
-                            <span data-user-copy>{p.display_name.split(' ')[0]}</span>
-                          </button>
-                        ))}
+                            }
+                          }}
+                        >
+                          <Avatar person={person} />
+                          <span className="conversation-copy">
+                            <strong data-user-copy>{person.display_name}</strong>
+                            <small className={unread ? 'unread' : ''} data-user-copy>
+                              {preview}
+                              {latestAt && (
+                                <time dateTime={latestAt}>
+                                  {' '}
+                                  · {relativeTime(latestAt, language)}
+                                </time>
+                              )}
+                            </small>
+                          </span>
+                          {unread > 0 && (
+                            <span
+                              className="conversation-unread"
+                              aria-label={`${unread} da leggere`}
+                            >
+                              {unread}
+                            </span>
+                          )}
+                        </button>
+                      ))}
                     </div>
                     {currentConversation ? (
                       <ChatConversation
@@ -1263,6 +1389,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                           )
                         }
                         onSend={act}
+                        onOpenPost={openSharedPost}
                       />
                     ) : (
                       <Empty title="Scegli una persona." kind="messages">
@@ -1557,7 +1684,9 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                             ? state
                             : {
                                 ...(await request('export')),
-                                local_messages: await localMessages(me.id),
+                                local_messages: await import('@/lib/client/chat-store').then(
+                                  (module) => module.localMessages(me.id),
+                                ),
                               },
                           'sn-dati.json',
                         );
@@ -2081,8 +2210,9 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
               setBusy(true);
               try {
                 if (demo) {
-                  await clearDemo();
-                  const next = seed();
+                  const demoStore = await import('@/lib/client/demo');
+                  await demoStore.clearDemo();
+                  const next = demoStore.seed();
                   setState(next);
                   setDeleteOpen(false);
                   navigate('home');
@@ -2093,7 +2223,9 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                     password: f.get('password'),
                     confirmation: f.get('confirmation'),
                   });
-                  await clearUserChat(me.id);
+                  await import('@/lib/client/chat-store').then((module) =>
+                    module.clearUserChat(me.id),
+                  );
                   setState(null);
                   setDeleteOpen(false);
                 }
