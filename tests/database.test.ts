@@ -296,6 +296,62 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
     expect(await asUser(eve, 'select * from public.messages')).toHaveLength(0);
     expect(await asUser(alice, 'select * from public.messages')).toHaveLength(1);
   });
+  it('registra le visualizzazioni delle storie senza esporre il pubblico a terzi', async () => {
+    const path = bob + '/00000000-0000-4000-8000-000000000991';
+    await asUser(
+      bob,
+      "insert into public.media_assets(path,owner_id,bytes,mime) values($1,$2,100,'image/webp')",
+      [path, bob],
+    );
+    await asUser(
+      bob,
+      "insert into storage.objects(bucket_id,name,metadata) values('media',$1,'{}')",
+      [path],
+    );
+    const [story] = await asUser<{ id: string }>(
+      bob,
+      "insert into public.posts(author_id,body,kind,media_path) values($1,'Una storia vista','story',$2) returning id",
+      [bob, path],
+    );
+    await asUser(alice, 'insert into public.story_views(story_id,viewer_id) values($1,$2)', [
+      story.id,
+      alice,
+    ]);
+    await expect(
+      asUser(alice, 'insert into public.story_views(story_id,viewer_id) values($1,$2)', [
+        story.id,
+        alice,
+      ]),
+    ).rejects.toThrow();
+    await expect(
+      asUser(alice, 'insert into public.story_views(story_id,viewer_id) values($1,$2)', [
+        story.id,
+        eve,
+      ]),
+    ).rejects.toThrow(/row-level security/);
+    await expect(
+      asUser(bob, 'insert into public.story_views(story_id,viewer_id) values($1,$2)', [
+        story.id,
+        bob,
+      ]),
+    ).rejects.toThrow(/row-level security/);
+    expect(
+      await asUser<{ viewer_id: string }>(bob, 'select viewer_id from public.story_views'),
+    ).toEqual([{ viewer_id: alice }]);
+    expect(
+      await asUser<{ story_id: string }>(alice, 'select story_id from public.story_views'),
+    ).toEqual([{ story_id: story.id }]);
+    expect(await asUser(eve, 'select * from public.story_views')).toHaveLength(0);
+    const indexes = await db.query<{ indexname: string }>(
+      "select indexname from pg_indexes where schemaname='public' and tablename='story_views' order by indexname",
+    );
+    expect(indexes.rows.map((row) => row.indexname)).toEqual([
+      'story_views_pkey',
+      'story_views_story_time',
+      'story_views_viewer_time',
+    ]);
+    await asUser(bob, 'delete from public.posts where id=$1', [story.id]);
+  });
   it('federazione richiede profilo pubblico e consenso esplicito', async () => {
     await expect(
       asUser(alice, 'update public.profiles set federation_enabled=true where id=$1', [alice]),

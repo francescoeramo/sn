@@ -39,6 +39,7 @@ import {
   mentionPreferenceInput,
   shareInput,
   explorePreferenceInput,
+  storyViewInput,
 } from '@/lib/core/rules';
 const uid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const ago = (minutes: number) => new Date(Date.now() - minutes * 60000).toISOString();
@@ -153,6 +154,7 @@ export function seed(): Snapshot {
     shares: [],
     explorePreferences: [],
     productMetrics: [],
+    storyViews: [],
     saved: { posts: [], nextCursor: null },
     notes: [],
     pollResults: [
@@ -429,6 +431,7 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
   s.shares ??= [];
   s.explorePreferences ??= [];
   s.productMetrics ??= [];
+  s.storyViews ??= [];
   s.saved ??= { posts: [], nextCursor: null };
   const me = s.me.id;
   const now = new Date().toISOString();
@@ -1223,6 +1226,33 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
       if (s.likes.some((l) => l.user_id === me && l.post_id === action.post_id))
         s.likes = s.likes.filter((l) => !(l.user_id === me && l.post_id === action.post_id));
       else s.likes.push({ user_id: me, post_id: action.post_id });
+      break;
+    }
+    case 'view-story': {
+      const value = storyViewInput.parse(action);
+      const story = s.posts.find((post) => post.id === value.story_id);
+      const author = s.profiles.find((profile) => profile.id === story?.author_id);
+      const follows = s.follows.some(
+        (follow) =>
+          follow.follower_id === me && follow.following_id === story?.author_id && follow.accepted,
+      );
+      const blocked = s.blocks.some(
+        (block) =>
+          (block.blocker_id === me && block.blocked_id === story?.author_id) ||
+          (block.blocked_id === me && block.blocker_id === story?.author_id),
+      );
+      if (
+        !story ||
+        story.kind !== 'story' ||
+        story.author_id === me ||
+        !author ||
+        !isActive(story) ||
+        blocked ||
+        (author.is_private && !follows)
+      )
+        throw new Error('Storia non disponibile.');
+      if (!s.storyViews.some((view) => view.story_id === value.story_id && view.viewer_id === me))
+        s.storyViews.push({ story_id: value.story_id, viewer_id: me, viewed_at: now });
       break;
     }
     case 'comment': {

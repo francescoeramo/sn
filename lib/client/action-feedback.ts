@@ -43,6 +43,7 @@ const ACTION_FAILURE: Record<Action['type'], string> = {
   'vote-poll': 'Voto non salvato. Riapri il sondaggio e riprova.',
   bookmark: 'Post non salvato. Riaprilo e riprova.',
   like: 'Like non salvato. Riapri il post e riprova.',
+  'view-story': 'Visualizzazione non salvata. Riapri la storia e riprova.',
   comment: 'Commento non pubblicato. Controlla il testo e riprova.',
   follow: 'Richiesta non inviata. Riapri il profilo e riprova.',
   accept: 'Richiesta non aggiornata. Riapri le notifiche e riprova.',

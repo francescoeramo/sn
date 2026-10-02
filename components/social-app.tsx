@@ -308,34 +308,61 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
     };
   }, [demo, profileId, state, view]);
   async function act(action: Action) {
-    const immediate = action.type === 'like';
+    const immediate = action.type === 'like' || action.type === 'view-story';
     if (!state || (!immediate && locked.current)) return false;
     if (!immediate) {
       locked.current = true;
       setBusy(true);
     }
     lastActionError.current = '';
+    const optimisticLikeWasPresent =
+      action.type === 'like' &&
+      state.likes.some((like) => like.user_id === state.me.id && like.post_id === action.post_id);
+    const optimisticStoryAdded =
+      action.type === 'view-story' &&
+      !(state.storyViews ?? []).some(
+        (view) => view.viewer_id === state.me.id && view.story_id === action.story_id,
+      );
+    if (!demo && action.type === 'like') {
+      startTransition(() => {
+        setState((current) =>
+          current
+            ? {
+                ...current,
+                likes: optimisticLikeWasPresent
+                  ? current.likes.filter(
+                      (like) =>
+                        !(like.user_id === current.me.id && like.post_id === action.post_id),
+                    )
+                  : [...current.likes, { user_id: current.me.id, post_id: action.post_id }],
+              }
+            : current,
+        );
+      });
+    }
+    if (!demo && action.type === 'view-story' && optimisticStoryAdded) {
+      setState((current) =>
+        current
+          ? {
+              ...current,
+              storyViews: [
+                ...(current.storyViews ?? []),
+                {
+                  story_id: action.story_id,
+                  viewer_id: current.me.id,
+                  viewed_at: new Date().toISOString(),
+                },
+              ],
+            }
+          : current,
+      );
+    }
     try {
       const next = demo
         ? await import('@/lib/client/demo').then((module) => module.mutateDemo(action))
         : await request('action', action);
       if (immediate && !demo) {
-        startTransition(() => {
-          setState((current) => {
-            if (!current) return current;
-            const present = current.likes.some(
-              (like) => like.user_id === current.me.id && like.post_id === action.post_id,
-            );
-            return {
-              ...current,
-              likes: present
-                ? current.likes.filter(
-                    (like) => !(like.user_id === current.me.id && like.post_id === action.post_id),
-                  )
-                : [...current.likes, { user_id: current.me.id, post_id: action.post_id }],
-            };
-          });
-        });
+        // The compact endpoint has already been reflected optimistically.
       } else if (action.type === 'share' && !demo) {
         setState((current) =>
           current
@@ -393,6 +420,40 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
       );
       return true;
     } catch (error) {
+      if (!demo && action.type === 'like') {
+        setState((current) =>
+          current
+            ? {
+                ...current,
+                likes: optimisticLikeWasPresent
+                  ? [
+                      ...current.likes.filter(
+                        (like) =>
+                          !(like.user_id === current.me.id && like.post_id === action.post_id),
+                      ),
+                      { user_id: current.me.id, post_id: action.post_id },
+                    ]
+                  : current.likes.filter(
+                      (like) =>
+                        !(like.user_id === current.me.id && like.post_id === action.post_id),
+                    ),
+              }
+            : current,
+        );
+      }
+      if (!demo && action.type === 'view-story' && optimisticStoryAdded) {
+        setState((current) =>
+          current
+            ? {
+                ...current,
+                storyViews: (current.storyViews ?? []).filter(
+                  (view) =>
+                    !(view.viewer_id === current.me.id && view.story_id === action.story_id),
+                ),
+              }
+            : current,
+        );
+      }
       const message = actionErrorMessage(action, error);
       lastActionError.current = message;
       setNotice(message);
@@ -456,6 +517,29 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
   const stories = visiblePosts.filter(
     (p) => p.kind === 'story' && (followed.has(p.author_id) || p.author_id === me.id),
   );
+  const viewedStoryIds = new Set(
+    (state.storyViews ?? [])
+      .filter((item) => item.viewer_id === me.id)
+      .map((item) => item.story_id),
+  );
+  const storyProfiles = profiles
+    .filter((profile) => stories.some((item) => item.author_id === profile.id))
+    .map((profile, position) => ({
+      profile,
+      position,
+      viewed:
+        profile.id !== me.id &&
+        stories
+          .filter((item) => item.author_id === profile.id)
+          .every((item) => viewedStoryIds.has(item.id)),
+    }))
+    .sort((a, b) => Number(a.viewed) - Number(b.viewed) || a.position - b.position);
+  const firstStoryFor = (authorId: string) => {
+    const authorStories = stories
+      .filter((item) => item.author_id === authorId)
+      .sort((a, b) => a.created_at.localeCompare(b.created_at));
+    return authorStories.find((item) => !viewedStoryIds.has(item.id)) ?? authorStories[0];
+  };
   const focusProfile = profiles.find((p) => p.id === (profileId ?? me.id));
   const visibleProfileConnections = (() => {
     if (!demo || !focusProfile) return profileConnections;
@@ -771,20 +855,18 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                     </span>
                     <span>La tua storia</span>
                   </button>
-                  {profiles
-                    .filter((p) => stories.some((s) => s.author_id === p.id))
-                    .map((p) => (
-                      <button
-                        className="story-button"
-                        key={p.id}
-                        onClick={() => setStory(stories.find((s) => s.author_id === p.id)!)}
-                      >
-                        <span className="story-ring">
-                          <Avatar person={p} size="large" />
-                        </span>
-                        <span data-user-copy>{p.display_name.split(' ')[0]}</span>
-                      </button>
-                    ))}
+                  {storyProfiles.map(({ profile: p, viewed }) => (
+                    <button
+                      className="story-button"
+                      key={p.id}
+                      onClick={() => setStory(firstStoryFor(p.id))}
+                    >
+                      <span className={`story-ring${viewed ? ' viewed' : ''}`}>
+                        <Avatar person={p} size="large" />
+                      </span>
+                      <span data-user-copy>{p.display_name.split(' ')[0]}</span>
+                    </button>
+                  ))}
                 </section>
                 <div className="home-section-break" aria-hidden="true" />
               </>
@@ -2115,6 +2197,11 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
           startId={story.id}
           profiles={profiles}
           demo={demo}
+          meId={me.id}
+          storyViews={state.storyViews ?? []}
+          onViewed={(storyId) => {
+            if (!viewedStoryIds.has(storyId)) void act({ type: 'view-story', story_id: storyId });
+          }}
           onClose={() => setStory(null)}
         />
       )}

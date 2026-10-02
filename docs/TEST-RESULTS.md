@@ -147,3 +147,9 @@ Le Note della comunità sono testate nel database contro letture di estranei, pr
 - Difetti preesistenti individuati e corretti in un commit separato: `combinedFeed` ordinava feed locale e Note federate solo per data, così la Nota remota più recente precedeva i post locali e i test `feed calmo`, `note della comunità`, `salvati` e `federazione` (mobile) fallivano già su `HEAD`. Ora il feed locale resta cronologico e le Note del Fediverso seguono in blocco. Aggiornate anche le due asserzioni che davano per primo il vecchio post della cerchia. La suite Playwright completa passa: **70/70** su desktop e mobile con build di produzione (senza overlay di sviluppo).
 - Le quattro migrazioni (`20260926120000_user_digest.sql`, `20260926130000_collaborative_posts.sql`, `20260926140000_expressiveness.sql`, `20260926150000_intentional_discovery.sql`) non sono state applicate al progetto Supabase cloud. Il canale email del digest resta non operativo: manca un provider di invio, quindi nell’attesa si usa solo `in_app`.
 
+## 2 ottobre 2026 — visualizzazioni e ordine delle storie
+
+- Le storie registrano una sola visualizzazione per persona; l’autore vede conteggio, identità e orario, mentre terzi e anonimi non possono leggere il pubblico. La migrazione RLS impedisce spoofing, auto-visualizzazioni e accesso a storie scadute o non visibili.
+- Dopo il caricamento effettivo del media, l’anello passa da viola a grigio e l’autore viene spostato in coda quando tutte le sue storie attive sono state viste. Con più storie viene aperta per prima la più vecchia non vista.
+- Lint, TypeScript e build Webpack di produzione superati; **135/135 test unitari e SQL** e **78/78 test Playwright desktop/mobile** superati.
+- La roadmap è stata riallineata allo stato reale: sezioni 6–9 già complete localmente, ancora da applicare e collaudare sul progetto Supabase dedicato. La migrazione `20261002120000_story_views.sql` non è stata applicata al cloud.

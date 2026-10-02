@@ -38,6 +38,7 @@ import {
   mentionPreferenceInput,
   shareInput,
   explorePreferenceInput,
+  storyViewInput,
 } from '@/lib/core/rules';
 import { identity, checked, adminDatabase, ApiError } from './supabase';
 import { enqueueFederatedActivity, ensureFederationActorKey, publicPostBy } from './federation';
@@ -216,6 +217,7 @@ export async function snapshot(existingIdentity?: Identity) {
     db.from('mentions').select('*').limit(500),
     db.from('shares').select('*').order('created_at', { ascending: false }).limit(500),
     db.from('explore_preferences').select('*').eq('user_id', user.id).limit(10),
+    db.from('story_views').select('*').order('viewed_at', { ascending: true }).limit(2000),
   ]);
   const [
     profiles,
@@ -248,6 +250,7 @@ export async function snapshot(existingIdentity?: Identity) {
     mentions,
     shares,
     explorePreferences,
+    storyViews,
   ] = results.map((r) => checked(r));
   const [bookmarks, saved, pollResults, remotePosts] = await Promise.all([
     bookmarksFor(db),
@@ -301,6 +304,7 @@ export async function snapshot(existingIdentity?: Identity) {
     mentions,
     shares,
     explorePreferences,
+    storyViews,
     productMetrics,
     notes,
     pollResults,
@@ -775,6 +779,18 @@ export async function mutate(input: unknown, includeSnapshot = true) {
       );
       break;
     }
+    case 'view-story': {
+      const value = storyViewInput.parse(obj);
+      checked(
+        await db
+          .from('story_views')
+          .upsert(
+            { story_id: value.story_id, viewer_id: user.id },
+            { onConflict: 'story_id,viewer_id', ignoreDuplicates: true },
+          ),
+      );
+      break;
+    }
     case 'comment': {
       const v = commentInput.parse(obj);
       checked(
@@ -1078,6 +1094,7 @@ export async function exportData() {
     ['mentions', ''],
     ['shares', 'user_id'],
     ['explore_preferences', 'user_id'],
+    ['story_views', 'viewer_id'],
   ]) {
     const rows: unknown[] = [];
     for (let offset = 0; ; offset += 500) {
@@ -1104,7 +1121,9 @@ export async function exportData() {
                             ? 'user_id'
                             : table === 'explore_preferences'
                               ? 'user_id'
-                              : 'id',
+                              : table === 'story_views'
+                                ? 'story_id'
+                                : 'id',
           )
           .range(offset, offset + 499),
       );

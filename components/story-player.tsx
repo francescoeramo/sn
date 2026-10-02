@@ -2,8 +2,8 @@
 
 import Image from 'next/image';
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, Pause, Play, Volume2, VolumeX } from 'lucide-react';
-import type { Post, Profile } from '@/lib/core/types';
+import { ChevronLeft, ChevronRight, Eye, Pause, Play, Volume2, VolumeX } from 'lucide-react';
+import type { Post, Profile, StoryView } from '@/lib/core/types';
 import { Avatar, Modal } from './primitives';
 
 export function StoryPlayer({
@@ -11,12 +11,18 @@ export function StoryPlayer({
   startId,
   profiles,
   demo,
+  meId,
+  storyViews,
+  onViewed,
   onClose,
 }: {
   stories: Post[];
   startId: string;
   profiles: Profile[];
   demo: boolean;
+  meId: string;
+  storyViews: StoryView[];
+  onViewed: (storyId: string) => void;
   onClose: () => void;
 }) {
   // Freeze this viewing session so feed refreshes do not reorder the stories being watched.
@@ -31,9 +37,7 @@ export function StoryPlayer({
   const [index, setIndex] = useState(() =>
     Math.max(
       0,
-      sequence.findIndex(
-        (s) => s.author_id === sequence.find((start) => start.id === startId)?.author_id,
-      ),
+      sequence.findIndex((story) => story.id === startId),
     ),
   );
   const current = sequence[index];
@@ -51,6 +55,14 @@ export function StoryPlayer({
         post={current}
         person={person}
         demo={demo}
+        own={current.author_id === meId}
+        viewers={storyViews
+          .filter((view) => view.story_id === current.id)
+          .flatMap((view) => {
+            const viewer = profiles.find((profile) => profile.id === view.viewer_id);
+            return viewer ? [{ ...view, viewer }] : [];
+          })}
+        onViewed={onViewed}
         authorStories={sequence.filter((s) => s.author_id === current.author_id)}
         onNext={next}
         onPrevious={previous}
@@ -64,6 +76,9 @@ function StoryFrame({
   post,
   person,
   demo,
+  own,
+  viewers,
+  onViewed,
   authorStories,
   onNext,
   onPrevious,
@@ -72,6 +87,9 @@ function StoryFrame({
   post: Post;
   person?: Profile;
   demo: boolean;
+  own: boolean;
+  viewers: Array<StoryView & { viewer: Profile }>;
+  onViewed: (storyId: string) => void;
   authorStories: Post[];
   onNext: () => void;
   onPrevious: () => void;
@@ -100,6 +118,7 @@ function StoryFrame({
       onNext();
     }
   });
+  const markViewed = useEffectEvent(() => onViewed(post.id));
   const activeIndex = authorStories.findIndex((s) => s.id === post.id);
 
   useEffect(() => {
@@ -154,6 +173,10 @@ function StoryFrame({
     if (stopped) element.pause();
     else void element.play().catch(() => setBlocked(true));
   }, [stopped]);
+
+  useEffect(() => {
+    if (ready && !concealed && !error && !own) markViewed();
+  }, [concealed, error, own, ready]);
 
   if (concealed)
     return (
@@ -329,6 +352,37 @@ function StoryFrame({
       <p className="story-caption" data-user-copy>
         {post.body}
       </p>
+      {own && (
+        <details
+          className="story-viewers"
+          onToggle={(event) => setPaused(event.currentTarget.open)}
+        >
+          <summary>
+            <Eye size={16} />
+            {viewers.length === 1
+              ? '1 persona ha visto questa storia'
+              : `${viewers.length} persone hanno visto questa storia`}
+          </summary>
+          {viewers.length ? (
+            <ul>
+              {viewers.map(({ viewer, viewed_at: viewedAt }) => (
+                <li key={viewer.id}>
+                  <Avatar person={viewer} size="small" />
+                  <span data-user-copy>{viewer.display_name}</span>
+                  <time dateTime={viewedAt}>
+                    {new Intl.DateTimeFormat('it', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    }).format(new Date(viewedAt))}
+                  </time>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="fine muted">Nessuna visualizzazione per ora.</p>
+          )}
+        </details>
+      )}
       <p className="fine muted">Tocca ai lati per cambiare storia. Tieni premuto per fermarla.</p>
     </section>
   );

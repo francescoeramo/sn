@@ -329,6 +329,88 @@ test('storie: dialogo accessibile e chiusura con Escape', async ({ page }) => {
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).not.toBeVisible();
 });
+test('storie: dopo la visione il bordo diventa grigio e il profilo va in coda', async ({
+  page,
+}) => {
+  await page.goto('/demo');
+  await expect(page.locator('.stories .story-button > span:last-child')).toHaveText([
+    'La tua storia',
+    'Giulia',
+    'Marco',
+    'Sara',
+  ]);
+  await page.getByRole('button', { name: 'Giulia', exact: true }).click();
+  await expect(page.locator('.story-stage img')).toBeVisible();
+  await expect
+    .poll(() =>
+      page.locator('.story-stage img').evaluate((image: HTMLImageElement) => image.complete),
+    )
+    .toBe(true);
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.stories .story-button > span:last-child')).toHaveText([
+    'La tua storia',
+    'Marco',
+    'Sara',
+    'Giulia',
+  ]);
+  await expect(
+    page.getByRole('button', { name: 'Giulia', exact: true }).locator('.story-ring'),
+  ).toHaveClass(/viewed/);
+  await expect(
+    page.getByRole('button', { name: 'Marco', exact: true }).locator('.story-ring'),
+  ).not.toHaveClass(/viewed/);
+});
+test('storie: l’autore vede conteggio e identità dei viewer', async ({ page }) => {
+  await page.goto('/demo');
+  await expect(page.getByRole('button', { name: 'Giulia', exact: true })).toBeVisible();
+  await page.evaluate(async () => {
+    await new Promise<void>((resolve, reject) => {
+      const request = indexedDB.open('sn-demo', 1);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        const database = request.result;
+        const transaction = database.transaction('state', 'readwrite');
+        const store = transaction.objectStore('state');
+        const get = store.get('snapshot');
+        get.onerror = () => reject(get.error);
+        get.onsuccess = () => {
+          const state = get.result;
+          const storyId = '90000000-0000-4000-8000-000000000001';
+          const giulia = state.profiles.find(
+            (profile: { username: string }) => profile.username === 'giulia',
+          );
+          state.posts.unshift({
+            id: storyId,
+            author_id: state.me.id,
+            body: 'La mia storia vista',
+            kind: 'story',
+            media_path: '/art/playlist.svg',
+            media_type: 'image/svg+xml',
+            alt: 'Illustrazione di prova',
+            created_at: new Date().toISOString(),
+            expires_at: new Date(Date.now() + 3600000).toISOString(),
+          });
+          state.storyViews = [
+            ...(state.storyViews ?? []),
+            { story_id: storyId, viewer_id: giulia.id, viewed_at: new Date().toISOString() },
+          ];
+          store.put(state, 'snapshot');
+        };
+        transaction.oncomplete = () => {
+          database.close();
+          resolve();
+        };
+        transaction.onerror = () => reject(transaction.error);
+      };
+    });
+  });
+  await page.reload();
+  await page.getByRole('button', { name: 'Francesco', exact: true }).click();
+  const viewers = page.locator('.story-viewers');
+  await expect(viewers).toContainText('1 persona ha visto questa storia');
+  await viewers.locator('summary').click();
+  await expect(viewers.getByText('Giulia Rossi')).toBeVisible();
+});
 test('storie: autoplay finito, pausa, avanti e indietro', async ({ page }) => {
   await page.goto('/demo');
   await page.getByRole('button', { name: 'Giulia', exact: true }).click();

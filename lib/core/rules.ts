@@ -67,6 +67,7 @@ export const postInput = z
     'Le opzioni del sondaggio devono essere diverse.',
   );
 export const bookmarkInput = z.object({ post_id: userId, saved: z.boolean() });
+export const storyViewInput = z.object({ story_id: userId });
 export const savedCursorInput = z.object({
   created_at: z.iso.datetime({ offset: true }),
   post_id: userId,

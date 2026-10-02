@@ -351,6 +351,22 @@ describe('Regole condivise', () => {
     expect(next.posts).toEqual(state.posts);
     expect(state.likes).toHaveLength(3);
   });
+  it('la demo registra una sola visualizzazione valida per storia', () => {
+    const state = seed();
+    const story = state.posts.find((post) => post.kind === 'story')!;
+    const once = applyDemo(state, { type: 'view-story', story_id: story.id });
+    const twice = applyDemo(once, { type: 'view-story', story_id: story.id });
+    expect(twice.storyViews).toEqual([
+      expect.objectContaining({ story_id: story.id, viewer_id: state.me.id }),
+    ]);
+    expect(() => applyDemo(state, { type: 'view-story', story_id: state.posts[0].id })).toThrow(
+      'Storia non disponibile',
+    );
+    story.expires_at = new Date(0).toISOString();
+    expect(() => applyDemo(state, { type: 'view-story', story_id: story.id })).toThrow(
+      'Storia non disponibile',
+    );
+  });
   it('la demo richiede follow reciproco per inviare messaggi', () => {
     const s = seed();
     expect(() =>

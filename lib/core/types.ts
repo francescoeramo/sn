@@ -35,6 +35,11 @@ export type Post = {
   expires_at: string | null;
   media?: PostMedia[];
 };
+export type StoryView = {
+  story_id: string;
+  viewer_id: string;
+  viewed_at: string;
+};
 export type RemotePost = {
   id: string;
   actor: string;
@@ -363,6 +368,7 @@ export type Snapshot = {
   me: Profile;
   profiles: Profile[];
   posts: Post[];
+  storyViews?: StoryView[];
   remotePosts?: RemotePost[];
   comments: Comment[];
   likes: { user_id: string; post_id: string }[];
@@ -500,6 +506,7 @@ export type Action =
   | { type: 'vote-poll'; poll_id: string; option_id: string }
   | { type: 'bookmark'; post_id: string; saved: boolean }
   | { type: 'like'; post_id: string }
+  | { type: 'view-story'; story_id: string }
   | { type: 'comment'; post_id: string; body: string; parent_id?: string | null; quote?: string }
   | { type: 'follow'; user_id: string }
   | { type: 'accept'; user_id: string; accept: boolean }
