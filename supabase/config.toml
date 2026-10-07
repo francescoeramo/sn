@@ -232,26 +232,36 @@ otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
 otp_expiry = 900
 
-# Use a production-ready SMTP server
+# In locale le email finiscono in Inbucket. Per il progetto cloud configurare
+# Resend come SMTP nella dashboard Auth; i valori qui sotto sono solo un esempio
+# per test locali con invio reale, da abilitare dopo la verifica del dominio.
 # [auth.email.smtp]
 # enabled = true
-# host = "smtp.sendgrid.net"
-# port = 587
-# user = "apikey"
-# pass = "env(SENDGRID_API_KEY)"
-# admin_email = "admin@email.com"
-# sender_name = "Admin"
+# host = "smtp.resend.com"
+# port = 465
+# user = "resend"
+# pass = "env(RESEND_API_KEY)"
+# admin_email = "aiuto@dominio-verificato.example"
+# sender_name = "SN"
 
-# Uncomment to customize email template
+# I template locali vanno copiati nella dashboard per il progetto cloud.
+[auth.email.template.confirmation]
+subject = "SN — conferma il tuo indirizzo email"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "SN — reimposta la tua password"
+content_path = "./supabase/templates/recovery.html"
+
+# Il progetto usa codici invito propri, non l'invito via email di Supabase Auth.
 # [auth.email.template.invite]
 # subject = "You have been invited"
 # content_path = "./supabase/templates/invite.html"
 
-# Uncomment to customize notification email template
 [auth.email.notification.password_changed]
 enabled = true
-# subject = "Your password has been changed"
-# content_path = "./supabase/templates/password_changed_notification.html"
+subject = "SN — la tua password è stata cambiata"
+content_path = "./supabase/templates/password_changed_notification.html"
 
 [auth.sms]
 # Allow/disallow new user signups via SMS to your project.
