@@ -23,15 +23,28 @@ import {
   passwordResetRequest,
   passwordUpdate,
   mfaAction,
+  nativeRefreshInput,
+  nativeMfaInput,
 } from '@/lib/core/rules';
 import {
   database,
   identity,
+  identityFrom,
   activeAccount,
+  activeAccountForToken,
+  requireBearer,
   checked,
   adminDatabase,
   ApiError,
 } from '@/lib/server/supabase';
+import {
+  signInWithPassword,
+  nativeAuthClient,
+  refreshNativeSession,
+  verifyNativeMfa,
+  revokeNativeSession,
+  isNativeAuthRoute,
+} from '@/lib/server/auth';
 import { snapshot, mutate, exportData, deleteAccount, savedPage } from '@/lib/server/social';
 import { processFederationQueue } from '@/lib/server/federation-delivery';
 
@@ -46,7 +59,11 @@ const json = (data: unknown, status = 200) =>
   });
 function errorResponse(error: unknown) {
   if (error instanceof BodyTooLarge) return json({ error: 'Richiesta troppo grande.' }, 413);
-  if (error instanceof ApiError) return json({ error: error.message }, error.status);
+  if (error instanceof ApiError)
+    return json(
+      error.code ? { error: error.message, code: error.code } : { error: error.message },
+      error.status,
+    );
   if (error instanceof z.ZodError)
     return json({ error: 'Controlla i campi: un valore non è valido.' }, 400);
   return json({ error: 'Il servizio non risponde. Riprova tra poco.' }, 500);
@@ -98,6 +115,31 @@ async function mfaState() {
     mfaRequired: assurance.nextLevel === 'aal2' && assurance.currentLevel !== 'aal2',
   };
 }
+// Native endpoints are selected by path (not by a client header), keep the login rate limit,
+// and never fall back to cookies. They are exempt from the web same-origin requirement
+// because they carry no ambient credentials and emit no CORS headers.
+async function nativeAuth(route: string, request: NextRequest) {
+  if (route === 'native/auth/login') {
+    const data = loginCredentials.parse(await body(request));
+    await enforceAuthRate(data.email, 'login');
+    const result = await signInWithPassword(nativeAuthClient(), data.email, data.password);
+    if (result.mfaRequired)
+      return json({ mfa_required: true, factor_id: result.factorId, ...result.session });
+    return json(result.session);
+  }
+  if (route === 'native/auth/refresh') {
+    const data = nativeRefreshInput.parse(await body(request));
+    return json(await refreshNativeSession(data.refresh_token));
+  }
+  if (route === 'native/auth/logout') {
+    await revokeNativeSession(requireBearer(request));
+    return json({ ok: true });
+  }
+  const token = requireBearer(request);
+  const data = nativeMfaInput.parse(await body(request));
+  await activeAccountForToken(token);
+  return json(await verifyNativeMfa(token, data.factor_id, data.code));
+}
 export async function GET(request: NextRequest, { params }: Context) {
   try {
     const route = (await params).path.join('/');
@@ -106,7 +148,7 @@ export async function GET(request: NextRequest, { params }: Context) {
       const { db } = await identity();
       return json(checked(await db.rpc('my_sessions')));
     }
-    if (route === 'bootstrap') return json(await snapshot());
+    if (route === 'bootstrap') return json(await snapshot(await identityFrom(request)));
     if (route === 'profile/connections') {
       const { db } = await identity();
       const target = userId.parse(request.nextUrl.searchParams.get('id'));
@@ -228,8 +270,9 @@ export async function GET(request: NextRequest, { params }: Context) {
 
 export async function POST(request: NextRequest, { params }: Context) {
   try {
-    sameOrigin(request);
     const route = (await params).path.join('/');
+    if (isNativeAuthRoute(route)) return await nativeAuth(route, request);
+    sameOrigin(request);
     if (route === 'auth/recover') {
       const data = passwordResetRequest.parse(await body(request));
       await enforceAuthRate(data.email, 'recover');
@@ -361,24 +404,8 @@ export async function POST(request: NextRequest, { params }: Context) {
       }
       const data = loginCredentials.parse(input);
       await enforceAuthRate(data.email, 'login');
-      const started = Date.now();
-      const result = await db.auth.signInWithPassword({
-        email: data.email,
-        password: data.password,
-      });
-      // Same message and a minimum response duration; Supabase also performs its own password verification and rate limiting.
-      await new Promise((resolve) =>
-        setTimeout(resolve, Math.max(0, 650 - (Date.now() - started))),
-      );
-      if (result.error)
-        throw new ApiError('Accesso non riuscito. Controlla email e password.', 401);
-      const assurance = checked(await db.auth.mfa.getAuthenticatorAssuranceLevel());
-      if (assurance.nextLevel === 'aal2' && assurance.currentLevel !== 'aal2') {
-        const factors = checked(await db.auth.mfa.listFactors());
-        const factor = factors.totp.find((item) => item.status === 'verified');
-        if (!factor) throw new ApiError('Secondo fattore non disponibile.', 503);
-        return json({ mfaRequired: true, factorId: factor.id });
-      }
+      const result = await signInWithPassword(db, data.email, data.password);
+      if (result.mfaRequired) return json({ mfaRequired: true, factorId: result.factorId });
       return json({ ok: true });
     }
     if (route === 'auth/logout') {

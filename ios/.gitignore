@@ -1,0 +1,7 @@
+# Progetto generato da XcodeGen (rigenerabile con `xcodegen generate`).
+SN.xcodeproj/
+# Artefatti di build e stato utente Xcode.
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/

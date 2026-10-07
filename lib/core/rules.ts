@@ -126,6 +126,12 @@ export const mfaAction = z.discriminatedUnion('action', [
   }),
   z.object({ action: z.literal('unenroll'), factorId: z.uuid() }),
 ]);
+// Contratto nativo M0 (snake_case): l'app conserva i token e li rinnova solo via server.
+export const nativeRefreshInput = z.object({ refresh_token: z.string().min(1).max(4096) });
+export const nativeMfaInput = z.object({
+  factor_id: z.uuid(),
+  code: z.string().regex(/^\d{6}$/),
+});
 export const passwordUpdate = z
   .object({
     password: securePassword,

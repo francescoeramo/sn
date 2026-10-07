@@ -7,6 +7,7 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public status = 400,
+    public code?: string,
   ) {
     super(message);
   }
@@ -56,6 +57,64 @@ export async function identity() {
   if (profile.error || !profile.data || profile.data.disabled)
     throw new ApiError('Account non disponibile.', 403);
   return { db, user, profile: profile.data };
+}
+// Native client: RLS queries run as the bearer user, without touching cookies.
+// The token is verified explicitly with auth.getUser(token).
+export function tokenDatabase(token: string) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  if (!url || !key)
+    throw new ApiError('SN non è ancora collegato al database. Puoi provare la demo.', 503);
+  return createClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false },
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  });
+}
+type RequestLike = { headers: { get(name: string): string | null } };
+// Only an explicit, well-formed Bearer header selects the native path.
+// A present but malformed header is never silently downgraded to cookies.
+export function bearerToken(header: string): string | null {
+  const match = /^Bearer[ \t]+(\S+)$/i.exec(header.trim());
+  return match ? match[1] : null;
+}
+export function requireBearer(request: RequestLike): string {
+  const header = request.headers.get('authorization');
+  const token = header === null ? null : bearerToken(header);
+  if (!token) throw new ApiError('Sessione non valida.', 401, 'session_invalid');
+  return token;
+}
+async function accountForToken(token: string) {
+  const db = tokenDatabase(token);
+  const { data, error } = await db.auth.getUser(token);
+  if (error || !data.user) throw new ApiError('Accedi per continuare.', 401, 'session_invalid');
+  return { db, user: data.user, token };
+}
+export async function activeAccountForToken(token: string) {
+  const { db, user, token: verified } = await accountForToken(token);
+  const profile = await db.from('profiles').select('*').eq('id', user.id).single();
+  if (profile.error || !profile.data || profile.data.disabled)
+    throw new ApiError('Account non disponibile.', 403, 'account_unavailable');
+  return { db, user, profile: profile.data, token: verified };
+}
+// Bearer wins when the Authorization header is present; otherwise the web cookie path is unchanged.
+export async function authenticatedFrom(request: RequestLike) {
+  if (request.headers.get('authorization') === null)
+    return { ...(await authenticated()), token: undefined };
+  const token = requireBearer(request);
+  const { db, user } = await accountForToken(token);
+  return { db, user, token };
+}
+export async function activeAccountFrom(request: RequestLike) {
+  if (request.headers.get('authorization') === null) return activeAccount();
+  return activeAccountForToken(requireBearer(request));
+}
+export async function identityFrom(request: RequestLike) {
+  if (request.headers.get('authorization') === null) return identity();
+  const { db, user, profile, token } = await activeAccountForToken(requireBearer(request));
+  const assurance = checked(await db.auth.mfa.getAuthenticatorAssuranceLevel(token));
+  if (assurance.nextLevel === 'aal2' && assurance.currentLevel !== 'aal2')
+    throw new ApiError('Inserisci il codice dell’app authenticator.', 403, 'mfa_required');
+  return { db, user, profile, token };
 }
 // Privileged client is isolated: only lifecycle operations with separately verified authorization.
 export function adminDatabase() {

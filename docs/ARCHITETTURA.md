@@ -2,7 +2,7 @@
 
 ## Confini
 
-`components/` contiene l’interfaccia React. `lib/core/` contiene tipi, regole e identità indipendenti da Next.js, riutilizzabili in una futura app React Native. `lib/client/` gestisce demo e preparazione media. `lib/server/` gestisce sessioni e query Supabase. Le API usano cookie HttpOnly: un’app nativa richiederà un adapter di autenticazione con bearer token, mantenendo le stesse regole di dominio.
+`components/` contiene l’interfaccia React. `lib/core/` contiene tipi, regole e identità indipendenti da Next.js, riutilizzabili in una futura app React Native. `lib/client/` gestisce demo e preparazione media. `lib/server/` gestisce sessioni e query Supabase. Le API web usano cookie HttpOnly; l’app nativa usa un adapter di autenticazione con bearer token (`lib/server/auth.ts`), mantenendo le stesse regole di dominio e le stesse RLS.
 
 Non serve ancora un monorepo. Non ci sono dipendenze da Vercel KV, Blob, code a pagamento o servizi di rendering immagini a consumo. Auth e Storage sono Supabase; Postgres conserva contenuti, relazioni, quote e policy. Le chiavi privilegiate servono solo a cancellazione account e manutenzione, dopo controlli separati. Le operazioni social usano il token dell’utente e RLS.
 
@@ -15,6 +15,17 @@ Le colonne privilegiate e i timestamp non sono modificabili dal ruolo `authentic
 PGlite esegue il vero motore Postgres e verifica schema, trigger e RLS con ruoli distinti. Gli schemi Auth e Storage nel test sono riproduzioni minime: non verificano GoTrue, API Storage, email, proxy del provider o concorrenza tra connessioni. Prima del deploy servono i test reali descritti in VERIFICA.md.
 
 La durata massima video è controllata nel browser. Il server verifica dimensione e firma del contenitore, ma non esegue ffprobe/antivirus né certifica la durata dei file inviati via API. Per la beta su invito il limite di byte protegge la quota; prima di aprire a sconosciuti va introdotta una pipeline media con decodifica e convalida in isolamento. La ricodifica browser dipende da MediaRecorder/captureStream; se non disponibile, si accettano solo file già entro 3 MiB.
+
+## App nativa: adapter bearer (M0, lato server)
+
+Il percorso nativo è un client delle API SN; server e database restano invariati. L’autenticazione è **server-mediated**: l’app invia email e password al server, il server parla con Supabase e restituisce i token; nessuna chiave privilegiata lascia il server.
+
+- Endpoint dedicati, in `app/api/[...path]/route.ts`, selezionati dal **percorso** e non da header del client (niente fiducia in `X-SN-Client`): `native/auth/login`, `native/auth/refresh`, `native/auth/logout`, `native/auth/mfa`. Allowlist esplicita, default-deny.
+- I quattro endpoint sono esenti dall’`Origin` richiesto ai POST web (non usano credenziali ambientali), **non** leggono né scrivono cookie e non emettono header CORS; `Cache-Control: private, no-store`. Il rate limit del login (HMAC su email + `SUPABASE_SECRET_KEY`) è invariato.
+- `GET /api/bootstrap` accetta il bearer: `Authorization` assente → percorso cookie invariato; bearer presente ma non valido → `401`, senza fallback ai cookie; bearer aal1 con MFA attiva → `403` finché non si verifica il codice.
+- MFA, logout e refresh usano GoTrue REST con il bearer (`lib/server/auth.ts`), senza `setSession`. `lib/server/supabase.ts` espone `tokenDatabase(token)` per le query RLS come utente e `identityFrom(request)` per la verifica del token.
+- Gli errori nativi hanno un `code` stabile (`session_invalid`, `refresh_invalid`, `auth_unavailable`, `mfa_required`, `mfa_invalid`, `mfa_unavailable`, `logout_failed`) oltre al messaggio localizzabile. I `code` sono per ora limitati ai percorsi `native/auth/*`.
+- Ambito logout M0: sessione corrente (`scope=local`), idempotente. App Attest resta una difesa futura.
 
 ## Federazione: trasporto locale in anteprima
 

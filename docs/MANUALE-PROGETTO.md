@@ -182,9 +182,11 @@ Variabili lette dal progetto (`.env.example` è il riferimento):
 | `CRON_SECRET`                          | Bearer secret manutenzione, almeno 32 caratteri casuali | Solo server/job, segreta          |
 | `PRIVACY_CONTACT_EMAIL`                | Contatto richiesto per registrazione                    | Configurazione pubblicabile       |
 
+Le email Auth di conferma, recupero e avviso di password cambiata hanno template italiani in `supabase/templates/`. Il Supabase locale le mostra in Inbucket; sul progetto cloud occorre copiare i template nella dashboard Auth e configurare Resend come SMTP secondo `docs/EMAIL.md`. `sn.help@proton.me` è il recapito di assistenza, ma non è un mittente utilizzabile con Resend senza controllo DNS del dominio `proton.me`. Il mittente effettivo deve appartenere a un dominio verificato. La modifica ai file locali non configura automaticamente il servizio cloud.
+
 ### Collegamento cloud previsto
 
-Non usare progetti Supabase estranei a SN. La documentazione identifica un progetto Free dedicato in regione UE come destinazione prevista, ma non è stata fatta modifica cloud. Prima di collegare: compilare `.env.local`; generare `FEDERATION_KEY_SECRET` con `openssl rand -base64 32` e `CRON_SECRET` robusto; applicare migrazioni in ordine sul progetto dedicato; configurare Site URL/Redirect URL incluse callback; abilitare conferma email e signup anonimo disattivato; password minima 12, JWT 5 minuti e link email 15 minuti; configurare/testare SMTP prima di invitare utenti. Assegnare moderatore inserendo l’UUID del primo account in `private.admins`. Non committare credenziali o codici invito.
+Non usare progetti Supabase estranei a SN. La documentazione identifica un progetto Free dedicato in regione UE come destinazione prevista, ma non è stata fatta modifica cloud. Prima di collegare: compilare `.env.local`; generare `FEDERATION_KEY_SECRET` con `openssl rand -base64 32` e `CRON_SECRET` robusto; applicare migrazioni in ordine sul progetto dedicato; configurare Site URL/Redirect URL incluse callback; abilitare conferma email e signup anonimo disattivato; password minima 12, JWT 5 minuti e link email 15 minuti; configurare/testare SMTP Resend e template secondo `docs/EMAIL.md` prima di invitare utenti. Assegnare moderatore inserendo l’UUID del primo account in `private.admins`. Non committare credenziali o codici invito.
 
 L’invito si genera con `node scripts/create-invite.mjs email@example.org`; lo script mostra l’SQL da eseguire nel progetto corretto. Verificare destinatario e database prima di eseguire l’SQL.
 
@@ -238,6 +240,8 @@ Ogni blocco deve arrivare completo su migrazione, API, demo IndexedDB, RLS, expo
 
 Altri elementi da roadmap lunga/brief e non parte della beta: dirette (servizio separato, mai nel piccolo endpoint upload), app nativa (adapter Auth bearer mantenendo regole dominio), protocollo E2EE evoluto/recupero dispositivi, ulteriore federazione. Consultare il brief prima di stimare o promettere queste funzioni.
 
+L’**adapter bearer lato server** per l’app nativa M0 è già presente (`native/auth/login|refresh|logout|mfa`, `tokenDatabase`, `identityFrom`), descritto in `docs/ARCHITETTURA.md` e in `docs/PIANO-APP-NATIVA.md`. Resta un’infrastruttura di prova: l’app nativa non è autorizzata né disponibile per gli utenti finché il proprietario non la approva e la matrice su iPhone non è completata.
+
 ## 10. Regole pratiche per chi interviene
 
 1. Verificare lo stato Git e gli ambienti prima di cambiare file o dati; distinguere demo, test locale, staging e progetto cloud.
@@ -258,6 +262,7 @@ Questo manuale è il punto di ingresso, ma i dettagli normativi/operativi restan
 - Confini architetturali/federazione: `docs/ARCHITETTURA.md`.
 - Protocollo e limiti crittografici: `docs/CRITTOGRAFIA.md`.
 - Backup e restore: `docs/BACKUP.md`.
+- Email Auth e Resend: `docs/EMAIL.md`.
 - Checklist cloud: `docs/VERIFICA.md`.
 - Evidenza dei test eseguiti: `docs/TEST-RESULTS.md`.
 - Configurazione locale: `.env.example`; non inserire segreti in Git.
