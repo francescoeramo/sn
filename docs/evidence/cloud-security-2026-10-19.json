@@ -1,0 +1,43 @@
+{
+  "checked_at": "2026-10-19T14:23:05.269706+00:00",
+  "supabase": {
+    "project": "sndb",
+    "ref": "hirjzejejjxftzxiugnp",
+    "applied_versions": [
+      "20261019134742",
+      "20261019134743",
+      "20261019134744",
+      "20261019140133"
+    ],
+    "applied_migrations": 4,
+    "deletion_rls": true,
+    "member_can_request_deletion": false,
+    "anon_can_list_deletions": false,
+    "service_can_request_deletion": true,
+    "protected_metadata_tables": 3,
+    "connection_block_filters": 2,
+    "server_upload_policies": 1,
+    "old_upload_policy": false
+  },
+  "sn_deployment": {
+    "id": "dpl_7aRdjL7ekZzMdDfpb7iuy3F5VDom",
+    "state": "READY",
+    "target": "production",
+    "commit": "930cfcf91bccd9c37c9a02481a84152d0955b8eb"
+  },
+  "lagraffa": {
+    "application_limit": {
+      "requests": 12,
+      "window_seconds": 900,
+      "scope": "per process and IP; not shared"
+    },
+    "production_env_names": [
+      "GROQ_API_KEY"
+    ],
+    "active_firewall_config_response": "404 Seawall Config not found",
+    "provider_scope_documented": "Groq organization",
+    "provider_exact_limits": "not verified: authenticated Groq console unavailable",
+    "provider_docs": "https://console.groq.com/docs/rate-limits",
+    "new_resources_or_spend": false
+  }
+}
