@@ -266,3 +266,7 @@ Questo manuale è il punto di ingresso, ma i dettagli normativi/operativi restan
 - Checklist cloud: `docs/VERIFICA.md`.
 - Evidenza dei test eseguiti: `docs/TEST-RESULTS.md`.
 - Configurazione locale: `.env.example`; non inserire segreti in Git.
+
+## 12. Audit di sicurezza del 19 ottobre 2026
+
+Le correzioni e l’ordine di rilascio sono in `docs/SECURITY-AUDIT-2026-10-19.md`: intenzione di cancellazione separata dai ban, MFA sulle letture di inviti, filtri blocchi nelle connessioni e upload Storage solo tramite server dopo prenotazione RLS dei byte misurati. Le quattro nuove migrazioni sono testate localmente e non applicate al cloud. I vecchi account disabilitati non vengono interpretati come richieste di cancellazione.

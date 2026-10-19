@@ -509,10 +509,11 @@ export async function POST(request: NextRequest, { params }: Context) {
       checked(
         await db
           .from('media_assets')
-          .insert({ path, owner_id: user.id, bytes: file.size, mime: file.type }),
+          .insert({ path, owner_id: user.id, bytes: bytes.byteLength, mime: file.type }),
       );
       checked(
-        await db.storage
+        // Only this measured, reserved body may reach privileged Storage insertion.
+        await adminDatabase().storage
           .from('media')
           .upload(path, bytes, { contentType: file.type, upsert: false, cacheControl: '0' }),
       );
@@ -540,10 +541,8 @@ export async function POST(request: NextRequest, { params }: Context) {
         checked(await admin.from('media_assets').delete().eq('path', path));
         removed++;
       }
-      const disabled = checked(
-        await admin.from('profiles').select('id').eq('disabled', true).limit(20),
-      );
-      for (const profile of disabled) {
+      const pending = checked(await admin.rpc('pending_account_deletions')) as { id: string }[];
+      for (const profile of pending) {
         const owned = checked(
           await admin.from('media_assets').select('path').eq('owner_id', profile.id),
         );

@@ -12,6 +12,8 @@ const config: NextConfig = {
     useTypeScriptCli: false,
   },
   poweredByHeader: false,
+  // Media already use unoptimized delivery; do not expose an unused decoder endpoint.
+  images: { unoptimized: true },
   async headers() {
     return [
       {

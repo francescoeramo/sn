@@ -1143,8 +1143,8 @@ export async function deleteAccount(password: string) {
   const admin = adminDatabase();
   const token = reauth.data.session.access_token;
   checked(await admin.auth.admin.signOut(token, 'global'));
-  // Disable database access before cleanup, including tokens issued before this request.
-  checked(await admin.from('profiles').update({ disabled: true }).eq('id', user.id));
+  // Record owner intent and disable access atomically. A moderation ban is not deletion consent.
+  checked(await admin.rpc('begin_account_deletion', { target: user.id }));
   const assets = checked(await admin.from('media_assets').select('path').eq('owner_id', user.id));
   for (let i = 0; i < assets.length; i += 100)
     checked(await admin.storage.from('media').remove(assets.slice(i, i + 100).map((a) => a.path)));

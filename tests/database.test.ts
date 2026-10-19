@@ -65,6 +65,7 @@ beforeAll(async () => {
   db = new PGlite();
   await db.exec(`create role anon; create role authenticated; create role service_role bypassrls;
     create schema auth; create table auth.users(id uuid primary key,email text,raw_user_meta_data jsonb);
+    create table auth.mfa_factors(id uuid primary key default gen_random_uuid(),user_id uuid references auth.users,status text);
     create table auth.sessions(id uuid primary key,user_id uuid references auth.users,created_at timestamptz default now(),updated_at timestamptz default now());
     create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
     create function auth.jwt() returns jsonb language sql stable as $$ select coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb $$;
@@ -303,8 +304,7 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
       "insert into public.media_assets(path,owner_id,bytes,mime) values($1,$2,100,'image/webp')",
       [path, bob],
     );
-    await asUser(
-      bob,
+    await db.query(
       "insert into storage.objects(bucket_id,name,metadata) values('media',$1,'{}')",
       [path],
     );
@@ -1019,8 +1019,7 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
       "insert into public.media_assets(path,owner_id,bytes,mime) values($1,$2,100,'image/webp')",
       [circleImage, alice],
     );
-    await asUser(
-      alice,
+    await db.query(
       `insert into storage.objects(bucket_id,name,metadata) values('media',$1,'{"size":100,"mimetype":"image/webp"}')`,
       [circleImage],
     );
@@ -1083,8 +1082,7 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
         "insert into public.media_assets(path,owner_id,bytes,mime) values($1,$2,100,'image/png')",
         [path, alice],
       );
-      await asUser(
-        alice,
+      await db.query(
         `insert into storage.objects(bucket_id,name,metadata) values('media',$1,'{"size":100,"mimetype":"image/png"}')`,
         [path],
       );
@@ -1244,8 +1242,7 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
         "insert into public.media_assets(path,owner_id,bytes,mime) values($1,$2,100,'image/webp')",
         [path, owner],
       );
-      await asUser(
-        owner,
+      await db.query(
         `insert into storage.objects(bucket_id,name,metadata) values('media',$1,'{"size":100,"mimetype":"image/webp"}')`,
         [path],
       );
@@ -1421,8 +1418,7 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
       "insert into public.media_assets(path,owner_id,bytes,mime) values($1,$2,100,'application/octet-stream')",
       [path, bob],
     );
-    await asUser(
-      bob,
+    await db.query(
       `insert into storage.objects(bucket_id,name,metadata) values('media',$1,'{"size":100,"mimetype":"application/octet-stream"}')`,
       [path],
     );
@@ -1490,8 +1486,7 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
       "insert into public.media_assets(path,owner_id,bytes,mime) values($1,$2,100,'application/octet-stream')",
       [path, bob],
     );
-    await asUser(
-      bob,
+    await db.query(
       `insert into storage.objects(bucket_id,name,metadata) values('media',$1,'{"size":100,"mimetype":"application/octet-stream"}')`,
       [path],
     );
@@ -1570,15 +1565,14 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
       ),
     ).rejects.toThrow('row-level security');
   });
-  it('accetta un file riservato senza dipendere dai metadati interni di Storage', async () => {
+  it('il server conserva un file riservato senza dipendere dai metadati interni di Storage', async () => {
     const path = bob + '/00000000-0000-4000-8000-000000000556';
     await asUser(
       bob,
       "insert into public.media_assets(path,owner_id,bytes,mime) values($1,$2,100,'image/webp')",
       [path, bob],
     );
-    await asUser(
-      bob,
+    await db.query(
       "insert into storage.objects(bucket_id,name,metadata) values('media',$1,'{}')",
       [path],
     );
@@ -2225,8 +2219,7 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
         "insert into public.media_assets(path,owner_id,bytes,mime) values($1,$2,100,'image/webp')",
         [path, owner],
       );
-      await asUser(
-        owner,
+      await db.query(
         `insert into storage.objects(bucket_id,name,metadata) values('media',$1,'{"size":100,"mimetype":"image/webp"}')`,
         [path],
       );
@@ -2376,8 +2369,7 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
       "insert into public.media_assets(path,owner_id,bytes,mime) values($1,$2,100,'image/webp')",
       [mediaPath, alice],
     );
-    await asUser(
-      alice,
+    await db.query(
       "insert into storage.objects(bucket_id,name,metadata) values('media',$1,'{}')",
       [mediaPath],
     );
