@@ -52,11 +52,13 @@ final class AuthCoordinator: ObservableObject {
             state = .signedOut
             return
         }
+        let restoreEpoch = epoch
         tokens = stored
         if stored.isExpired() {
             do {
-                _ = try await performRefresh(expectedEpoch: epoch)
+                _ = try await performRefresh(expectedEpoch: restoreEpoch)
             } catch let error as APIError {
+                guard restoreEpoch == epoch else { return }
                 if error.isDefinitiveSessionFailure {
                     resetToSignedOut()
                     return
@@ -67,11 +69,13 @@ final class AuthCoordinator: ObservableObject {
                 // Logout ha invalidato l'epoch durante il rinnovo: nessun rientro.
                 return
             } catch {
+                guard restoreEpoch == epoch else { return }
                 offline = true
                 state = .signedIn(me: cachedMe)
                 return
             }
         }
+        guard restoreEpoch == epoch else { return }
         await probe()
     }
 
@@ -122,24 +126,22 @@ final class AuthCoordinator: ObservableObject {
         let pending = refreshTask
         refreshTask = nil
         epoch += 1
-        // Attende un rinnovo in volo per revocare con il token più recente, se disponibile.
+        // F4: uscita locale immediata, anche se il rinnovo è ancora sospeso.
         var revocationToken = tokens?.accessToken
-        // Nota: l'`await` non va messo dentro la condizione del binding. Alcune grammatiche
-        // di parsing (es. tree-sitter-swift usata da Graphify) non accettano `if let x = try?
-        // await …` e degradano l'intero file. Il comportamento è identico.
+        tokens = nil
+        pendingMfaFactorId = nil
+        store.clear()
+        offline = false
+        lastErrorMessage = nil
+        clearFeed()
+        state = .signedOut
+        // F2: attende la rotazione solo per revocare sul server la sessione più recente.
         if let pending {
             let refreshed = try? await pending.value
             if let pair = refreshed {
                 revocationToken = pair.accessToken
             }
         }
-        tokens = nil
-        pendingMfaFactorId = nil
-        // F4: i token locali spariscono subito; la revoca sul server è best-effort.
-        store.clear()
-        offline = false
-        clearFeed()
-        state = .signedOut
         if let revocationToken {
             try? await api.logout(accessToken: revocationToken)
         }

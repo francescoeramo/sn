@@ -1,12 +1,6 @@
 import Foundation
 import Security
 
-protocol TokenStore {
-    func load() -> TokenPair?
-    func save(_ tokens: TokenPair) throws
-    func clear()
-}
-
 enum TokenStoreError: Error {
     case keychain(OSStatus)
 }

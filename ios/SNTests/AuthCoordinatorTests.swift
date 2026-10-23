@@ -106,7 +106,7 @@ final class AuthCoordinatorTests: XCTestCase {
         store.tokens = tokens(expiresIn: -10)
 
         let coordinator = AuthCoordinator(api: api, store: store)
-        let probe = Task { await coordinator.probe() }
+        let probe = Task { await coordinator.restore() }
         try? await Task.sleep(nanoseconds: 40_000_000) // lascia partire il rinnovo
         await coordinator.logout()
         await probe.value
@@ -116,4 +116,115 @@ final class AuthCoordinatorTests: XCTestCase {
         let logoutCount = await api.logoutCount
         XCTAssertEqual(logoutCount, 1, "il logout deve revocare la sessione sul server")
     }
+    func testLogoutClearsLocalSessionBeforeRefreshCompletes() async {
+        let api = MockAPI()
+        let rotated = tokens()
+        await api.suspendRefresh()
+        await api.setRefreshResult(.success(rotated))
+        let store = MemoryTokenStore()
+        store.tokens = tokens(expiresIn: -10)
+        let coordinator = AuthCoordinator(api: api, store: store)
+        let restoring = Task { await coordinator.restore() }
+        await api.waitForRefresh()
+        let loggingOut = Task { await coordinator.logout() }
+        // The logout task yields while awaiting the held refresh.
+        for _ in 0..<100 where coordinator.state != .signedOut { await Task.yield() }
+        XCTAssertEqual(coordinator.state, .signedOut)
+        XCTAssertNil(store.tokens)
+        let beforeRelease = await api.logoutCount
+        XCTAssertEqual(beforeRelease, 0)
+        await api.releaseRefresh()
+        await loggingOut.value
+        await restoring.value
+        let revoked = await api.logoutTokens
+        XCTAssertEqual(revoked, [rotated.accessToken])
+        XCTAssertEqual(coordinator.state, .signedOut)
+        XCTAssertNil(store.tokens)
+    }
+
+    func testLateOfflineRefreshCannotRestoreLoggedOutSession() async {
+        let api = MockAPI()
+        await api.suspendRefresh()
+        await api.setRefreshResult(.failure(.transport))
+        let store = MemoryTokenStore()
+        store.tokens = tokens(expiresIn: -10)
+        let coordinator = AuthCoordinator(api: api, store: store)
+        let restoring = Task { await coordinator.restore() }
+        await api.waitForRefresh()
+        let loggingOut = Task { await coordinator.logout() }
+        for _ in 0..<100 where coordinator.state != .signedOut { await Task.yield() }
+        await api.releaseRefresh()
+        await loggingOut.value
+        await restoring.value
+        XCTAssertEqual(coordinator.state, .signedOut)
+        XCTAssertFalse(coordinator.offline)
+        XCTAssertNil(store.tokens)
+    }
+
+    private func post(_ id: String, author: String = "user-id", circle: Bool = false) -> FeedPost {
+        FeedPost(id: id, author_id: author, body: id, kind: "post", media_path: nil,
+                 media_type: nil, alt: "", created_at: "2026-10-23T12:30:00Z",
+                 content_warning: nil, media: nil,
+                 circle_links: circle ? [CirclePostLink(post_id: id)] : nil)
+    }
+
+    func testPaginationAppendsWithoutDuplicatesAndStopsAtEnd() async {
+        let api = MockAPI()
+        var initial = bootstrap()
+        initial.posts = [post("first")]
+        initial.nextCursor = "cursor-1"
+        await api.setBootstrapResult(.success(initial))
+        await api.setPostsResult(.success(FeedPage(posts: [post("first"), post("older")], nextCursor: nil)))
+        let store = MemoryTokenStore()
+        store.tokens = tokens()
+        let coordinator = AuthCoordinator(api: api, store: store)
+        await coordinator.restore()
+        await coordinator.loadMore()
+        await coordinator.loadMore()
+        XCTAssertEqual(coordinator.homePosts.map(\.id), ["first", "older"])
+        XCTAssertNil(coordinator.nextCursor)
+        let cursors = await api.postCursors
+        XCTAssertEqual(cursors, ["cursor-1"])
+    }
+
+    func testPaginationOfflinePreservesPostsCursorAndSession() async {
+        let api = MockAPI()
+        var initial = bootstrap()
+        initial.posts = [post("first")]
+        initial.nextCursor = "cursor-1"
+        await api.setBootstrapResult(.success(initial))
+        let store = MemoryTokenStore()
+        store.tokens = tokens()
+        let coordinator = AuthCoordinator(api: api, store: store)
+        await coordinator.restore()
+        await coordinator.loadMore()
+        XCTAssertEqual(coordinator.feed.map(\.id), ["first"])
+        XCTAssertEqual(coordinator.nextCursor, "cursor-1")
+        XCTAssertTrue(coordinator.offline)
+        XCTAssertNotNil(store.tokens)
+        XCTAssertFalse(coordinator.isLoadingMore)
+        await api.setPostsResult(.success(FeedPage(posts: [post("older")], nextCursor: nil)))
+        await coordinator.loadMore()
+        XCTAssertEqual(coordinator.homePosts.map(\.id), ["first", "older"])
+        XCTAssertFalse(coordinator.offline)
+        XCTAssertNil(coordinator.lastErrorMessage)
+    }
+
+    func testHomeFeedExcludesUnfollowedPendingAndCirclePosts() async {
+        let api = MockAPI()
+        var initial = bootstrap()
+        initial.posts = [post("mine"), post("followed", author: "friend"),
+                         post("pending", author: "pending"), post("stranger", author: "other"),
+                         post("circle", circle: true), post("linked-circle")]
+        initial.follows = [FeedFollow(follower_id: "user-id", following_id: "friend", accepted: true),
+                           FeedFollow(follower_id: "user-id", following_id: "pending", accepted: false)]
+        initial.circlePosts = [CirclePostLink(post_id: "linked-circle")]
+        await api.setBootstrapResult(.success(initial))
+        let store = MemoryTokenStore()
+        store.tokens = tokens()
+        let coordinator = AuthCoordinator(api: api, store: store)
+        await coordinator.restore()
+        XCTAssertEqual(coordinator.homePosts.map(\.id), ["mine", "followed"])
+    }
+
 }

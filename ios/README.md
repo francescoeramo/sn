@@ -10,7 +10,7 @@ Il client nativo usa le API SN; backend Next.js e Supabase restano condivisi con
 | M0 — sessione | Flussi principali funzionanti su iPhone: login, verifica sessione, rinnovo, logout/riapertura, recupero offline, MFA | Conferme dell'utente nella sessione del 15 ottobre; test server in `tests/native-auth.test.ts` |
 | M0.5 — crypto 1:1 | Completata su iPhone con CryptoKit, in entrambe le direzioni web ↔ iPhone | [Rapporto](../docs/evidence/ios-crypto-interop-2026-10-15.json): 35 controlli, tre risposte su tre dispositivi, allegato verificato |
 | M1 — feed, profilo, post con immagine | Implementato e installato via USB, collaudo runtime aperto | Contratto in [PIANO-APP-NATIVA.md](../docs/PIANO-APP-NATIVA.md) |
-| XCTest sessione/SwiftUI | Presenti in `SNTests`, non eseguiti con il runner Darwin | Non confondere con i due XCTest crypto Linux superati |
+| XCTest sessione | 11 test di logica eseguiti su Linux; runner Darwin/SwiftUI ancora non eseguito | `bash scripts/check-ios-session.sh`; shim di Combine, API/store in memoria |
 
 La versione 0.2 contiene feed cronologico con aggiornamento manuale, paginazione
 esplicita, avvisi sui contenuti, lettura autenticata delle immagini, proprio profilo
@@ -27,9 +27,9 @@ ricaricare la foto se una validazione del post viene rifiutata.
 M0.5 resta completata: nessuna modifica ai vettori o al protocollo crypto.
 
 Le conferme funzionali M0 non attestano tutti i casi concorrenti della matrice tecnica.
-La modifica MFA database successiva è verificata con test SQL e prova cloud aal1/aal2;
-un nuovo login completo su iPhone dopo tale migrazione non è stato osservato direttamente.
-Questo resta un controllo di regressione da eseguire durante M1, senza ripetere M0.5.
+Login/MFA su iPhone dopo la migrazione database sono stati confermati nella prova M1
+del 23 ottobre (vedi sotto). I test concorrenti locali non sostituiscono le prove
+runtime su telefono né la verifica della revoca sul server.
 
 ## Ambiente e struttura
 
@@ -43,7 +43,7 @@ con iOS 27.0.1. Firma, installazione e runtime sono stati verificati.
 - `ChatCrypto/`: modulo 1:1 condiviso fra CryptoKit iOS e test Linux.
 - `ChatCrypto/Package.resolved` e `Package.resolved`: lockfile da mantenere versionati.
 - `SN/Diagnostics/CryptoProbeDiagnostics.swift`: rapporto sintetico DEBUG, senza rete.
-- `SNTests/`: test sessione separati, runner ancora da verificare.
+- `SNTests/`: test sessione eseguibili su Linux tramite `SessionChecks`; runner Darwin ancora da verificare.
 
 ## Build e dispositivo
 
@@ -161,3 +161,33 @@ Nessuna migrazione o modifica cloud è stata eseguita per M1.
 
 Aprire SN e completare il collaudo runtime sopra. M1 non è ancora dichiarata conclusa.
 Per continuare con OpenCode: [OPENCODE.md](../docs/OPENCODE.md).
+
+## Consolidamento sessione e feed — 23 ottobre 2026
+
+Ripresa dal commit `3aeb037`: M1 già funzionante sul telefono, confermati dall’utente
+app aperta, accesso e hotspot USB. Nessuna nuova tappa M2 dichiarata conclusa.
+
+Correzioni ad AuthCoordinator:
+- Logout: token, dati del feed e stato locale cancellati prima di attendere un rinnovo
+  in corso. La revoca server attende ancora il token ruotato (F2/F4).
+- Restore: un errore di rinnovo arrivato dopo logout viene ignorato tramite epoch;
+  non può più ripristinare lo stato signedIn/offline. Caso riprodotto dal nuovo test
+  prima della correzione, poi superato.
+
+`bash scripts/check-ios-session.sh`: **11 XCTest superati** sul coordinatore reale,
+modelli e protocolli. Copertura: single-flight, refresh rifiutato/offline, logout
+concorrente e token revocato, ripristino, paginazione senza duplicati/fine finestra,
+ripresa dopo errore e filtro follow/cerchie. Un test preesistente di logout chiamava
+probe senza prima caricare i token: corretto affinché eserciti davvero il rinnovo.
+I protocolli TokenStore/APIClient sono separati dalle implementazioni Apple/HTTP
+per compilare la stessa logica senza dipendenze Apple. Lo shim Combine memorizza
+soltanto valori: **non è verifica SwiftUI o Keychain**. Dettagli in
+[SessionChecks](SessionChecks/README.md). Nessuna dipendenza di rete per questi test.
+
+`xtool dev build` superato; `xtool dev run --usb` completato con installazione e
+verifica al 100%, exit 0. L’avvio e il collaudo della nuova build non sono ancora
+confermati dall’utente. Rete ricontrollata: Wi-Fi universitario disconnesso con
+`nmcli device disconnect wlo1`; unica route predefinita via `172.20.10.1` sull’USB.
+La rete Wi-Fi resta disconnessa a fine sessione. Backend sempre sull’indirizzo USB.
+Paginazione sul telefono, riapertura dopo invio e accessibilità restano prove runtime
+aperte finché non arriva una conferma esplicita; i test locali non le sostituiscono.

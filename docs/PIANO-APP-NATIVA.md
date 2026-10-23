@@ -280,3 +280,15 @@ bootstrap e lettura media con esito 200. Due tentativi MFA precedenti avevano av
 200 e successivo bootstrap 200 osservati. Il percorso principale M1 è funzionale
 sull’iPhone via USB. Paginazione oltre la prima finestra, riapertura dopo invio e
 regressione/accessibilità estese restano aperte; non equivalgono al collaudo già fatto.
+
+## 9. Consolidamento del 23 ottobre 2026
+
+AuthCoordinator ora esce localmente prima di attendere il refresh per la revoca,
+come previsto da F4; restore ignora anche gli errori tardivi di un’epoch precedente.
+11 XCTest di `ios/SNTests` eseguiti su Linux con
+`bash scripts/check-ios-session.sh`, usando il codice reale e uno shim Combine
+limitato ai valori. Incluse regressioni concorrenti e paginazione/filtro del feed.
+Non è esecuzione del runner Darwin, Keychain o SwiftUI. Build xtool superata.
+Per installazione e collaudo corrente fa fede `ios/README.md`. M1 runtime esteso
+resta aperto; nessun avanzamento a storie/chat senza completarne la verifica.
+Wi-Fi universitario disconnesso: unica route predefinita sull’hotspot USB.
