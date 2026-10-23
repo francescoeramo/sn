@@ -6,7 +6,7 @@
 - Unclassified: 11 file(s) not represented in the graph (top: (none) 5, .resolved 2, .example 1)
 
 ## Summary
-- 1840 nodes · 3826 edges · 137 communities (81 shown, 56 thin omitted)
+- 1840 nodes · 3827 edges · 137 communities (81 shown, 56 thin omitted)
 - Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 205 edges (avg confidence: 0.87)
 - Token cost: 0 input · 0 output
 

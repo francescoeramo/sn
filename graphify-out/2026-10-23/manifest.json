@@ -234,9 +234,9 @@
     "semantic_hash": "6578a381bcd7f84485e45859754d306e"
   },
   "ios/SN/Auth/AuthCoordinator.swift": {
-    "mtime": 1792765941.310318,
-    "seen": 1792766035.3595269,
-    "ast_hash": "b5b7c9fb8fff4e3daaa510d9e50c3be8",
+    "mtime": 1792766062.8584242,
+    "seen": 1792766139.2247949,
+    "ast_hash": "3a8ed2277d972b442475d8f66585b0db",
     "semantic_hash": ""
   },
   "ios/SN/Auth/TokenStore.swift": {
@@ -294,9 +294,9 @@
     "semantic_hash": ""
   },
   "ios/SNTests/AuthCoordinatorTests.swift": {
-    "mtime": 1792765960.0758047,
-    "seen": 1792766035.3595548,
-    "ast_hash": "305bb7ab8cbacc1d93c3ff234f0cc07b",
+    "mtime": 1792766076.355533,
+    "seen": 1792766139.2248223,
+    "ast_hash": "4fb4ba1d215f7103306f9a8db6ef15a8",
     "semantic_hash": ""
   },
   "ios/SNTests/MockAPI.swift": {
