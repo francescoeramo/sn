@@ -231,3 +231,12 @@ build finale anch’esso al 100% del trasferimento, verifica finale in attesa al
 momento del salvataggio. Richiesto di tenere iPhone sbloccato sulla Home. Non
 attribuire questo stato a un errore di firma senza diagnostica; non equivale a
 runtime confermato. L’installer resta in attesa, aggiornare lo stato al suo esito.
+
+Esito finale: dopo la richiesta di tenere il telefono sbloccato, il secondo
+installer ha completato **Verifying 100%, exit 0**. La build con recupero automatico
+e cache immagini è quindi installata e verificata via USB. La coincidenza con lo
+sblocco non dimostra la causa dell’attesa. Aprire SN manualmente: velocità del primo
+download e scomparsa automatica dell’avviso sulla nuova build attendono il collaudo
+runtime dell’utente. Il push del fix e del grafo è riuscito (`e2e6492`) dopo due
+HTTP 408 usando opzioni temporanee HTTP/1.1 e postBuffer; nessuna configurazione Git
+persistente modificata e nessun ricorso al Wi-Fi universitario.
