@@ -887,12 +887,6 @@
     "ast_hash": "26c09bdfbee7c0c73579c68160c1a254",
     "semantic_hash": ""
   },
-  "creaInvito.txt": {
-    "mtime": 1790845605.6220148,
-    "seen": 1791824229.369526,
-    "ast_hash": "863b33edca954eb52dda915d8f210e5f",
-    "semantic_hash": ""
-  },
   "docs/ARCHITETTURA.md": {
     "mtime": 1792085422.6759741,
     "seen": 1792085592.1679332,
@@ -1212,9 +1206,9 @@
     "semantic_hash": ""
   },
   "docs/IOS-M1-INTERFACCIA.md": {
-    "mtime": 1792764713.9358494,
-    "seen": 1792764816.5929441,
-    "ast_hash": "d99c9bb0e30250c49d82f9c7d94b56e4",
+    "mtime": 1792764833.5142288,
+    "seen": 1792765198.8949783,
+    "ast_hash": "9af5f176a641bb3e98813348f8257cab",
     "semantic_hash": ""
   }
 }
