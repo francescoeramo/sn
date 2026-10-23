@@ -206,6 +206,7 @@ final class AuthCoordinatorTests: XCTestCase {
         await api.setPostsResult(.success(FeedPage(posts: [post("older")], nextCursor: nil)))
         await coordinator.loadMore()
         XCTAssertEqual(coordinator.homePosts.map(\.id), ["first", "older"])
+        XCTAssertEqual(coordinator.connectionGeneration, 1)
         XCTAssertFalse(coordinator.offline)
         XCTAssertNil(coordinator.lastErrorMessage)
     }
@@ -225,6 +226,85 @@ final class AuthCoordinatorTests: XCTestCase {
         let coordinator = AuthCoordinator(api: api, store: store)
         await coordinator.restore()
         XCTAssertEqual(coordinator.homePosts.map(\.id), ["mine", "followed"])
+    }
+
+    func testSuccessfulImageClearsOfflineBannerWithoutFeedReload() async throws {
+        let api = MockAPI()
+        let store = MemoryTokenStore()
+        store.tokens = tokens()
+        let coordinator = AuthCoordinator(api: api, store: store)
+        await coordinator.restore() // bootstrap fails offline
+        XCTAssertTrue(coordinator.offline)
+        XCTAssertNotNil(coordinator.lastErrorMessage)
+        await api.setMediaResult(.success(Data([1, 2, 3])))
+        _ = try await coordinator.image(path: "photo")
+        XCTAssertFalse(coordinator.offline)
+        XCTAssertNil(coordinator.lastErrorMessage)
+    }
+
+    func testRepeatedImageUsesSessionMemoryAndLogoutClearsIt() async throws {
+        let api = MockAPI()
+        await api.setBootstrapResult(.success(bootstrap()))
+        await api.setMediaResult(.success(Data([1, 2, 3])))
+        let store = MemoryTokenStore()
+        store.tokens = tokens()
+        let coordinator = AuthCoordinator(api: api, store: store)
+        await coordinator.restore()
+        async let first = coordinator.image(path: "photo")
+        async let second = coordinator.image(path: "photo")
+        _ = try await (first, second)
+        _ = try await coordinator.image(path: "photo")
+        let count = await api.mediaCount
+        XCTAssertEqual(count, 1)
+        await coordinator.logout()
+        do {
+            _ = try await coordinator.image(path: "photo")
+            XCTFail("logout must remove cached private images")
+        } catch { }
+    }
+
+    func testCachedImageDoesNotPretendConnectionRecovered() async throws {
+        let api = MockAPI()
+        await api.setBootstrapResult(.success(bootstrap()))
+        await api.setMediaResult(.success(Data([1])))
+        let store = MemoryTokenStore()
+        store.tokens = tokens()
+        let coordinator = AuthCoordinator(api: api, store: store)
+        await coordinator.restore()
+        _ = try await coordinator.image(path: "photo")
+        await api.setBootstrapResult(.failure(.transport))
+        await coordinator.probe()
+        _ = try await coordinator.image(path: "photo")
+        XCTAssertTrue(coordinator.offline)
+        XCTAssertNotNil(coordinator.lastErrorMessage)
+    }
+
+    func testOfflineRecoveryRechecksServerAndClearsBanner() async {
+        let api = MockAPI()
+        let store = MemoryTokenStore()
+        store.tokens = tokens()
+        let coordinator = AuthCoordinator(api: api, store: store)
+        await coordinator.restore()
+        XCTAssertTrue(coordinator.offline)
+        await api.setBootstrapResult(.success(bootstrap()))
+        await coordinator.recoverConnection()
+        XCTAssertFalse(coordinator.offline)
+        XCTAssertNil(coordinator.lastErrorMessage)
+        XCTAssertNotNil(coordinator.lastVerifiedAt)
+        XCTAssertEqual(coordinator.connectionGeneration, 1)
+    }
+
+    func testCancelledRecoveryDoesNotClearOfflineBanner() async {
+        let api = MockAPI()
+        let store = MemoryTokenStore()
+        store.tokens = tokens()
+        let coordinator = AuthCoordinator(api: api, store: store)
+        await coordinator.restore()
+        let recovery = Task { await coordinator.recoverConnection() }
+        recovery.cancel()
+        await recovery.value
+        XCTAssertTrue(coordinator.offline)
+        XCTAssertNotNil(coordinator.lastErrorMessage)
     }
 
 }

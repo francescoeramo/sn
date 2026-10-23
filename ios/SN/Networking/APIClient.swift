@@ -94,6 +94,10 @@ struct APIClient: APIClientProtocol {
         let response: URLResponse
         do {
             (data, response) = try await session.data(for: request)
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch let error as URLError where error.code == .cancelled {
+            throw CancellationError()
         } catch {
             // Rete assente o timeout: ambiguo, non implica un rifiuto del server (R4).
             throw APIError.transport

@@ -376,3 +376,13 @@ Build Darwin con xtool superata; prove runtime estese ancora aperte, stato opera
 in `ios/README.md`. Nessun cambio cloud, schema o crittografia.
 Rete: Wi-Fi universitario disconnesso; hotspot USB unica route predefinita e server
 vincolato a `172.20.10.3:3000`. Ricontrollare indirizzo e route alla prossima sessione.
+
+### Recupero connessione iOS — 23 ottobre 2026
+
+L’utente conferma caricamento dei post dopo riapertura; paginazione non esercitabile
+con pochi post. Segnalati lentezza foto e messaggio offline rimasto dopo il recupero.
+Il successo media ora aggiorna la connessione; retry bootstrap solo in primo piano
+con backoff 3–30 secondi e ripresa foto fallite. Cache privata solo RAM e download
+condiviso per percorso, svuotati al logout. 16 XCTest locali e build Darwin superati.
+Primo download ancora da misurare sul telefono: non dichiarare risolta tutta la
+lentezza grazie ai soli test di cache. Stato installazione in `ios/README.md`.

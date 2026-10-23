@@ -10,7 +10,7 @@ Il client nativo usa le API SN; backend Next.js e Supabase restano condivisi con
 | M0 — sessione | Flussi principali funzionanti su iPhone: login, verifica sessione, rinnovo, logout/riapertura, recupero offline, MFA | Conferme dell'utente nella sessione del 15 ottobre; test server in `tests/native-auth.test.ts` |
 | M0.5 — crypto 1:1 | Completata su iPhone con CryptoKit, in entrambe le direzioni web ↔ iPhone | [Rapporto](../docs/evidence/ios-crypto-interop-2026-10-15.json): 35 controlli, tre risposte su tre dispositivi, allegato verificato |
 | M1 — feed, profilo, post con immagine | Implementato e installato via USB, collaudo runtime aperto | Contratto in [PIANO-APP-NATIVA.md](../docs/PIANO-APP-NATIVA.md) |
-| XCTest sessione | 11 test di logica eseguiti su Linux; runner Darwin/SwiftUI ancora non eseguito | `bash scripts/check-ios-session.sh`; shim di Combine, API/store in memoria |
+| XCTest sessione | 16 test di logica eseguiti su Linux; runner Darwin/SwiftUI ancora non eseguito | `bash scripts/check-ios-session.sh`; shim di Combine, API/store in memoria |
 
 La versione 0.2 contiene feed cronologico con aggiornamento manuale, paginazione
 esplicita, avvisi sui contenuti, lettura autenticata delle immagini, proprio profilo
@@ -191,3 +191,43 @@ confermati dall’utente. Rete ricontrollata: Wi-Fi universitario disconnesso co
 La rete Wi-Fi resta disconnessa a fine sessione. Backend sempre sull’indirizzo USB.
 Paginazione sul telefono, riapertura dopo invio e accessibilità restano prove runtime
 aperte finché non arriva una conferma esplicita; i test locali non le sostituiscono.
+
+## Recupero connessione e immagini — 23 ottobre 2026
+
+Conferma dell’utente dopo la riapertura: i post vengono caricati. Nessun pulsante
+«Carica i post precedenti» con pochi post, quindi la paginazione oltre la prima
+finestra resta non esercitata sul device. Segnalati caricamento foto molto lento e
+avviso «No connection» persistente anche quando le immagini erano infine visibili.
+
+Causa riprodotta con XCTest: `image()` completava senza aggiornare offline/errore.
+Le foto erano inoltre scaricate di nuovo senza riuso tra feed e profilo. Correzioni:
+- Una risposta media riuscita rimuove lo stato e l’avviso di connessione assente.
+  Una foto già in cache non conta come prova di connessione ripristinata.
+- In primo piano, durante offline, lettura bootstrap con attese 3, 6, 12, 24,
+  poi 30 secondi tra i tentativi. Il task termina al recupero, al logout o quando
+  l’app passa in background; nessuna scrittura ripetuta automaticamente.
+- Le immagini fallite ripartono al recupero della connessione. Una singola richiesta
+  per percorso condivisa fra letture contemporanee; cache NSCache solo in memoria,
+  limiti richiesti 16 MiB e 24 elementi, svuotata al logout/sessione invalidata.
+  Non esiste cache disco dei media. NSCache può espellere immagini prima dei limiti.
+- La cancellazione URLSession non viene più tradotta in errore di connessione.
+
+**16 XCTest locali superati**, inclusi i nuovi casi di avviso persistente, richieste
+media duplicate, cache che non nasconde offline, pulizia al logout, recupero e
+cancellazione. I primi due difetti sono stati riprodotti dai test prima del fix.
+Build Darwin superata. Rimane da misurare il primo download sul telefono: la cache
+riduce le richieste ripetute, ma non prova di aver risolto l’attesa iniziale della
+rete/backend. Nessuna misurazione autenticata dei tempi media disponibile nei log
+consultati; non attribuire la lentezza al provider senza evidenza.
+
+Controllo rete locale: `/api/bootstrap` senza token ha risposto 401 in 51 ms dal
+computer, vincolando curl all’interfaccia USB. Dimostra backend attivo e risposta
+locale rapida, non misura Auth, download Storage o percorso dal telefono.
+
+Installazione della correzione: primo tentativo `xtool dev run --usb` arrivato al
+100% di trasferimento ma senza fase Verifying; interrotto con SIGINT dopo attesa,
+non considerato riuscito anche se il processo è uscito 0. Secondo tentativo con
+build finale anch’esso al 100% del trasferimento, verifica finale in attesa al
+momento del salvataggio. Richiesto di tenere iPhone sbloccato sulla Home. Non
+attribuire questo stato a un errore di firma senza diagnostica; non equivale a
+runtime confermato. L’installer resta in attesa, aggiornare lo stato al suo esito.

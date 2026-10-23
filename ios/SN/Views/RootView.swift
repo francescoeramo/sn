@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RootView: View {
     @EnvironmentObject private var coordinator: AuthCoordinator
+    @Environment(\.scenePhase) private var scenePhase
     @State private var didRestore = false
 
     var body: some View {
@@ -14,6 +15,10 @@ struct RootView: View {
                         .navigationTitle("SN")
                 }
             }
+        }
+        .task(id: scenePhase == .active && coordinator.offline) {
+            guard scenePhase == .active, coordinator.offline else { return }
+            await coordinator.recoverConnection()
         }
         .task {
             guard !didRestore else { return }

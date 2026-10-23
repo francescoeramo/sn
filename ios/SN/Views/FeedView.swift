@@ -141,7 +141,8 @@ private struct PrivatePostImage: View {
                 ProgressView("Caricamento immagine…").frame(maxWidth: .infinity, minHeight: 120)
             }
         }
-        .task(id: "\(path)-\(attempt)") {
+        .task(id: "\(path)-\(attempt)-\(coordinator.connectionGeneration)") {
+            guard image == nil else { return }
             failed = false
             do {
                 let data = try await coordinator.image(path: path)

@@ -292,3 +292,15 @@ Non è esecuzione del runner Darwin, Keychain o SwiftUI. Build xtool superata.
 Per installazione e collaudo corrente fa fede `ios/README.md`. M1 runtime esteso
 resta aperto; nessun avanzamento a storie/chat senza completarne la verifica.
 Wi-Fi universitario disconnesso: unica route predefinita sull’hotspot USB.
+
+## 10. Recupero connessione M1 — 23 ottobre 2026
+
+Riapertura con post caricati confermata dall’utente; pagina successiva non provata
+per numero insufficiente di post. Segnalati foto lente e avviso offline persistente.
+Corretto lo stato dopo una risposta media riuscita e aggiunto recupero automatico
+con letture bootstrap in primo piano (backoff 3–30 secondi); immagini fallite
+ritentate al recupero. Download condivisi per percorso e cache solo RAM, svuotata
+con la sessione, evitano trasferimenti ripetuti tra feed e profilo. Cancellazioni
+HTTP distinte dagli errori di connessione. 16 XCTest Linux e build xtool superati.
+Velocità del primo download e regressione del recupero sulla nuova build restano
+prove su iPhone da confermare. Nessuna modifica alle API, al cloud o alla crypto.

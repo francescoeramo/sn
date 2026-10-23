@@ -22,6 +22,14 @@ final class AuthCoordinator: ObservableObject {
     @Published private(set) var profiles: [FeedProfile] = []
     @Published private(set) var nextCursor: String?
     @Published private(set) var isLoadingMore = false
+    @Published private(set) var connectionGeneration = 0
+    private let imageCache: NSCache<NSString, NSData> = {
+        let cache = NSCache<NSString, NSData>()
+        cache.totalCostLimit = 16 * 1024 * 1024
+        cache.countLimit = 24
+        return cache
+    }()
+    private var imageTasks: [String: Task<Data, Error>] = [:]
     private var followedIds: Set<String> = []
     private var currentUserId: String?
     private var circlePostIds: Set<String> = []
@@ -158,7 +166,6 @@ final class AuthCoordinator: ObservableObject {
         }
         let probeEpoch = epoch
         isProbing = true
-        lastErrorMessage = nil
         lastVerifiedAt = nil
         defer { isProbing = false }
         do {
@@ -171,7 +178,8 @@ final class AuthCoordinator: ObservableObject {
             profiles = bootstrap.profiles
             nextCursor = bootstrap.nextCursor
             cachedMe = bootstrap.me
-            offline = false
+            connectionRecovered()
+            lastErrorMessage = nil
             lastVerifiedAt = Date()
             state = .signedIn(me: bootstrap.me)
         } catch let error as APIError {
@@ -205,7 +213,7 @@ final class AuthCoordinator: ObservableObject {
             let known = Set(feed.map(\.id))
             feed.append(contentsOf: page.posts.filter { !known.contains($0.id) })
             nextCursor = page.nextCursor
-            offline = false
+            connectionRecovered()
             lastErrorMessage = nil
         } catch is CancellationError {
             return
@@ -215,8 +223,63 @@ final class AuthCoordinator: ObservableObject {
         }
     }
 
+    /// Private media are reused only in memory for this session, never on disk.
     func image(path: String) async throws -> Data {
-        try await read { [api] token in try await api.media(accessToken: token, path: path) }
+        guard tokens != nil else { throw APIError.unauthorized(code: "session_invalid") }
+        if let cached = imageCache.object(forKey: path as NSString) {
+            return cached as Data // A cache hit is not evidence of recovered connectivity.
+        }
+        let requestEpoch = epoch
+        let task: Task<Data, Error>
+        if let pending = imageTasks[path] {
+            task = pending
+        } else {
+            task = Task { [weak self] in
+                guard let self else { throw CancellationError() }
+                return try await self.read { [api = self.api] token in
+                    try await api.media(accessToken: token, path: path)
+                }
+            }
+            imageTasks[path] = task
+        }
+        do {
+            let data = try await task.value
+            guard requestEpoch == epoch else { throw CancellationError() }
+            imageTasks[path] = nil
+            imageCache.setObject(data as NSData, forKey: path as NSString, cost: data.count)
+            connectionRecovered()
+            return data
+        } catch {
+            guard requestEpoch == epoch else { throw CancellationError() }
+            imageTasks[path] = nil
+            if let apiError = error as? APIError,
+               apiError.isConnectivityFailure || apiError.isDefinitiveSessionFailure {
+                handleFeedError(apiError)
+            }
+            throw error
+        }
+    }
+
+    /// Retry only a read while the foreground view owns this cancellable task.
+    /// A usable network path alone does not prove the SN server is reachable.
+    func recoverConnection() async {
+        let recoveryEpoch = epoch
+        var delay: UInt64 = 3
+        while offline && tokens != nil && recoveryEpoch == epoch && !Task.isCancelled {
+            do { try await Task.sleep(nanoseconds: delay * 1_000_000_000) }
+            catch { return }
+            guard recoveryEpoch == epoch, !Task.isCancelled else { return }
+            await probe()
+            delay = min(delay * 2, 30)
+        }
+    }
+
+    private func connectionRecovered() {
+        if offline {
+            offline = false
+            lastErrorMessage = nil
+            connectionGeneration += 1
+        }
     }
 
     /// Writes are never automatically retried: a lost response may already have committed.
@@ -265,6 +328,9 @@ final class AuthCoordinator: ObservableObject {
     }
 
     private func clearFeed() {
+        imageTasks.values.forEach { $0.cancel() }
+        imageTasks.removeAll()
+        imageCache.removeAllObjects()
         feed = []
         circlePostIds = []
         followedIds = []
@@ -342,7 +408,7 @@ final class AuthCoordinator: ObservableObject {
 
     private func markOffline(_ error: APIError) {
         // F5: sessione conservata, connessione assente. Nessun logout.
-        offline = true
+        offline = error.isConnectivityFailure
         lastErrorMessage = ErrorMessages.message(for: error)
         state = .signedIn(me: cachedMe)
     }
