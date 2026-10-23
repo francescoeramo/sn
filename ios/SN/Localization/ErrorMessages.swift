@@ -37,6 +37,10 @@ enum ErrorMessages {
             .it: "Sessione non valida. Accedi di nuovo.",
             .en: "Invalid session. Sign in again.",
         ],
+        "connection_unavailable": [
+            .it: "Nessuna connessione. Controlla il collegamento USB e riprova.",
+            .en: "No connection. Check the USB connection and try again.",
+        ],
         "auth_unavailable": [
             .it: "Il servizio non risponde. Riprova tra poco.",
             .en: "The service is unavailable. Try again shortly.",

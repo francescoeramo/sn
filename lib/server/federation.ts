@@ -52,6 +52,7 @@ export async function publicActorBy(field: 'username' | 'actor_key', value: stri
     .eq('is_private', false)
     .eq('federation_enabled', true)
     .eq('disabled', false)
+    .or(`banned_until.is.null,banned_until.lte.${new Date().toISOString()}`)
     .maybeSingle();
   if (error || !data) return null;
   const publicKeyPem = await actorPublicKey(data.id);
@@ -73,6 +74,7 @@ export async function inboxActorByKey(actorKey: string) {
     .eq('is_private', false)
     .eq('federation_enabled', true)
     .eq('disabled', false)
+    .or(`banned_until.is.null,banned_until.lte.${new Date().toISOString()}`)
     .maybeSingle();
   if (error || !data) return null;
   const publicKeyPem = await actorPublicKey(data.id);
@@ -151,6 +153,7 @@ export async function publicPostBy(activityKey: string) {
     .eq('is_private', false)
     .eq('federation_enabled', true)
     .eq('disabled', false)
+    .or(`banned_until.is.null,banned_until.lte.${new Date().toISOString()}`)
     .maybeSingle();
   if (profileError || !profile) return null;
   const publicKeyPem = await actorPublicKey(profile.id);
@@ -193,6 +196,7 @@ export async function publicOutbox(actorKey: string, page?: number) {
     .eq('is_private', false)
     .eq('federation_enabled', true)
     .eq('disabled', false)
+    .or(`banned_until.is.null,banned_until.lte.${new Date().toISOString()}`)
     .maybeSingle();
   if (profileError || !profile) return null;
 

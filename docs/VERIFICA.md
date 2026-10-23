@@ -15,4 +15,18 @@ Il percorso testato è: interfaccia → salvataggio IndexedDB → ricaricamento 
 5. Esporta dati con più di una pagina; elimina un account, verifica file e messaggi rimossi e token vecchi respinti. Interrompi una rimozione Storage in ambiente di test e verifica che la manutenzione completi la cancellazione senza riaprire l’accesso.
 6. Richiedi il recupero con un’email esistente e una inesistente: la risposta deve essere identica. Verifica scadenza del link, cambio password, email di notifica e revoca dei refresh token su due browser. Un access token già emesso può restare valido fino a 5 minuti, limite imposto dal formato JWT di Supabase.
 
-Eseguire anche gli advisor Supabase su RLS e funzioni privilegiate. In questa sessione nessuna migrazione è stata applicata ai due progetti esistenti. Il deploy e il collaudo Auth/Storage cloud non sono stati eseguiti.
+Eseguire anche gli advisor Supabase su RLS e funzioni privilegiate. Aggiornamento
+15 ottobre 2026: sul solo progetto SN `sndb` sono applicate 47 migrazioni; verificati
+ruolo moderatore, permessi RPC e vincolo MFA SQL aal1/aal2. I ban sono coperti da test
+SQL locali e browser; nessun utente reale è stato bannato per il collaudo. Restano
+56 warning sulle RPC autenticate intenzionali e la protezione password compromesse
+non disponibile nel piano gratuito. Nessun upgrade o deploy pubblico eseguito.
+Queste verifiche parziali non segnano come superata l'intera checklist Auth/Storage.
+
+## Client iOS
+
+M0 funzionale confermata dall'utente. M0.5 verificata direttamente sul telefono con
+CryptoKit: [procedura](IOS-CRYPTO-INTEROP.md) e [rapporto](evidence/ios-crypto-interop-2026-10-15.json).
+Prossimo incremento M1 (feed, profilo, immagine). Restano distinti e non eseguiti gli
+XCTest sessione/SwiftUI e la matrice tecnica hardware completa. Il login MFA dopo
+la migrazione SQL è un controllo di regressione da includere durante M1.

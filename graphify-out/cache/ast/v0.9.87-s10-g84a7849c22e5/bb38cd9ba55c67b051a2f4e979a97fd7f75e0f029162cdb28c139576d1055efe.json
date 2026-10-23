@@ -1,0 +1,1 @@
+{"nodes": [{"id": "$graphify-root$_supabase_migrations_20261019140133_restrict_media_uploads_to_server_sql", "label": "20261019140133_restrict_media_uploads_to_server.sql", "file_type": "code", "source_file": "supabase/migrations/20261019140133_restrict_media_uploads_to_server.sql", "source_location": null}], "edges": []}

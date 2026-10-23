@@ -23,6 +23,16 @@ npm run build
 npm run test:e2e
 ```
 
+## Client iOS
+
+Il client SwiftUI usa SwiftPM e xtool su Linux. I flussi M0 sono confermati dall'utente;
+M0.5 (cifratura web ↔ iPhone con allegati) è verificata sul telefono con CryptoKit.
+La build è firmata e installata. Il prossimo incremento è **M1: feed, profilo e post con
+immagine**; l'interfaccia attuale resta il prototipo di sessione, non l'app social completa.
+Comandi, evidenze e limiti sono in [ios/README.md](ios/README.md) e nella
+[prova di interoperabilità](docs/IOS-CRYPTO-INTEROP.md).
+Per lavorare con DeepSeek Flash leggi [docs/OPENCODE.md](docs/OPENCODE.md).
+
 ## Produzione
 
 L’app reale richiede un progetto Supabase dedicato, le variabili descritte in [.env.example](.env.example) e tutte le migrazioni in `supabase/migrations/`. Non usare progetti o credenziali personali.

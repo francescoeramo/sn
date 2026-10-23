@@ -1,5 +1,13 @@
 # Checklist di collegamento — Supabase e Vercel
 
+
+> Stato parziale al 15 ottobre 2026: `sndb` collegato con 47 migrazioni applicate,
+> `francescoeramo` moderatore, vincolo MFA SQL e ban a durata implementati. M0 iOS
+> confermata dall'utente e M0.5 CryptoKit verificata sul telefono; M1 è il prossimo
+> incremento. Non segnare l'intera checklist come conclusa: SMTP, Storage, restore,
+> concorrenza e disponibilità pubblica richiedono ancora il collaudo previsto.
+> Evidenze in `TEST-RESULTS.md` e `IOS-CRYPTO-INTEROP.md`.
+
 Regole d'oro: nessun segreto con prefisso `NEXT_PUBLIC_`; nessun upgrade o addebito automatico; federazione spenta finché non collaudata; non usare progetti Supabase condivisi con altri dati; `.env.local` non va mai committato (è già in `.gitignore`).
 
 ## Mappa rapida: variabile → dove si trova → dove va

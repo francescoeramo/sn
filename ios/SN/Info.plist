@@ -4,23 +4,42 @@
 <dict>
 	<key>CFBundleDisplayName</key>
 	<string>SN</string>
+	<!-- xtool non espande le variabili build di Xcode: usiamo valori letterali. -->
 	<key>CFBundleShortVersionString</key>
-	<string>$(MARKETING_VERSION)</string>
+	<string>0.2</string>
 	<key>CFBundleVersion</key>
-	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<string>2</string>
+	<!-- iPhone only (equivalente a TARGETED_DEVICE_FAMILY = 1). -->
+	<key>UIDeviceFamily</key>
+	<array>
+		<integer>1</integer>
+	</array>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<!-- Base URL del server SN. In M0 punta all'ambiente di prova (vedi README). -->
+	<!-- `localhost` nell'app indica il telefono: per la prova su dispositivo va sostituito
+	     con l'indirizzo del computer raggiungibile dall'iPhone (hotspot USB o HTTPS). -->
+	<!-- Sviluppo via hotspot USB (23 ottobre 2026): indirizzo del computer sulla sola interfaccia USB. -->
 	<key>SNApiBaseURL</key>
-	<string>http://localhost:3000</string>
+	<string>http://172.20.10.3:3000</string>
+	<!-- iOS 14+: una connessione a un indirizzo privato della rete locale richiede il
+	     consenso dell'utente. Il testo compare nel prompt di sistema. -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>SN usa la rete locale durante lo sviluppo per collegarsi al server di prova sul computer.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<!-- M0: consente di raggiungere il server di prova in HTTP sulla rete locale. -->
-		<!-- Prima di una build di rilascio, rimuovere e usare HTTPS. -->
+		<!-- Da iOS 17 gli IP non sono più esenti da ATS: l'indirizzo usato va elencato
+		     in NSExceptionDomains. Prima di una build di rilascio, rimuovere e usare HTTPS. -->
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 		<key>NSExceptionDomains</key>
 		<dict>
+			<key>172.20.10.3</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
 			<key>localhost</key>
 			<dict>
 				<key>NSExceptionAllowsInsecureHTTPLoads</key>

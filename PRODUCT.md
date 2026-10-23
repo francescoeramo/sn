@@ -54,14 +54,14 @@ Anti-riferimenti espliciti: dashboard SaaS generica, gradienti viola-blu, card a
 Le seguenti richieste guidano la pianificazione futura. Non costituiscono un'attestazione di implementazione né autorizzano a presentarle come già disponibili.
 
 - **Federazione ActivityPub:** l’anteprima locale richiede un opt-in separato e revocabile, poi espone WebFinger, Actor con chiave pubblica, outbox, Note/Create testuali e relativi allegati per i profili pubblici. L’inbox verifica `Follow`, `Like`, `Reject`, `Create`, `Update`, `Delete` e relativi `Undo`; conserva le Note remote in tabelle private e le mostra nel feed con origine esplicita, senza azioni locali non collegate. Recupero chiavi e consegne applicano blocklist, limiti, cache con refresh controllato e pinning DNS. Un worker disattivato per impostazione predefinita firma e ritenta `Accept`, `Create` e `Delete`. Restano moderazione dedicata, collaudo delle consegne e interoperabilità effettiva con Mastodon/Pixelfed. I profili privati non devono essere esposti come attori pubblici federabili.
-- **Cerchie:** implementate localmente con inviti tra contatti reciproci, ruoli, mini-feed cronologico, destinazioni multiple, sondaggi, export e cancellazione. Resta l’immagine facoltativa; migrazioni e flussi non sono stati collaudati sul progetto cloud.
-- **Eventi semplici:** prima versione locale con visibilità per cerchia o follower approvati, risposte idempotenti, commenti, aggiornamenti, annullamento e notifiche essenziali. Restano modifica dei dettagli, album dopo l’inizio e collaudo cloud. Nessun ticketing, pagamento, mappa esterna o geolocalizzazione obbligatoria.
+- **Cerchie:** implementate localmente con inviti tra contatti reciproci, ruoli, mini-feed cronologico, destinazioni multiple, sondaggi, export e cancellazione. Immagine facoltativa implementata e migrazioni applicate; resta il collaudo funzionale cloud.
+- **Eventi semplici:** prima versione locale con visibilità per cerchia o follower approvati, risposte idempotenti, commenti, aggiornamenti, annullamento e notifiche essenziali. Modifica dei dettagli e album dopo l’inizio implementati localmente; migrazioni applicate, collaudo funzionale cloud ancora aperto. Nessun ticketing, pagamento, mappa esterna o geolocalizzazione obbligatoria.
 - **Digest opt-in:** riepilogo giornaliero o settimanale, disattivato per impostazione predefinita, con massimo cinque elementi e ordinamento spiegabile. Nessun profiling comportamentale o tracciamento delle aperture.
 - **Post collaborativi e album:** inviti espliciti, una visibilità comprensibile per album e permessi revocabili. Le transazioni e le RLS devono impedire contributi dopo rimozione, blocco o scadenza dell’accesso.
 - **Conversazioni più espressive:** reazioni leggere senza classifica, risposte contestuali, menzioni soggette a consenso e condivisioni interne senza copie pubbliche né contatori di amplificazione.
 - **Scoperta intenzionale:** percorsi espliciti e motivati tramite hashtag, contatti e ricerche scelte dalla persona. Nessun feed «Per te», scorrimento infinito, streak o ranking opaco; le metriche di salute devono essere aggregate e minimizzate.
 - **Chat di gruppo:** affrontarla dopo la cifratura 1:1 della fase 3. Prevedere membership con ruoli admin/membro, inviti coerenti con il follow reciproco, rimozione dei membri, abbandono e rinomina. Le regole precise su chi può aggiungere chi restano da definire.
-- **2FA e sessioni:** TOTP facoltativa per tutti e consigliata ai moderatori. Attivazione, verifica agli accessi successivi e disattivazione protetta da `aal2` sono implementate. La pagina mostra sessione corrente, date di avvio e ultimo accesso, permette la revoca singola o di tutte le altre e non raccoglie IP per questa funzione. Il flusso completo resta da collaudare su Supabase cloud.
+- **2FA e sessioni:** TOTP facoltativa per tutti e consigliata ai moderatori. Attivazione, verifica agli accessi successivi e disattivazione protetta da `aal2` sono implementate. La pagina mostra sessione corrente, date di avvio e ultimo accesso, permette la revoca singola o di tutte le altre e non raccoglie IP per questa funzione. MFA e sessione nativa sono confermate dall’utente; gate MFA SQL verificato sul cloud. Il collaudo completo delle sessioni e dei casi limite resta aperto.
 - **Sondaggi:** implementati come post con 2–4 opzioni, un voto definitivo per utente e scadenza opzionale. I risultati aggregati sono visibili dopo il voto o la chiusura; l’identità dei votanti non viene esposta al client. Resta il collaudo cloud.
 - **Salvataggi:** associazione privata utente–post e sezione «Salvati» nel profilo, accessibile solo al proprietario.
 - **Avvisi di contenuto / spoiler:** campo opzionale che nasconde corpo e media dietro un'azione esplicita. Prevederlo prima dell'attivazione della federazione.
@@ -121,3 +121,19 @@ Definire chi può cambiare la modalità condivisa della conversazione e la durat
 - Le decisioni dei moderatori su note e segnalazioni producono un registro non modificabile dall’app: moderatore, azione, contenuto interessato e data. Il registro è visibile solo ai moderatori e non conserva una copia dei contenuti rimossi.
 - La ricerca nel testo dei post usa la configurazione linguistica italiana di Postgres e lo stesso perimetro di visibilità del feed; un indice non rende ricercabili contenuti privati o bloccati.
 - I backup manuali devono uscire dal repository già cifrati per una chiave GPG dedicata. Database e oggetti Storage richiedono copie separate; le chiavi private E2EE restano sui dispositivi degli utenti.
+
+
+## Stato verificato iOS e cloud — 15 ottobre 2026
+
+Il proprietario ha richiesto lo sviluppo del client SwiftUI nativo, senza autorizzare
+implicitamente una distribuzione pubblica. M0 funzionale è confermata dall'utente;
+M0.5 è verificata sul telefono con CryptoKit e ritorno Web Crypto (35 controlli,
+più dispositivi e allegato). Il prossimo incremento è M1: feed, profilo e un post
+con immagine. Non sono ancora presenti chat UI o moderazione nel client iOS.
+Vedi `ios/README.md`, `docs/PIANO-APP-NATIVA.md` e `docs/IOS-CRYPTO-INTEROP.md`.
+
+Supabase `sndb` è collegato con 47 migrazioni; ban di 3 giorni, 1 mese, 6 mesi,
+1 anno o permanenti sono disponibili nel pannello web, con motivo e revoca.
+Il vincolo MFA è applicato anche nel database. I precedenti riferimenti al cloud
+non collaudato restano validi per i flussi non verificati, non significano database
+ancora da collegare. La checklist completa della beta e il rilascio restano aperti.

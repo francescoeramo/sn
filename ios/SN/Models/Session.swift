@@ -84,13 +84,37 @@ struct Me: Codable, Equatable, Sendable {
     }
 }
 
-/// Sottoinsieme di `GET /api/bootstrap`. Il resto dello snapshot è ignorato in M0.
+/// Sottoinsieme dello snapshot condiviso: sessione e prima finestra del feed.
 struct Bootstrap: Decodable, Sendable {
     let userId: String
     let me: Me
+    var posts: [FeedPost] = []
+    var profiles: [FeedProfile] = []
+    var nextCursor: String? = nil
+    var circlePosts: [CirclePostLink] = []
+    var follows: [FeedFollow] = []
+
+    init(userId: String, me: Me, posts: [FeedPost] = [], profiles: [FeedProfile] = [], nextCursor: String? = nil) {
+        self.userId = userId
+        self.me = me
+        self.posts = posts
+        self.profiles = profiles
+        self.nextCursor = nextCursor
+    }
+
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        userId = try values.decode(String.self, forKey: .userId)
+        me = try values.decode(Me.self, forKey: .me)
+        posts = try values.decodeIfPresent([FeedPost].self, forKey: .posts) ?? []
+        profiles = try values.decodeIfPresent([FeedProfile].self, forKey: .profiles) ?? []
+        nextCursor = try values.decodeIfPresent(String.self, forKey: .nextCursor)
+        circlePosts = try values.decodeIfPresent([CirclePostLink].self, forKey: .circlePosts) ?? []
+        follows = try values.decodeIfPresent([FeedFollow].self, forKey: .follows) ?? []
+    }
 
     enum CodingKeys: String, CodingKey {
         case userId = "user_id"
-        case me
+        case me, posts, profiles, nextCursor, circlePosts, follows
     }
 }

@@ -1,0 +1,168 @@
+{
+  "checks": [
+    "web-fingerprint",
+    "phone-fingerprint",
+    "web-to-swift-0",
+    "text-only-0",
+    "ciphertext-tamper-0",
+    "aad-retention-0",
+    "aad-revision-0",
+    "aad-expiry-0",
+    "aad-recipient-0",
+    "aad-id-0",
+    "permanent-0",
+    "swift-sender-copy-0",
+    "web-to-swift-1",
+    "text-only-1",
+    "ciphertext-tamper-1",
+    "aad-retention-1",
+    "aad-revision-1",
+    "aad-expiry-1",
+    "aad-recipient-1",
+    "aad-id-1",
+    "permanent-1",
+    "swift-sender-copy-1",
+    "web-to-swift-2",
+    "web-attachment-2",
+    "attachment-tamper-2",
+    "ciphertext-tamper-2",
+    "aad-retention-2",
+    "aad-revision-2",
+    "aad-expiry-2",
+    "aad-recipient-2",
+    "aad-id-2",
+    "expired-2",
+    "swift-sender-copy-2",
+    "stranger",
+    "oversize-unicode"
+  ],
+  "fixture_id": "13082b7b-8d80-4fa1-8fcd-f9fb3aa3566c",
+  "generated_at": "2026-10-15T17:23:40Z",
+  "platform": "ios-cryptokit",
+  "replies": [
+    {
+      "sealed": {
+        "ciphertext": "IfcrI4Zq6Ff5qQvpBDXuMs8fGIcaGy81OCYhraaH4lixZ7U1EaBr6olTU2L5dVbBUpM5IAQaGYAvwJrdjymgTTzTV1CkmH/dUAi9jYhUlNSAlIl2/WqwxrYU7QlHTv1VpF5/1g==",
+        "context": {
+          "expires_at": null,
+          "id": "20000000-0000-4000-8000-000000000000",
+          "recipient_id": "00000000-0000-4000-8000-000000000011",
+          "retention": "synced",
+          "sender_id": "00000000-0000-4000-8000-000000000012"
+        },
+        "iv": "SV2KKYT4IvOcaI4g",
+        "keys": {
+          "00000000-0000-4000-8000-000000000001": {
+            "ciphertext": "astDm/C2JLn7FOq4Iqalo54eQdWziiPPTZE2MHclE51t0ubckoZzGKG57jqstM5D",
+            "iv": "qqfGcqxykgfyn4HS"
+          },
+          "00000000-0000-4000-8000-000000000002": {
+            "ciphertext": "fjI+PWgtaCa0hkcIRbqH2lXn0jxaneHG89twuGyxJLR5OCWlBFdPOT27WB8D3lvy",
+            "iv": "Tv414hIBDEw9Slj/"
+          },
+          "00000000-0000-4000-8000-000000000003": {
+            "ciphertext": "rz2xA+wfkx/68JEf1T062xz4leX8rLsor069NYhcDGylDPWpKyj4qYQGYlje9HTj",
+            "iv": "P+KdLcnL7fg+wp/I"
+          }
+        },
+        "salt": "ZFeDxO0nm7GtUHNzKfNUNJp0btOGLt0ezs+umATYyRE=",
+        "sender": {
+          "id": "00000000-0000-4000-8000-000000000002",
+          "label": "Dispositivo di test M0.5",
+          "public_key": {
+            "crv": "P-256",
+            "kty": "EC",
+            "x": "fPJ7GI0DT36KUjgDBLUaw8CJaeJ38hs1pgtI_EdmmXg",
+            "y": "B3dVENuO0EApPZrGn3Qw27p9reY86YIpngS3nSJ4c9E"
+          },
+          "user_id": "00000000-0000-4000-8000-000000000012"
+        },
+        "version": 1
+      }
+    },
+    {
+      "sealed": {
+        "ciphertext": "1LmTiG7vVdzoTngSygNyzQCLV8jLCGVb0iJr4MxXgISH0/yX/31fHEaP1Gq+OL7lKF7ZH23XTcUPMs+LbJlXzUVkHJz8Pqe7UWuhxo6Utq+zURkNaodYK4GtCmiNGEdVwdh8CQ==",
+        "context": {
+          "expires_at": null,
+          "id": "20000000-0000-4000-8000-000000000001",
+          "recipient_id": "00000000-0000-4000-8000-000000000011",
+          "retention": "synced",
+          "revision": 0,
+          "sender_id": "00000000-0000-4000-8000-000000000012"
+        },
+        "iv": "cXWWhp20qb2P9Njr",
+        "keys": {
+          "00000000-0000-4000-8000-000000000001": {
+            "ciphertext": "DIZvaWXPSnWdx6a7GtU3OnGLZ2qmEMdNxYDqdErPIl9gRUZK8ajpJFNLFbcJYuAp",
+            "iv": "VBT8aoMOAdDGZrKt"
+          },
+          "00000000-0000-4000-8000-000000000002": {
+            "ciphertext": "LVrK7iZcjT4JNoUK+NY3fvteoVREO8eOtX54aPbavTQrSHE+2BmCIjenCSwxH5t+",
+            "iv": "eZhO9Ss6EeYPqRJk"
+          },
+          "00000000-0000-4000-8000-000000000003": {
+            "ciphertext": "SDHxGZ2Fhb8zUbkZNAIg//mX4kEFqN8CmtB/ZPtSedfSSTEE0KrcEyItYiVz31vB",
+            "iv": "ALbicBlvaeFTYG4o"
+          }
+        },
+        "salt": "ld/njaCzTM1Chi3i7+irGrjx5/UdObdCTBxTpK3sy1c=",
+        "sender": {
+          "id": "00000000-0000-4000-8000-000000000002",
+          "label": "Dispositivo di test M0.5",
+          "public_key": {
+            "crv": "P-256",
+            "kty": "EC",
+            "x": "fPJ7GI0DT36KUjgDBLUaw8CJaeJ38hs1pgtI_EdmmXg",
+            "y": "B3dVENuO0EApPZrGn3Qw27p9reY86YIpngS3nSJ4c9E"
+          },
+          "user_id": "00000000-0000-4000-8000-000000000012"
+        },
+        "version": 1
+      }
+    },
+    {
+      "attachment": "21Xy4MIpLfnK+hWoUTUexJ2nYz0yDw==",
+      "sealed": {
+        "ciphertext": "28y5p7pzqnKl/ja0uCgTLNZh7BZvRI+B5XqabXEjy1Mcukcwd43s+59XTNEH7Eul7kOyNYsQSy18MaZRU4oX7suoWfAnTpRBDXNgYEqfEEQYjrIvVPQnobc6hD8FsQij+SMEyYIdma2KwjhUHj2mczlqmJe0/BxCJsLUX47ZQ39acwoTFJvH4LZ/LIKFP0ZgAkX0wZf5+Gb8XkzoH/2zfG8Y2fbaOsHN6KsvIxrp0bVbsCkOyjiVfeEFffs4GAYlsdiL",
+        "context": {
+          "expires_at": "2099-01-02T03:04:05.000Z",
+          "id": "20000000-0000-4000-8000-000000000002",
+          "recipient_id": "00000000-0000-4000-8000-000000000011",
+          "retention": "device",
+          "revision": 1,
+          "sender_id": "00000000-0000-4000-8000-000000000012"
+        },
+        "iv": "HlYpOAHSjQUPZQVp",
+        "keys": {
+          "00000000-0000-4000-8000-000000000001": {
+            "ciphertext": "28Nf9Vfi5mfNzb9TEgUOhMWWHkhcmiL30j3QWKhHYmtlni1dP3qV0eBrVQCb5ELs",
+            "iv": "7+puqhyWs1WkF1S9"
+          },
+          "00000000-0000-4000-8000-000000000002": {
+            "ciphertext": "+01u7rxRsU8KiZuF4QssAVBGAqUsOAOhQ/Ww0/w8inAPz58Va84/hdtt+37JDOIz",
+            "iv": "7BEtPixnwsMYu/fZ"
+          },
+          "00000000-0000-4000-8000-000000000003": {
+            "ciphertext": "NVaeUpQD6OUe2hjYGYCoWVhrGoHs3amVihw+CC/5ztAasW2w5IJh8xfBqarzmfVX",
+            "iv": "hs1sewLbLupBVJEV"
+          }
+        },
+        "salt": "lLc3JYOwbHuiFrgrkGyHPziETmQqIw84d/HRnwLMPjc=",
+        "sender": {
+          "id": "00000000-0000-4000-8000-000000000002",
+          "label": "Dispositivo di test M0.5",
+          "public_key": {
+            "crv": "P-256",
+            "kty": "EC",
+            "x": "fPJ7GI0DT36KUjgDBLUaw8CJaeJ38hs1pgtI_EdmmXg",
+            "y": "B3dVENuO0EApPZrGn3Qw27p9reY86YIpngS3nSJ4c9E"
+          },
+          "user_id": "00000000-0000-4000-8000-000000000012"
+        },
+        "version": 1
+      }
+    }
+  ],
+  "status": "passed"
+}

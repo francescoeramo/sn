@@ -1,7 +1,9 @@
 # SN — Piano app nativa iOS (SwiftUI)
 
 > Direzione, sequenza a tappe e specifica della tappa M0. Documento di lavoro: le voci
-> marcate come "da verificare" o "decisione" NON sono acquisite. Stato: proposta.
+> marcate come "da verificare" o "decisione" NON sono acquisite. Stato 15 ottobre 2026:
+> M0 funzionale confermata dall'utente; M0.5 verificata su iPhone con CryptoKit.
+> Prossimo incremento M1. Matrice tecnica integrale e XCTest sessione restano distinti.
 
 ## 1. Direzione e vincoli
 
@@ -159,7 +161,7 @@ Regola: si esce dall'account **solo** quando la sessione risulta effettivamente 
 
 ### 4.9 Modifiche iOS
 
-- Progetto Xcode (versione/iOS per Liquid Glass da confermare sui doc Apple).
+- Progetto SwiftPM in `ios/` con `Package.swift` e `xtool.yml`; build e installazione con xtool su Linux. Target attuale iOS 17; nuove API Liquid Glass da verificare sul SDK e sul dispositivo.
 - Moduli: `TokenStore` (Keychain), `AuthCoordinator` (single-flight + epoch), `APIClient`,
   `Models`, `AppConfig`.
 - Schermate M0: Login, MFA verify, Verifica sessione (mostra `me`), Logout.
@@ -173,6 +175,13 @@ Regola: si esce dall'account **solo** quando la sessione risulta effettivamente 
 - Nessun modello Post in M0 (definito in M1 in base a ciò che feed/profilo/publish mostrano).
 
 ### 4.11 Matrice di uscita (per endpoint)
+
+La tabella seguente è il contratto di verifica, non un verbale di 14 prove hardware
+superate. Login, MFA, rinnovo, logout/riapertura, offline e bootstrap sono confermati
+dall'utente; i test server coprono i controlli di autenticazione. Il runner XCTest
+sessione/SwiftUI e le prove concorrenti runtime non risultano eseguiti. La prova
+M0.5 è invece documentata direttamente dal rapporto CryptoKit recuperato dal device.
+
 
 | # | Endpoint | Input auth | Esito atteso |
 |---|---|---|---|
@@ -205,7 +214,7 @@ Regola: si esce dall'account **solo** quando la sessione risulta effettivamente 
 
 Da verificare (non assunte):
 - Intervallo di riuso dei refresh token e comportamento del vecchio token.
-- Forme REST GoTrue per challenge/verify e logout; necessità del refresh token sul logout.
+- Forme REST GoTrue per challenge/verify e logout verificate nel codice e nei test; MFA/login/logout confermati dall’utente su iPhone. Logout usa bearer, non refresh token.
 - TTL reale del JWT nell'ambiente di prova.
 - Revoca verificabile (es. `my_sessions` non elenca più la sessione).
 - Versione iOS minima per Liquid Glass.
@@ -214,3 +223,60 @@ Decisioni:
 - Rate limit del refresh: per-IP (nuova RPC) o solo GoTrue.
 - Ambito del logout: sessione corrente o tutte le sessioni del dispositivo.
 - Introduzione dei `code` errore solo per `native/auth/*` o estesa a tutte le API.
+
+
+## 6. Incremento M0.5 implementato (15 ottobre 2026)
+
+Modulo Swift del protocollo 1:1 v1 in `ios/ChatCrypto`, senza nuove schermate.
+Vettori generati con il codice web reale e risposte Swift verificate dallo stesso
+codice: testo, allegati, impronte, AAD, revisioni, più dispositivi e manomissioni.
+Due XCTest del modulo crypto eseguiti su Linux; 35 controlli interni superati e
+compatibilità di ritorno verificata. CryptoKit iOS compilato e installato, con
+report DEBUG automatico recuperato via USB e verificato dal codice web: tre
+risposte, tre dispositivi, allegati e 35 controlli superati su iPhone reale.
+**M0.5 completata: è possibile iniziare M1.** Procedura in [IOS-CRYPTO-INTEROP.md](IOS-CRYPTO-INTEROP.md).
+
+
+## 7. Passaggio di consegne M1
+
+Obiettivo: feed cronologico e finito, proprio profilo e pubblicazione di un post con
+una immagine sul backend SN esistente. Riutilizzare AuthCoordinator, refresh
+single-flight, epoch logout e modelli limitati ai dati effettivamente mostrati.
+Prima ricostruire il contratto delle API: bootstrap è bearer, ma paginazione posts,
+lettura media, action e upload usano ancora il percorso web. Aggiungere solo gli
+adapter necessari a M1 con bearer verificato e regole RLS, preservando cookie,
+Origin, quote, validazioni e limiti per il sito. Nessun bypass generale di Origin.
+
+Compilare con xtool e verificare login MFA, caricamento, refresh del feed, profilo,
+selezione/upload immagine, pubblicazione e riapertura su iPhone. Rispettare il target
+minimo iOS 17. Gruppi, storie, chat UI e moderazione nativa restano M2+.
+I documenti di avvio e OpenCode devono puntare a M1, senza rigenerare i vettori M0.5
+né reinstallare toolchain o ripristinare vecchie configurazioni.
+
+## 8. Incremento del 23 ottobre 2026 — M1 implementata e installata
+
+Feed cronologico finito e paginato, proprio profilo e post con una foto sono ora
+implementati in SwiftUI. Build Darwin senza avvisi; bearer esteso a posts/media e
+scritture ristrette native/post e native/upload con identità verificata, MFA, RLS e
+quote del sito. Origin web preservato, nessuna modifica cloud o al protocollo crypto.
+Verifica: 29 test server, 8 controlli eseguibili modelli Swift, typecheck/lint mirato.
+SNTests e collaudo runtime M1 restano aperti: non dichiarare M1 conclusa.
+
+Sviluppo su hotspot personale **USB**, server vincolato a `172.20.10.3:3000`, indirizzo
+osservato nella sessione e da ricontrollare. Nessun uso della LAN universitaria per
+collegare app e backend. Installazione USB e verifica completate al 100% (exit 0)
+al secondo tentativo; il primo aveva restituito provisioning Apple 409, causa
+transitoria non accertata. Nessun cambio account o toolchain. Aprire SN a mano e
+collaudare MFA, feed, paginazione, foto, pubblicazione, riapertura e accessibilità.
+`ios/README.md` documenta il passaggio e prevale sui riferimenti storici a M1 non
+implementata e al vecchio indirizzo Wi-Fi.
+
+Aggiornamento runtime della stessa sessione: UFW bloccava il traffico sull’interfaccia
+USB (log kernel confermato). Regola aggiunta esclusivamente da `172.20.10.1` a
+`172.20.10.3:3000/tcp` su `enp8s0f3u1c4i2`; procedura e rimozione in `ios/README.md`.
+L’utente ha poi confermato accesso, feed e foto nel profilo. Log server: login/MFA,
+bootstrap e lettura media con esito 200. Due tentativi MFA precedenti avevano avuto
+503. L’utente ha infine confermato pubblicazione e nuova foto visibile nel post; native/post
+200 e successivo bootstrap 200 osservati. Il percorso principale M1 è funzionale
+sull’iPhone via USB. Paginazione oltre la prima finestra, riapertura dopo invio e
+regressione/accessibilità estese restano aperte; non equivalgono al collaudo già fatto.

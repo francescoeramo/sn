@@ -1,5 +1,48 @@
 # Risultati delle verifiche
 
+## Stato corrente al 15 ottobre 2026
+
+| Ambito | Evidenza acquisita | Limite |
+| --- | --- | --- |
+| M0 iOS | Login, sessione, rinnovo, logout/riapertura, offline e MFA confermati dall'utente | Non equivale a matrice tecnica completa o XCTest sessione eseguiti |
+| M0.5 iOS | Rapporto CryptoKit recuperato via USB e verificato dal codice web: 35 controlli, tre risposte, tre dispositivi, allegato | Prova sintetica offline; non è chat UI o persistenza chiavi |
+| Test crypto | Due XCTest Linux e sei test Web Crypto passati | Distinti da ios/SNTests |
+| Backend | 152 test su 8 file passati dopo il vincolo MFA SQL; lint, typecheck e build verificati nelle sezioni datate | Non certificano tutto il cloud o una release pubblica |
+| Supabase | 47 migrazioni su sndb; ruolo moderatore e gate aal1/aal2 verificati sul cloud | Collaudo beta completo, SMTP/Storage/restore e concorrenza ancora aperti |
+| Prossimo incremento | M1: feed, profilo, post con immagine e adapter bearer delle relative API | Client attuale Login/MFA/Sessione |
+
+Fonti: [README iOS](../ios/README.md), [procedura crypto](IOS-CRYPTO-INTEROP.md),
+[rapporto iPhone](evidence/ios-crypto-interop-2026-10-15.json).
+Le sezioni datate sotto sono un registro storico: i precedenti blocchi di rete,
+localhost o backend in pausa non descrivono lo stato corrente. Non attribuire
+alle prove successive copertura retroattiva di tutti i casi della matrice M0.
+
+
+## 15 ottobre 2026 — avvisi SECURITY DEFINER e bypass MFA
+
+- Catalogo cloud: 56 RPC SECURITY DEFINER eseguibili da authenticated; zero di
+  queste accessibili ad anon; zero senza search_path fissato. Revisionati i guard
+  e i percorsi condivisi di autorizzazione. Non è una certificazione di sicurezza.
+- Riproduzione cloud, sola lettura e rollback: con identità dell'account dotato
+  di MFA e claim aal1, private.member/admin restituivano true e moderation_accounts
+  esponeva 4 account. Il controllo MFA del server SN era aggirabile via Data API.
+- Test di regressione fallito prima della correzione, poi superato. Migrazione
+  `20261015171422_enforce_mfa_database_access.sql` applicata a sndb: member richiede
+  aal2 solo se esiste un fattore verificato. Il solo profilo attivo del chiamante
+  resta disponibile prima del challenge, senza permettere modifiche al profilo.
+  Session RPC e nove tabelle con policy basate solo sulla proprietà sono protette.
+- Prova cloud dopo migrazione, ruolo authenticated in transazione con rollback:
+  aal1 nega member/admin e moderation_accounts; resta disponibile il profilo per
+  il challenge; aal2 consente moderazione. Nessun dato utente modificato dalla prova.
+- `npm test`: 8 file, 152 test superati. Typecheck superato. Il test distingue
+  fattori non verificati/verificati, claim assente/aal1/aal2, utenti senza MFA,
+  revoca sessioni e accesso alle preferenze. Nessuna modifica ai client web/iOS;
+  nuovo login su iPhone dopo questa migrazione non osservato direttamente.
+- Advisor invariati: 56 avvisi sulle RPC autenticate, 16 INFO RLS senza policy
+  e avviso password compromesse. Le RPC rimangono intenzionalmente eseguibili,
+  con controlli interni; non rimossi i grant per azzerare il linter.
+  Protezione password compromesse disponibile solo da Pro: nessun upgrade eseguito.
+
 Data: 10 settembre 2026. Ambito: prime tre fasi del prompt aggiornato: feed, storie e chat effimera con allegati.
 
 | Controllo           | Risultato                                        |
@@ -153,3 +196,131 @@ Le Note della comunità sono testate nel database contro letture di estranei, pr
 - Dopo il caricamento effettivo del media, l’anello passa da viola a grigio e l’autore viene spostato in coda quando tutte le sue storie attive sono state viste. Con più storie viene aperta per prima la più vecchia non vista.
 - Lint, TypeScript e build Webpack di produzione superati; **135/135 test unitari e SQL** e **78/78 test Playwright desktop/mobile** superati.
 - La roadmap è stata riallineata allo stato reale: sezioni 6–9 già complete localmente, ancora da collaudare sul progetto Supabase dedicato. La migrazione `20261002140006_story_views.sql` è stata applicata al progetto SN `sndb` in `eu-west-1` e verificata nello storico remoto.
+
+
+## Build iOS su Linux, 15 ottobre 2026
+
+Comando: `cd ios && xtool dev build`. Esito: exit 0, `Build complete! (9.21 secs)`,
+bundle generato in `ios/xtool/SN.app`. Swift 6.4.1, SDK `darwin`, xtool commit
+`f0a1f90efdbb0dc023e276ff529da92618da7a87`.
+
+Il primo tentativo nel sandbox si è bloccato dopo un errore CFSocket; interrotto e
+ripetuto fuori dal sandbox con successo. Non sono state necessarie modifiche Swift.
+`xtool devices --usb --no-wait` non ha elencato iPhone. Firma/installazione, interazioni,
+rete, matrice M0 e test XCTest non eseguiti in questa verifica.
+
+
+## Configurazione OpenCode, 15 ottobre 2026
+
+Profilo locale e template `docs/agents/opencode.sn.json` validati con lo schema ufficiale.
+`opencode debug config` conferma agente predefinito `sn_ios`, prompt risolto, deleghe
+bloccate e parametri del modello. La skill `sn-ios-xtool` supera `quick_validate.py`.
+Una prova CLI OpenCode 2.0.29 contro un server locale finto termina con exit 0 e conferma
+l'invio di `thinking: {type: enabled}` e `reasoning_effort: high`. Nessuna chiamata ai
+provider AI per questa prova; una seconda esecuzione conferma `reasoning_effort: low`
+selezionando la variante low. Nessuna misura della qualità di DeepSeek su SN.
+
+
+## Prima esecuzione su iPhone, 15 ottobre 2026
+
+Incremento M0: portare il client compilato dall'`app` alla **esecuzione sul dispositivo**.
+
+- `xtool devices --usb --no-wait` elenca l'iPhone (`iPhone di Fra`, udid `00008150-…`,
+  iOS 27.0.1, iPhone18,1): rispetto alla sessione precedente la USB è riconosciuta.
+- `cd ios && xtool dev build`: exit 0, `Build complete!`, bundle in `ios/xtool/SN.app`.
+- `xtool dev run --usb`: exit 0. Fasi `Provisioning`, `Signing`, `Packaging`,
+  `Connecting`, `Installing`, `Verifying` tutte al 100%. Bundle installato
+  `XTL-K6YFCD7D39.it.sn.app`.
+- Avvio: `xtool launch` non funziona su iOS 17+ (`DebugserverClient.Error.unknown`;
+  libimobiledevice non supporta il debugserver RemoteXPC), quindi l'app è stata aperta
+  toccando l'icona. **Esito osservato: l'app mostra la schermata Accedi.**
+- Rete M0 non verificata: il telefono era su una rete diversa da quella del computer e
+  non raggiungeva `http://<IP LAN>:3000`. Il log del server di prova non ha ricevuto
+  nessuna richiesta dall'app: l'errore mostrato nel login è di trasporto, non di
+  protocollo. La riga `POST /api/native/auth/login` presente nel log è della prova locale
+  con `curl`, non del dispositivo.
+- `SNApiBaseURL` è stato puntato all'IP LAN del computer con la relativa eccezione ATS
+  (obbligatoria da iOS 17 per gli IP). La configurazione corrente resta
+  `http://192.168.1.9:3000`; il riferimento storico al ritorno a localhost è superato.
+- Login, MFA, refresh, logout, `GET /api/bootstrap`, matrice §4.11 e test XCTest restano
+  non eseguiti.
+
+## Aggiornamento 15 ottobre 2026 — feedback sessione nativa e Supabase
+
+- Letto `/home/fra/Documents/check1M0.md`; le indicazioni su backend in pausa
+  descrivono un blocco precedente. `sndb` ora è `ACTIVE_HEALTHY`, account di prova
+  non sospeso e ultimo login registrato in Auth.
+- Tutte le 44 migrazioni applicative presenti sul cloud. Applicata la migrazione
+  aggiuntiva `restrict_rls_auto_enable_execution`: `anon` e `authenticated` senza
+  EXECUTE sulla funzione event-trigger interna, trigger ancora attivo (1), zero
+  tabelle pubbliche senza RLS. Advisor anonimo risolto. Restano avvisi sulle RPC
+  privilegiate intenzionalmente autenticate e sulla protezione password compromesse.
+- Corretto il feedback di `Verifica sessione`: avanzamento, orario dopo bootstrap,
+  eliminazione errori precedenti e scarto delle risposte dopo cambio di sessione.
+- `xtool dev build`: riuscito. `xtool dev run --usb`: firma e installazione verificate
+  al 100%. Avvio manuale e feedback visivo della nuova build non ancora osservati.
+- Aggiunti due XCTest per successo dopo errore e fallimento dopo successo.
+  `swift test --swift-sdk darwin` non avvia il runner: SDK con più target;
+  il tentativo con triple iOS 17 non trova un SDK corrispondente. Non dichiarati eseguiti.
+- Feed e navigazione social non presenti: questa build implementa M0, non M1.
+- Test backend mirati: `npm test -- tests/database.test.ts tests/native-auth.test.ts`,
+  2 file e 75 test superati, comprese le migrazioni SQL aggiornate.
+
+## 15 ottobre 2026 — ban temporanei e permanenti
+
+- Opzioni web: 3 giorni, 1 mese, 6 mesi, 1 anno, permanente. Date di scadenza
+  visibili nell'elenco account e nel registro delle decisioni. Demo e traduzioni
+  inglesi aggiornate. Ripristino anticipato conservato.
+- Migrazione `20261015170711_timed_account_bans.sql` applicata a Supabase `sndb`.
+  Preservati i vecchi ban permanenti e il contratto RPC a tre argomenti.
+  Scadenza governata da RLS a ogni richiesta, senza job. Nessun utente reale bannato
+  per le prove: i test di ban e scadenza sono eseguiti nel database PGlite.
+- Cloud: RPC non eseguibile da anon; authenticated non può aggiornare banned_until.
+  Verifica transazionale con ruolo authenticated di francescoeramo: moderatore=true,
+  elenco di 4 account leggibile. Advisor: nuovo avviso atteso sulla RPC SECURITY
+  DEFINER autenticata, con controlli interni di ruolo, identità e motivo; nessuna
+  nuova esposizione anonima. Gli altri avvisi preesistenti restano invariati.
+- `npm test`: 8 file, 151 test superati. Copertura nuova: tutte le durate, audit,
+  divieto di autoassegnazione/scadenza, blocco letture e scritture con sessione
+  esistente, scadenza senza cron, revoca anticipata, compatibilità vecchi client,
+  clamp dei mesi e degli anni bisestili nella demo.
+- TypeScript, ESLint e build di produzione riusciti. Detector Impeccable: nessuna
+  segnalazione. Test browser sulla build di produzione: flusso moderazione su
+  desktop e mobile, ban temporaneo e permanente, motivazione e ripristino.
+  I tentativi sul server dev preesistente non completavano il caricamento;
+  la verifica usa la build standalone isolata sulla porta 3100.
+- L'utente ha inoltre confermato il funzionamento della verifica sessione, rinnovo,
+  logout/riapertura, recupero offline e MFA nell'app iPhone M0. Sono prove riferite
+  dall'utente, distinte dagli XCTest (runner ancora non eseguito).
+
+## 15 ottobre 2026 — implementazione iOS M0.5
+
+- Aggiunto modulo Swift del protocollo E2EE 1:1 v1 e verifica offline bidirezionale
+  usando `lib/crypto/chat.ts` originale. Nessun endpoint nuovo, nessuna modifica
+  cloud, nessun messaggio reale inviato, nessun token o chiave reale esportato.
+- `swift test --package-path ios/ChatCrypto`: 2 XCTest crypto Linux superati.
+  Runner interno: 35 verifiche su tre vettori; report Linux verificato dal codice
+  Web Crypto con tre destinatari/dispositivi per risposta e allegato binario.
+- `npm test -- tests/crypto.test.ts`: 6 test superati.
+- `xtool dev build`: riuscito con CryptoKit iOS, senza compilare il backend Crypto
+  Linux per il dispositivo. `xtool dev run --usb`: firma e installazione al 100%.
+- La prova hardware richiede apertura manuale di SN e verifica del report
+  `Documents/crypto-interop-report.json` con piattaforma `ios-cryptokit`.
+  Report recuperato via USB e verificato: piattaforma ios-cryptokit, 35 controlli,
+  tre risposte corrette su tre dispositivi e allegati decifrati dal codice web.
+  M0.5 completata su iPhone reale. Evidenza senza dati reali o chiavi private utente:
+  `docs/evidence/ios-crypto-interop-2026-10-15.json`.
+- Il nuovo runner Linux testa il modulo crypto, non i precedenti XCTest SwiftUI/
+  AuthCoordinator. I lockfile SwiftPM fissano la dipendenza Linux e le transitive.
+
+## 15 ottobre 2026 — allineamento documentazione e OpenCode
+
+Allineati stato operativo, roadmap, contratto nativo, istruzioni agenti, skill iOS,
+template e profilo OpenCode attivo. Aggiornati anche check1M0.md (marcato storico)
+e la sezione SN della guida OpencodeDeepseekFunc.md in Documents, con copie precedenti
+in /tmp. Nessun codice applicativo o servizio cloud modificato da questo allineamento.
+
+Verificati: collegamenti locali in 17 documenti, JSON attivo uguale al template,
+47 migrazioni presenti, validatore skill, debug config/debug agents OpenCode e
+riproduzione del rapporto CryptoKit conservato. Nessuna chiamata ai provider e
+nessuna nuova build richiesta per questi soli aggiornamenti di documentazione.

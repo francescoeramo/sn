@@ -6,6 +6,10 @@ protocol APIClientProtocol: Sendable {
     func verifyMfa(accessToken: String, factorId: String, code: String) async throws -> TokenPair
     func logout(accessToken: String) async throws
     func bootstrap(accessToken: String) async throws -> Bootstrap
+    func posts(accessToken: String, before: String) async throws -> FeedPage
+    func media(accessToken: String, path: String) async throws -> Data
+    func upload(accessToken: String, jpeg: Data) async throws -> UploadedMedia
+    func publish(accessToken: String, post: NewPost) async throws
 }
 
 /// Client HTTP verso il server SN. Il bearer è passato esplicitamente dai chiamanti:
@@ -45,6 +49,35 @@ struct APIClient: APIClientProtocol {
         return try decode(Bootstrap.self, from: data)
     }
 
+    func posts(accessToken: String, before: String) async throws -> FeedPage {
+        let data = try await request(path: query("/api/posts", name: "before", value: before), method: "GET", token: accessToken, body: nil)
+        return try decode(FeedPage.self, from: data)
+    }
+
+    func media(accessToken: String, path: String) async throws -> Data {
+        try await request(path: query("/api/media", name: "path", value: path), method: "GET", token: accessToken, body: nil)
+    }
+
+    func upload(accessToken: String, jpeg: Data) async throws -> UploadedMedia {
+        let boundary = "SN-\(UUID().uuidString)"
+        var body = Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"file\"; filename=\"photo.jpg\"\r\nContent-Type: image/jpeg\r\n\r\n".utf8)
+        body.append(jpeg)
+        body.append(Data("\r\n--\(boundary)--\r\n".utf8))
+        let data = try await request(path: "/api/native/upload", method: "POST", token: accessToken, body: body, contentType: "multipart/form-data; boundary=\(boundary)")
+        return try decode(UploadedMedia.self, from: data)
+    }
+
+    func publish(accessToken: String, post: NewPost) async throws {
+        _ = try await request(path: "/api/native/post", method: "POST", token: accessToken, body: encoder.encode(post))
+    }
+
+    private func query(_ path: String, name: String, value: String) -> String {
+        var components = URLComponents()
+        components.path = path
+        components.queryItems = [URLQueryItem(name: name, value: value)]
+        return components.string!.replacingOccurrences(of: "+", with: "%2B")
+    }
+
     private func decode<T: Decodable>(_ type: T.Type, from data: Data) throws -> T {
         do {
             return try decoder.decode(type, from: data)
@@ -53,15 +86,17 @@ struct APIClient: APIClientProtocol {
         }
     }
 
-    private func request(path: String, method: String, token: String?, body: Data?) async throws -> Data {
+    private func request(path: String, method: String, token: String?, body: Data?, contentType: String = "application/json") async throws -> Data {
         guard let url = URL(string: path, relativeTo: baseURL) else { throw APIError.transport }
         var request = URLRequest(url: url)
         request.httpMethod = method
+        request.httpShouldHandleCookies = false
+        request.timeoutInterval = 30
         request.cachePolicy = .reloadIgnoringLocalCacheData
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         if let body {
             request.httpBody = body
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.setValue(contentType, forHTTPHeaderField: "Content-Type")
         }
         if let token {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")

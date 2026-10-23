@@ -31,7 +31,7 @@ import {
   UsersRound,
 } from 'lucide-react';
 import type { Action, Snapshot, Post, Profile } from '@/lib/core/types';
-import { LIMITS, isActive, hashtags, relativeTime } from '@/lib/core/rules';
+import { LIMITS, isActive, hashtags, relativeTime, banDuration } from '@/lib/core/rules';
 import { Avatar, Empty, LoadingShell, Modal } from './primitives';
 import { AuthScreen } from './auth-screen';
 import { PostCard } from './post-card';
@@ -1853,9 +1853,19 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                             {account.is_admin
                               ? ' · moderatore'
                               : account.disabled
-                                ? ' · sospeso'
+                                ? account.ban_expires_at
+                                  ? ' · ban temporaneo'
+                                  : ' · ban permanente'
                                 : ' · attivo'}
                           </small>
+                          {account.disabled && account.ban_expires_at && (
+                            <small>
+                              <span>Scadenza del ban</span>:{' '}
+                              <time dateTime={account.ban_expires_at}>
+                                {new Date(account.ban_expires_at).toLocaleString(language)}
+                              </time>
+                            </small>
+                          )}
                         </span>
                         {!account.is_admin && (
                           <button
@@ -2049,6 +2059,20 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                                   : entry.target_id.slice(0, 8)}
                               </small>
                               {entry.reason && <small data-user-copy>{entry.reason}</small>}
+                              {entry.action === 'account_suspended' && (
+                                <small>
+                                  {entry.ban_expires_at ? (
+                                    <>
+                                      <span>Scadenza del ban</span>:{' '}
+                                      <time dateTime={entry.ban_expires_at}>
+                                        {new Date(entry.ban_expires_at).toLocaleString(language)}
+                                      </time>
+                                    </>
+                                  ) : (
+                                    <span>Ban permanente</span>
+                                  )}
+                                </small>
+                              )}
                             </span>
                             <span>
                               <span data-user-copy>
@@ -2227,10 +2251,37 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                 user_id: accountDecision.id,
                 disabled: accountDecision.disabled,
                 reason: String(form.get('reason')),
+                duration: accountDecision.disabled
+                  ? banDuration.parse(form.get('duration'))
+                  : 'permanent',
               });
               if (ok) setAccountDecision(null);
             }}
           >
+            {accountDecision.disabled && (
+              <>
+                <label>
+                  Durata del ban
+                  <select
+                    name="duration"
+                    defaultValue="3_days"
+                    required
+                    disabled={busy}
+                    aria-describedby="ban-duration-help"
+                  >
+                    <option value="3_days">3 giorni</option>
+                    <option value="1_month">1 mese</option>
+                    <option value="6_months">6 mesi</option>
+                    <option value="1_year">1 anno</option>
+                    <option value="permanent">Permanente</option>
+                  </select>
+                </label>
+                <p id="ban-duration-help" className="fine muted">
+                  I ban temporanei scadono automaticamente. Il ban permanente resta attivo finché un
+                  moderatore non lo revoca.
+                </p>
+              </>
+            )}
             <label>
               Motivo della decisione
               <textarea name="reason" minLength={10} maxLength={500} rows={4} required autoFocus />

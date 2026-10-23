@@ -5,3 +5,13 @@ build/
 DerivedData/
 *.xcuserstate
 xcuserdata/
+
+# SwiftPM / xtool.
+.build/
+.swiftpm/
+.bsp/
+Package.resolved
+!/Package.resolved
+!/ChatCrypto/Package.resolved
+# Output di xtool dev build (app, ipa, build server): relativo alla root del package.
+/xtool

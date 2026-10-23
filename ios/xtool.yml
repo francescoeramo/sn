@@ -1,0 +1,7 @@
+version: 1
+# Bundle ID stabile e controllato dal progetto. xtool aggiunge automaticamente il
+# prefisso XTL-<TEAM-ID>. in fase di firma/provisioning: non va scritto qui.
+bundleID: it.sn.app
+# Info.plist del progetto (SNApiBaseURL, eccezioni ATS, ...). I valori definiti in
+# questo file hanno priorità sui default generati da xtool.
+infoPath: SN/Info.plist

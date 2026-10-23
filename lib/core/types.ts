@@ -166,6 +166,7 @@ export type ModerationAudit = {
   target_type: 'report' | 'post' | 'community_note' | 'account' | 'remote_report' | 'instance';
   target_id: string;
   reason: string;
+  ban_expires_at?: string | null;
   created_at: string;
 };
 export type ModerationAccount = {
@@ -173,6 +174,7 @@ export type ModerationAccount = {
   username: string;
   display_name: string;
   disabled: boolean;
+  ban_expires_at?: string | null;
   is_admin: boolean;
   created_at: string;
 };
@@ -535,7 +537,13 @@ export type Action =
   | { type: 'moderate'; report_id: string; remove: boolean }
   | { type: 'moderate-remote'; report_id: string; hide: boolean }
   | { type: 'moderate-instance'; hostname: string; blocked: boolean; reason: string }
-  | { type: 'moderate-account'; user_id: string; disabled: boolean; reason: string }
+  | {
+      type: 'moderate-account';
+      user_id: string;
+      disabled: boolean;
+      reason: string;
+      duration?: '3_days' | '1_month' | '6_months' | '1_year' | 'permanent';
+    }
   | { type: 'block'; user_id: string };
 
 export type ChatGroup = {

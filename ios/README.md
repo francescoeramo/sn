@@ -1,62 +1,163 @@
-# SN — app nativa iOS (M0, scaffolding)
+# SN per iOS: SwiftUI e xtool
 
-Client SwiftUI delle API SN. Server e database restano invariati: l'app consuma gli endpoint
-`native/auth/*` e `GET /api/bootstrap` descritti in `docs/PIANO-APP-NATIVA.md` e `docs/ARCHITETTURA.md`.
+Aggiornato al 23 ottobre 2026: M1 implementata e installata via USB; collaudo runtime aperto.
+Il client nativo usa le API SN; backend Next.js e Supabase restano condivisi con il sito.
 
-> Stato: **scaffolding**. I file sono stati scritti e rivisti, ma **non compilati**: questa
-> macchina non ha Xcode. Vanno aperti, compilati e iterati su un Mac prima di considerarli validi.
+## Stato attuale e prossimo incremento
 
-## Cosa è incluso (M0)
+| Tappa | Stato | Evidenza |
+| --- | --- | --- |
+| M0 — sessione | Flussi principali funzionanti su iPhone: login, verifica sessione, rinnovo, logout/riapertura, recupero offline, MFA | Conferme dell'utente nella sessione del 15 ottobre; test server in `tests/native-auth.test.ts` |
+| M0.5 — crypto 1:1 | Completata su iPhone con CryptoKit, in entrambe le direzioni web ↔ iPhone | [Rapporto](../docs/evidence/ios-crypto-interop-2026-10-15.json): 35 controlli, tre risposte su tre dispositivi, allegato verificato |
+| M1 — feed, profilo, post con immagine | Implementato e installato via USB, collaudo runtime aperto | Contratto in [PIANO-APP-NATIVA.md](../docs/PIANO-APP-NATIVA.md) |
+| XCTest sessione/SwiftUI | Presenti in `SNTests`, non eseguiti con il runner Darwin | Non confondere con i due XCTest crypto Linux superati |
 
-| Piano § | File |
-|---|---|
-| TokenStore (Keychain, `WhenUnlockedThisDeviceOnly`) | `SN/Auth/TokenStore.swift` |
-| AuthCoordinator (single-flight R3, epoch R6, offline F5) | `SN/Auth/AuthCoordinator.swift` |
-| APIClient (bearer, errori `{error, code}`) | `SN/Networking/APIClient.swift`, `SN/Networking/APIError.swift` |
-| Modelli M0 (R5) | `SN/Models/Session.swift` |
-| Errori localizzati it/en | `SN/Localization/ErrorMessages.swift` |
-| Schermate Login/MFA/Verifica/Logout | `SN/Views/*.swift` |
-| Test | `SNTests/*.swift` |
+La versione 0.2 contiene feed cronologico con aggiornamento manuale, paginazione
+esplicita, avvisi sui contenuti, lettura autenticata delle immagini, proprio profilo
+e composizione di un post con una foto tramite PhotosPicker. Il profilo mostra i
+propri post nella finestra caricata, non uno storico completo indipendente. Storie,
+video, chat UI, interazioni e modifica profilo restano alle tappe successive.
 
-## Setup su macOS
+Le scritture non vengono ritentate automaticamente. Una risposta di pubblicazione
+persa blocca un secondo invio dal composer e chiede di controllare prima il feed.
+Le immagini sono ridimensionate a 1600 pixel e ricodificate JPEG (limite 3 MiB),
+senza inoltrare i metadati originali. L’upload conserva il percorso per evitare di
+ricaricare la foto se una validazione del post viene rifiutata.
 
-1. Xcode 16 o successivo.
-2. Genera il progetto con [XcodeGen](https://github.com/yonaskolb/XcodeGen):
-   ```bash
-   brew install xcodegen
-   cd ios && xcodegen generate && open SN.xcodeproj
-   ```
-   In alternativa crea a mano un'app iOS "App" con interfaccia SwiftUI, aggiungi i file di `SN/`
-   al target e `SNTests/` al target di test.
-3. Imposta `SNApiBaseURL` in `ios/SN/Info.plist` con l'indirizzo del server di prova raggiungibile
-   **dal telefono** (non `localhost`): es. `http://192.168.1.20:3000`.
-4. Avvia il server in modo che ascolti sulla rete locale:
-   ```bash
-   npm run dev -- --hostname 0.0.0.0
-   ```
-5. Esegui i test: `xcodebuild test -scheme SN -destination 'platform=iOS Simulator,name=iPhone 16'`.
+M0.5 resta completata: nessuna modifica ai vettori o al protocollo crypto.
 
-### App Transport Security
+Le conferme funzionali M0 non attestano tutti i casi concorrenti della matrice tecnica.
+La modifica MFA database successiva è verificata con test SQL e prova cloud aal1/aal2;
+un nuovo login completo su iPhone dopo tale migrazione non è stato osservato direttamente.
+Questo resta un controllo di regressione da eseguire durante M1, senza ripetere M0.5.
 
-In M0 il server è in HTTP: `Info.plist` abilita `NSAllowsLocalNetworking` e una eccezione per
-`localhost`. Per un IP di rete locale aggiungi una voce `NSExceptionDomains`, oppure usa un tunnel
-HTTPS. **Prima di una build di rilascio rimuovi le eccezioni ATS.**
+## Ambiente e struttura
 
-### Versione iOS / Liquid Glass
+Swift 6.4.1 su Linux, SDK `darwin` (iPhoneOS 27.0), xtool commit
+`f0a1f90efdbb0dc023e276ff529da92618da7a87`. Target minimo iOS 17; iPhone di prova
+con iOS 27.0.1. Firma, installazione e runtime sono stati verificati.
 
-Il target è iOS 17.0 per restare compatibile con SwiftUI standard. La "Liquid Glass" richiede SDK
-e versioni più recenti: la versione minima va confermata sui documenti Apple (decisione aperta nel
-piano, §5) prima di adottarla.
+- `Package.swift`, `xtool.yml`, `SN/`: app SwiftPM; `project.yml` è il precedente XcodeGen.
+- `SN/Auth/`: Keychain token, single-flight refresh, epoch di logout e stato offline.
+- `SN/Networking/`, `SN/Models/`, `SN/Views/`: API, modelli e schermate M0.
+- `ChatCrypto/`: modulo 1:1 condiviso fra CryptoKit iOS e test Linux.
+- `ChatCrypto/Package.resolved` e `Package.resolved`: lockfile da mantenere versionati.
+- `SN/Diagnostics/CryptoProbeDiagnostics.swift`: rapporto sintetico DEBUG, senza rete.
+- `SNTests/`: test sessione separati, runner ancora da verificare.
 
-## Contratto verificato
+## Build e dispositivo
 
-- Login senza MFA → `200 { access_token, refresh_token, expires_at, token_type }`.
-- Login con MFA → `200 { mfa_required, factor_id, access_token, ... }`.
-- Refresh → nuova coppia; rifiuto definitivo `401 { code: "refresh_invalid" }`.
-- MFA verify (bearer aal1) → coppia aal2.
-- Logout (bearer) → `200 { ok: true }`, idempotente.
-- `GET /api/bootstrap` con bearer aal1 e MFA attiva → `403 { code: "mfa_required" }`.
+Dalla root del repository:
 
-I `code` mappati in `ErrorMessages.swift`: `login_invalid`, `refresh_invalid`, `session_invalid`,
-`auth_unavailable`, `mfa_required`, `mfa_invalid`, `mfa_unavailable`, `logout_failed`,
-`account_unavailable`.
+```bash
+swift --version
+swift sdk list
+xtool --version
+cd ios
+xtool dev build
+xtool devices --usb --no-wait
+xtool dev run --usb
+```
+
+Una build alla volta. `xtool dev run --usb` firma e installa; aprire l'icona SN a mano.
+`xtool launch` non funziona nell'ambiente verificato con iOS 17+ (debugserver RemoteXPC).
+Non usare Xcode, simulatori o VM macOS, né reinstallare SDK/toolchain senza diagnosi.
+Controllare firma/provisioning solo se necessario, senza copiare credenziali nei log.
+
+## Server raggiungibile dall'iPhone
+
+Nella sessione del 23 ottobre si usa **solo hotspot personale via USB**; non serve
+che telefono e computer siano sul Wi-Fi dell’università. L’interfaccia USB del
+computer è `enp8s0f3u1c4i2`, con indirizzo `172.20.10.3/28` osservato nella sessione.
+`SNApiBaseURL` in `SN/Info.plist` punta a `http://172.20.10.3:3000`, con eccezione ATS
+circoscritta. L’indirizzo può cambiare: verificarlo con `ip -br -4 address` prima
+della prossima build. Non usare il vecchio `192.168.1.9` né ascoltare su `0.0.0.0`.
+
+Dopo aver attivato Hotspot personale in modalità USB sul telefono:
+
+```bash
+npm exec next dev -- --hostname 172.20.10.3 --port 3000
+```
+
+Il server risponde solo sull’indirizzo USB. `localhost` nell’app indica il telefono.
+Il test HTTP dal computer ha raggiunto `/api/bootstrap` e ottenuto 401 senza token;
+non prova ancora la raggiungibilità dal telefono né un accesso MFA completo.
+Il firewall bloccava i SYN dall’iPhone: confermato nei log kernel UFW con
+`IN=enp8s0f3u1c4i2 SRC=172.20.10.1 DST=172.20.10.3 DPT=3000`. Aggiunta esclusivamente:
+
+```bash
+pkexec ufw allow in on enp8s0f3u1c4i2 proto tcp from 172.20.10.1 to 172.20.10.3 port 3000 comment 'SN sviluppo iPhone solo USB'
+```
+
+Per rimuoverla dopo lo sviluppo:
+
+```bash
+pkexec ufw delete allow in on enp8s0f3u1c4i2 proto tcp from 172.20.10.1 to 172.20.10.3 port 3000
+```
+
+La regola non apre la rete universitaria; le regole preesistenti restano invariate.
+Dopo la correzione l’utente ha confermato accesso e feed sull’iPhone via USB.
+Per rilascio serve HTTPS.
+
+## Verifica M1 del 23 ottobre 2026
+
+- `xtool dev build`: completata senza avvisi, target iOS 17, SDK Darwin esistente.
+- `npm test -- tests/native-social.test.ts tests/native-auth.test.ts tests/security-api.test.ts`:
+  29 test superati. Coprono bearer obbligatorio sulle scritture native, nessun
+  fallback cookie, MFA, Origin web preservato, letture e limiti upload condivisi.
+- `npm run typecheck` e lint mirato di route, social e test: superati.
+- Esecuzione Swift dei modelli Foundation su Linux: 8 controlli superati, incluso
+  `media_path: null` richiesto per i post testuali. Non è il runner `SNTests`.
+- `xtool dev run --usb`: installazione e verifica al 100%, exit 0. Il primo tentativo
+  aveva ricevuto provisioning Apple 409 (nessun device iOS corrispondente); il secondo
+  è riuscito senza cambio account, registrazioni manuali o aggiornamento toolchain.
+  La causa transitoria non è stata accertata. Aprire SN a mano sul telefono.
+- Accesso, feed e foto nel profilo via USB confermati dall’utente il 23 ottobre, dopo
+  la regola UFW. Log server: login 200, MFA 200, bootstrap 200 e media 200. Due tentativi
+  MFA avevano ricevuto 503 prima del successo; nessun retry automatico è stato aggiunto.
+- L’utente ha confermato anche il pulsante Nuovo post, pubblicazione riuscita e la
+  nuova foto visibile nel post. Nei log osservati: native/post 200 e bootstrap 200;
+  l’upload separato non è stato conservato come evidenza di questa prova manuale.
+- Paginazione oltre la prima finestra, riapertura dopo pubblicazione, VoiceOver,
+  Dynamic Type e aspetto chiaro restano da verificare. Aspetto scuro osservato su iPhone.
+  Cattura reale USB del profilo in aspetto scuro acquisita; altre schermate e
+  accessibilità non ancora verificate visivamente.
+
+## Controlli del contratto M1 (Linux)
+
+```bash
+swiftc -module-cache-path /tmp/sn-swift-model-cache ios/SN/Models/Session.swift ios/SN/Models/Feed.swift ios/ContractChecks/main.swift -o /tmp/sn-ios-model-contract
+/tmp/sn-ios-model-contract
+```
+
+Sono otto controlli con dati sintetici dei modelli JSON, non test runtime SwiftUI
+né il runner XCTest delle sessioni.
+
+## Prove ripetibili
+
+Dalla root:
+
+```bash
+swift test --package-path ios/ChatCrypto
+ios/ChatCrypto/.build/debug/SNChatInterop > /tmp/sn-crypto-linux-report.json
+node scripts/ios-crypto-interop.mjs verify /tmp/sn-crypto-linux-report.json
+node scripts/ios-crypto-interop.mjs verify docs/evidence/ios-crypto-interop-2026-10-15.json
+npm test -- tests/crypto.test.ts tests/native-auth.test.ts
+```
+
+Risultati registrati: due XCTest crypto Linux, 35 controlli interni, sei test Web Crypto;
+rapporto `ios-cryptokit` del telefono verificato dal codice web. Procedura, estrazione
+USB e rigenerazione vettori in [IOS-CRYPTO-INTEROP.md](../docs/IOS-CRYPTO-INTEROP.md).
+Non rigenerare i vettori per continuare M1: cambierebbe il fixture ID del rapporto.
+
+## Adapter M1 e prossimo passo
+
+`GET /api/posts` e `GET /api/media` accettano ora identità bearer verificata come
+bootstrap; senza Authorization il percorso web resta a cookie. Un header invalido
+non ripiega mai sui cookie. `POST /api/native/post` e `/api/native/upload` richiedono
+bearer e MFA e riusano mutazione social, RLS, quote, prenotazione byte e validazioni
+del sito. Nessun bypass generale Origin: action/upload web restano protetti.
+Nessuna migrazione o modifica cloud è stata eseguita per M1.
+
+Aprire SN e completare il collaudo runtime sopra. M1 non è ancora dichiarata conclusa.
+Per continuare con OpenCode: [OPENCODE.md](../docs/OPENCODE.md).

@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   fileKind,
+  banExpiry,
+  moderateAccountInput,
   hashtags,
   isActive,
   postInput,
@@ -152,6 +154,47 @@ describe('Regole condivise', () => {
         reason: 'Tentativo non consentito.',
       }),
     ).toThrow('Accesso negato');
+  });
+  it('calcola mesi di calendario e valida le durate del ban', () => {
+    const at = new Date('2028-01-31T12:30:00Z');
+    expect(banExpiry('3_days', at)).toBe('2028-02-03T12:30:00.000Z');
+    expect(banExpiry('1_month', at)).toBe('2028-02-29T12:30:00.000Z');
+    expect(banExpiry('6_months', at)).toBe('2028-07-31T12:30:00.000Z');
+    expect(banExpiry('1_year', new Date('2028-02-29T12:30:00Z'))).toBe('2029-02-28T12:30:00.000Z');
+    expect(banExpiry('permanent', at)).toBeNull();
+    expect(
+      moderateAccountInput.safeParse({
+        user_id: seed().profiles[1].id,
+        disabled: true,
+        reason: 'Violazione verificata.',
+        duration: '2_days',
+      }).success,
+    ).toBe(false);
+  });
+  it('la demo conserva scadenza e audit e fa scadere un ban temporaneo', () => {
+    const state = seed();
+    const target = state.moderationAccounts![1];
+    const suspended = applyDemo(state, {
+      type: 'moderate-account',
+      user_id: target.id,
+      disabled: true,
+      reason: 'Violazione verificata.',
+      duration: '1_month',
+    });
+    expect(suspended.moderationAccounts![1].ban_expires_at).toBeTruthy();
+    expect(suspended.moderationAudit![0].ban_expires_at).toBe(
+      suspended.moderationAccounts![1].ban_expires_at,
+    );
+    suspended.moderationAccounts![1].ban_expires_at = '2000-01-01T00:00:00Z';
+    const again = applyDemo(suspended, {
+      type: 'moderate-account',
+      user_id: target.id,
+      disabled: true,
+      reason: 'Nuova violazione verificata.',
+      duration: 'permanent',
+    });
+    expect(again.moderationAccounts![1].disabled).toBe(true);
+    expect(again.moderationAccounts![1].ban_expires_at).toBeNull();
   });
   it('accetta le sei durate temporanee e conserva i messaggi ordinari', () => {
     const input = { user_id: seed().profiles[1].id, body: 'Ciao' };

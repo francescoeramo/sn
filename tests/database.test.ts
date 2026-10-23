@@ -1754,6 +1754,184 @@ describe('Autorizzazioni Postgres reali (PGlite)', () => {
     ]);
     await db.query('delete from private.admins where user_id=$1', [eve]);
   });
+  it('applica tutte le durate, protegge la scadenza e riabilita automaticamente alla scadenza', async () => {
+    await db.query('insert into private.admins(user_id) values($1)', [eve]);
+    try {
+      await expect(
+        asUser(bob, 'select public.set_account_ban($1,true,$2,$3)', [
+          alice,
+          'Tentativo non consentito.',
+          '3_days',
+        ]),
+      ).rejects.toThrow('Accesso negato');
+      await expect(
+        asUser(eve, 'select public.set_account_ban($1,true,$2,$3)', [
+          eve,
+          'Tentativo non consentito.',
+          '3_days',
+        ]),
+      ).rejects.toThrow('Accesso negato');
+      await expect(
+        asUser(eve, 'select public.set_account_ban($1,true,$2,$3)', [
+          bob,
+          'Violazione delle regole.',
+          '2_days',
+        ]),
+      ).rejects.toThrow('Durata');
+      await expect(
+        asUser(eve, 'select public.set_account_ban($1,true,$2,$3)', [bob, 'breve', '3_days']),
+      ).rejects.toThrow('Motiva');
+      await expect(
+        asUser(bob, 'update public.profiles set banned_until=null where id=$1', [bob]),
+      ).rejects.toThrow('permission denied');
+      for (const [duration, interval] of [
+        ['3_days', '72 hours'],
+        ['1_month', '1 month'],
+        ['6_months', '6 months'],
+        ['1_year', '1 year'],
+        ['permanent', null],
+      ]) {
+        await asUser(eve, 'select public.set_account_ban($1,true,$2,$3)', [
+          bob,
+          'Violazione verificata delle regole.',
+          duration,
+        ]);
+        const [account] = await asUser<{ disabled: boolean; ban_expires_at: Date | null }>(
+          eve,
+          'select disabled,ban_expires_at from public.moderation_accounts() where id=$1',
+          [bob],
+        );
+        expect(account.disabled).toBe(true);
+        expect(account.ban_expires_at === null).toBe(duration === 'permanent');
+        expect(await asUser(bob, 'select * from public.profiles')).toHaveLength(0);
+        expect(
+          await asUser(alice, 'select * from public.profiles where id=$1', [bob]),
+        ).toHaveLength(0);
+        await expect(
+          asUser(bob, "insert into public.posts(author_id,body) values($1,'Non consentito')", [
+            bob,
+          ]),
+        ).rejects.toThrow();
+        await expect(
+          asUser(eve, 'select public.set_account_ban($1,true,$2,$3)', [
+            bob,
+            'Tentativo duplicato non consentito.',
+            duration,
+          ]),
+        ).rejects.toThrow('già aggiornato');
+        if (interval) {
+          const [audit] = (
+            await db.query<{ matches: boolean }>(
+              `select ban_expires_at=((created_at at time zone 'UTC')+$2::interval) at time zone 'UTC' as matches from public.moderation_audit where target_id=$1 and action='account_suspended' order by created_at desc limit 1`,
+              [bob, interval],
+            )
+          ).rows;
+          expect(audit.matches).toBe(true);
+          // Move only the expiry in the test fixture: no cleanup job or fresh JWT required.
+          await db.query(
+            "update public.profiles set banned_until=now()-interval '1 second' where id=$1",
+            [bob],
+          );
+          expect(
+            await asUser(bob, 'select * from public.profiles where id=$1', [bob]),
+          ).toHaveLength(1);
+          expect(
+            await asUser(alice, 'select * from public.profiles where id=$1', [bob]),
+          ).toHaveLength(1);
+          const [expired] = await asUser<{ disabled: boolean }>(
+            eve,
+            'select disabled from public.moderation_accounts() where id=$1',
+            [bob],
+          );
+          expect(expired.disabled).toBe(false);
+        } else {
+          await asUser(eve, 'select public.set_account_disabled($1,false,$2)', [
+            bob,
+            'Revoca anticipata verificata.',
+          ]);
+          expect(
+            await asUser(bob, 'select * from public.profiles where id=$1', [bob]),
+          ).toHaveLength(1);
+        }
+      }
+      // Early revocation also clears a temporary ban using the legacy client RPC.
+      await asUser(eve, 'select public.set_account_ban($1,true,$2,$3)', [
+        bob,
+        'Violazione verificata delle regole.',
+        '3_days',
+      ]);
+      await asUser(eve, 'select public.set_account_disabled($1,false,$2)', [
+        bob,
+        'Revoca anticipata verificata.',
+      ]);
+      expect(
+        (await db.query('select banned_until from public.profiles where id=$1', [bob])).rows,
+      ).toEqual([{ banned_until: null }]);
+    } finally {
+      await db.query('update public.profiles set disabled=false,banned_until=null where id=$1', [
+        bob,
+      ]);
+      await db.query('delete from private.admins where user_id=$1', [eve]);
+    }
+  });
+  it('richiede MFA verificata anche nelle RPC dirette e lascia disponibile il profilo per il challenge', async () => {
+    await db.query('insert into private.admins(user_id) values($1)', [eve]);
+    try {
+      await db.query("insert into auth.mfa_factors(user_id,status) values($1,'unverified')", [eve]);
+      await db.query('select set_config(\'request.jwt.claims\',\'{"aal":"aal1"}\',false)');
+      expect(await asUser(eve, 'select private.member() as allowed')).toEqual([{ allowed: true }]);
+      await asUser(
+        eve,
+        'insert into public.mention_preferences(user_id) values($1) on conflict do nothing',
+        [eve],
+      );
+      await db.query("update auth.mfa_factors set status='verified' where user_id=$1", [eve]);
+      expect(await asUser(eve, 'select private.member() as allowed')).toEqual([{ allowed: false }]);
+      expect(await asUser(eve, 'select private.admin() as allowed')).toEqual([{ allowed: false }]);
+      await expect(asUser(eve, 'select * from public.moderation_accounts()')).rejects.toThrow(
+        'Accesso negato',
+      );
+      await expect(
+        asUser(eve, 'select public.set_account_ban($1,true,$2,$3)', [
+          bob,
+          'Tentativo senza secondo fattore.',
+          '3_days',
+        ]),
+      ).rejects.toThrow('Accesso negato');
+      expect(await asUser(eve, 'select * from public.posts')).toHaveLength(0);
+      // MFA endpoints need the caller's own active profile before obtaining aal2.
+      expect(await asUser(eve, 'select id from public.profiles')).toEqual([{ id: eve }]);
+      expect(await asUser(eve, 'select * from public.my_sessions()')).toHaveLength(0);
+      expect(await asUser(eve, 'select * from public.mention_preferences')).toHaveLength(0);
+      await expect(
+        asUser(
+          eve,
+          'update public.mention_preferences set mentions_enabled=false where user_id=$1 returning user_id',
+          [eve],
+        ),
+      ).resolves.toHaveLength(0);
+      await expect(
+        asUser(eve, 'select public.revoke_my_session($1)', [crypto.randomUUID()]),
+      ).rejects.toThrow('Accesso negato');
+      await expect(
+        asUser(eve, "update public.profiles set bio='Non consentito' where id=$1 returning id", [
+          eve,
+        ]),
+      ).resolves.toHaveLength(0);
+      await db.query('select set_config(\'request.jwt.claims\',\'{"aal":"aal2"}\',false)');
+      expect(await asUser(eve, 'select private.member() as allowed')).toEqual([{ allowed: true }]);
+      expect(await asUser(eve, 'select * from public.moderation_accounts()')).toHaveLength(3);
+      // Accounts without verified factors continue using password-only sessions.
+      await db.query("select set_config('request.jwt.claims','{}',false)");
+      expect(await asUser(eve, 'select private.member() as allowed')).toEqual([{ allowed: false }]);
+      expect(await asUser(bob, 'select private.member() as allowed')).toEqual([{ allowed: true }]);
+    } finally {
+      await db.query("select set_config('request.jwt.claims','{}',false)");
+      await db.query('delete from auth.mfa_factors where user_id=$1', [eve]);
+      await db.query('delete from public.mention_preferences where user_id=$1', [eve]);
+      await db.query('delete from private.admins where user_id=$1', [eve]);
+    }
+  });
   it('i salvati sono privati anche per moderatori e non autorizzano post privati', async () => {
     const [{ id }] = await asUser<{ id: string }>(
       alice,

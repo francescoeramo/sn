@@ -2,6 +2,8 @@ import { clearChatStore } from './chat-store';
 import type { Action, Snapshot, Profile, DigestItem } from '@/lib/core/types';
 import {
   isActive,
+  moderateAccountInput,
+  banExpiry,
   LIMITS,
   postInput,
   messageInput,
@@ -325,6 +327,7 @@ export async function loadDemo(): Promise<Snapshot> {
       req.onsuccess = () => {
         const state: Snapshot = req.result ?? seed();
         initializeChat(state);
+        expireDemoBans(state);
         state.notes ??= [];
         state.pollResults ??= [];
         state.moderationAudit ??= [];
@@ -405,9 +408,18 @@ export async function clearDemo() {
     db.close();
   }
 }
+function expireDemoBans(state: Snapshot) {
+  for (const account of state.moderationAccounts ?? []) {
+    if (account.ban_expires_at && Date.parse(account.ban_expires_at) <= Date.now()) {
+      account.disabled = false;
+      account.ban_expires_at = null;
+    }
+  }
+}
 export function applyDemo(source: Snapshot, action: Action): Snapshot {
   const s = structuredClone(source);
   initializeChat(s);
+  expireDemoBans(s);
   s.notes ??= [];
   s.pollResults ??= [];
   s.moderationAudit ??= [];
@@ -1555,17 +1567,17 @@ export function applyDemo(source: Snapshot, action: Action): Snapshot {
     }
     case 'moderate-account': {
       if (!s.isAdmin) throw new Error('Accesso negato.');
-      const reason = action.reason.trim();
-      if (reason.length < 10 || reason.length > 500)
-        throw new Error('Motiva la decisione (10-500 caratteri).');
+      const { reason, duration } = moderateAccountInput.parse(action);
       const account = s.moderationAccounts?.find((item) => item.id === action.user_id);
       if (!account || account.is_admin || account.id === me) throw new Error('Accesso negato.');
       if (account.disabled === action.disabled) throw new Error('Stato account già aggiornato.');
       account.disabled = action.disabled;
+      account.ban_expires_at = action.disabled ? banExpiry(duration, new Date(now)) : null;
       s.moderationAudit?.unshift({
         id: crypto.randomUUID(),
         moderator_id: me,
         action: action.disabled ? 'account_suspended' : 'account_restored',
+        ban_expires_at: account.ban_expires_at,
         target_type: 'account',
         target_id: account.id,
         reason,

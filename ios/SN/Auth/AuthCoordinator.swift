@@ -15,6 +15,20 @@ final class AuthCoordinator: ObservableObject {
     @Published private(set) var state: State = .loading
     @Published private(set) var offline = false
     @Published var lastErrorMessage: String?
+    @Published private(set) var isProbing = false
+    @Published private(set) var lastVerifiedAt: Date?
+
+    @Published private(set) var feed: [FeedPost] = []
+    @Published private(set) var profiles: [FeedProfile] = []
+    @Published private(set) var nextCursor: String?
+    @Published private(set) var isLoadingMore = false
+    private var followedIds: Set<String> = []
+    private var currentUserId: String?
+    private var circlePostIds: Set<String> = []
+
+    var regularPosts: [FeedPost] { feed.filter { $0.kind == "post" && !circlePostIds.contains($0.id) && ($0.circle_links?.isEmpty ?? true) } }
+
+    var homePosts: [FeedPost] { regularPosts.filter { $0.author_id == currentUserId || followedIds.contains($0.author_id) } }
 
     private let api: APIClientProtocol
     private let store: TokenStore
@@ -110,14 +124,21 @@ final class AuthCoordinator: ObservableObject {
         epoch += 1
         // Attende un rinnovo in volo per revocare con il token più recente, se disponibile.
         var revocationToken = tokens?.accessToken
-        if let pending, let pair = try? await pending.value {
-            revocationToken = pair.accessToken
+        // Nota: l'`await` non va messo dentro la condizione del binding. Alcune grammatiche
+        // di parsing (es. tree-sitter-swift usata da Graphify) non accettano `if let x = try?
+        // await …` e degradano l'intero file. Il comportamento è identico.
+        if let pending {
+            let refreshed = try? await pending.value
+            if let pair = refreshed {
+                revocationToken = pair.accessToken
+            }
         }
         tokens = nil
         pendingMfaFactorId = nil
         // F4: i token locali spariscono subito; la revoca sul server è best-effort.
         store.clear()
         offline = false
+        clearFeed()
         state = .signedOut
         if let revocationToken {
             try? await api.logout(accessToken: revocationToken)
@@ -128,16 +149,31 @@ final class AuthCoordinator: ObservableObject {
 
     /// R4: solo una lettura idempotente può fare refresh + un retry.
     func probe() async {
+        guard !isProbing, !isLoadingMore else { return }
         guard tokens != nil else {
             state = .signedOut
             return
         }
+        let probeEpoch = epoch
+        isProbing = true
+        lastErrorMessage = nil
+        lastVerifiedAt = nil
+        defer { isProbing = false }
         do {
             let bootstrap = try await bootstrapWithRefresh()
+            guard probeEpoch == epoch else { return }
+            currentUserId = bootstrap.userId
+            followedIds = Set(bootstrap.follows.filter { $0.follower_id == bootstrap.userId && $0.accepted }.map(\.following_id))
+            circlePostIds = Set(bootstrap.circlePosts.map(\.post_id))
+            feed = bootstrap.posts
+            profiles = bootstrap.profiles
+            nextCursor = bootstrap.nextCursor
             cachedMe = bootstrap.me
             offline = false
+            lastVerifiedAt = Date()
             state = .signedIn(me: bootstrap.me)
         } catch let error as APIError {
+            guard probeEpoch == epoch else { return }
             if error.isDefinitiveSessionFailure {
                 resetToSignedOut()
             } else {
@@ -147,9 +183,94 @@ final class AuthCoordinator: ObservableObject {
             // R6: un rinnovo che completa dopo il logout non deve riattivare l'utente.
             return
         } catch {
+            guard probeEpoch == epoch else { return }
             offline = true
+            lastErrorMessage = ErrorMessages.message(for: .transport)
             state = .signedIn(me: cachedMe)
         }
+    }
+
+    func loadMore() async {
+        guard !isLoadingMore, !isProbing, let cursor = nextCursor else { return }
+        let requestEpoch = epoch
+        isLoadingMore = true
+        defer { isLoadingMore = false }
+        do {
+            let page = try await read { [api] token in
+                try await api.posts(accessToken: token, before: cursor)
+            }
+            guard requestEpoch == epoch else { return }
+            let known = Set(feed.map(\.id))
+            feed.append(contentsOf: page.posts.filter { !known.contains($0.id) })
+            nextCursor = page.nextCursor
+            offline = false
+            lastErrorMessage = nil
+        } catch is CancellationError {
+            return
+        } catch {
+            guard requestEpoch == epoch else { return }
+            handleFeedError(error)
+        }
+    }
+
+    func image(path: String) async throws -> Data {
+        try await read { [api] token in try await api.media(accessToken: token, path: path) }
+    }
+
+    /// Writes are never automatically retried: a lost response may already have committed.
+    func uploadPhoto(jpeg: Data?, uploaded: String?) async throws -> String? {
+        let requestEpoch = epoch
+        var path = uploaded
+        if path == nil, let jpeg {
+            let token = try await validAccessToken()
+            let result = try await api.upload(accessToken: token, jpeg: jpeg)
+            guard requestEpoch == epoch else { throw CancellationError() }
+            path = result.path
+        }
+        return path
+    }
+
+    func sendPost(body: String, alt: String, path: String?) async throws {
+        let requestEpoch = epoch
+        let token = try await validAccessToken()
+        try await api.publish(accessToken: token, post: NewPost(body: body, media_path: path, alt: alt))
+        guard requestEpoch == epoch else { throw CancellationError() }
+    }
+
+    private func read<T: Sendable>(_ operation: @Sendable (String) async throws -> T) async throws -> T {
+        let requestEpoch = epoch
+        do {
+            let token = try await validAccessToken()
+            let result = try await operation(token)
+            guard requestEpoch == epoch else { throw CancellationError() }
+            return result
+        } catch let error as APIError where error.isUnauthorized {
+            let pair = try await performRefresh(expectedEpoch: requestEpoch)
+            let result = try await operation(pair.accessToken)
+            guard requestEpoch == epoch else { throw CancellationError() }
+            return result
+        }
+    }
+
+    private func handleFeedError(_ error: Error) {
+        if let error = error as? APIError {
+            if error.isDefinitiveSessionFailure { resetToSignedOut() }
+            lastErrorMessage = ErrorMessages.message(for: error)
+            offline = error.isConnectivityFailure
+        } else {
+            lastErrorMessage = ErrorMessages.message(for: .transport)
+        }
+    }
+
+    private func clearFeed() {
+        feed = []
+        circlePostIds = []
+        followedIds = []
+        currentUserId = nil
+        profiles = []
+        nextCursor = nil
+        cachedMe = nil
+        lastVerifiedAt = nil
     }
 
     // MARK: - Interno
@@ -212,6 +333,7 @@ final class AuthCoordinator: ObservableObject {
         tokens = nil
         pendingMfaFactorId = nil
         store.clear()
+        clearFeed()
         offline = false
         state = .signedOut
     }

@@ -46,6 +46,43 @@ final class AuthCoordinatorTests: XCTestCase {
         XCTAssertNil(store.tokens)
     }
 
+    func testProbeConfirmsSuccessAndClearsPreviousError() async {
+        let api = MockAPI()
+        let store = MemoryTokenStore()
+        store.tokens = tokens()
+        let coordinator = AuthCoordinator(api: api, store: store)
+        await coordinator.restore() // il mock inizialmente simula un errore di rete
+        XCTAssertNotNil(coordinator.lastErrorMessage)
+        XCTAssertNil(coordinator.lastVerifiedAt)
+
+        await api.setBootstrapResult(.success(bootstrap()))
+        await coordinator.probe()
+
+        XCTAssertEqual(coordinator.state, .signedIn(me: bootstrap().me))
+        XCTAssertNotNil(coordinator.lastVerifiedAt)
+        XCTAssertNil(coordinator.lastErrorMessage)
+        XCTAssertFalse(coordinator.offline)
+        XCTAssertFalse(coordinator.isProbing)
+    }
+
+    func testFailedProbeRemovesPreviousSuccess() async {
+        let api = MockAPI()
+        await api.setBootstrapResult(.success(bootstrap()))
+        let store = MemoryTokenStore()
+        store.tokens = tokens()
+        let coordinator = AuthCoordinator(api: api, store: store)
+        await coordinator.restore()
+        XCTAssertNotNil(coordinator.lastVerifiedAt)
+
+        await api.setBootstrapResult(.failure(.transport))
+        await coordinator.probe()
+
+        XCTAssertNil(coordinator.lastVerifiedAt)
+        XCTAssertNotNil(coordinator.lastErrorMessage)
+        XCTAssertFalse(coordinator.isProbing)
+        XCTAssertNotNil(store.tokens)
+    }
+
     func testConnectivityFailureKeepsSession() async {
         let api = MockAPI()
         await api.setRefreshResult(.failure(.transport))

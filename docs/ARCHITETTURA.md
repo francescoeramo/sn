@@ -2,7 +2,7 @@
 
 ## Confini
 
-`components/` contiene l’interfaccia React. `lib/core/` contiene tipi, regole e identità indipendenti da Next.js, riutilizzabili in una futura app React Native. `lib/client/` gestisce demo e preparazione media. `lib/server/` gestisce sessioni e query Supabase. Le API web usano cookie HttpOnly; l’app nativa usa un adapter di autenticazione con bearer token (`lib/server/auth.ts`), mantenendo le stesse regole di dominio e le stesse RLS.
+`components/` contiene l’interfaccia React. `lib/core/` contiene tipi, regole e identità indipendenti da Next.js, riutilizzabili nei contratti API del client SwiftUI. `lib/client/` gestisce demo e preparazione media. `lib/server/` gestisce sessioni e query Supabase. Le API web usano cookie HttpOnly; l’app nativa usa un adapter di autenticazione con bearer token (`lib/server/auth.ts`), mantenendo le stesse regole di dominio e le stesse RLS.
 
 Non serve ancora un monorepo. Non ci sono dipendenze da Vercel KV, Blob, code a pagamento o servizi di rendering immagini a consumo. Auth e Storage sono Supabase; Postgres conserva contenuti, relazioni, quote e policy. Le chiavi privilegiate servono solo a cancellazione account e manutenzione, dopo controlli separati. Le operazioni social usano il token dell’utente e RLS.
 
@@ -26,6 +26,28 @@ Il percorso nativo è un client delle API SN; server e database restano invariat
 - MFA, logout e refresh usano GoTrue REST con il bearer (`lib/server/auth.ts`), senza `setSession`. `lib/server/supabase.ts` espone `tokenDatabase(token)` per le query RLS come utente e `identityFrom(request)` per la verifica del token.
 - Gli errori nativi hanno un `code` stabile (`session_invalid`, `refresh_invalid`, `auth_unavailable`, `mfa_required`, `mfa_invalid`, `mfa_unavailable`, `logout_failed`) oltre al messaggio localizzabile. I `code` sono per ora limitati ai percorsi `native/auth/*`.
 - Ambito logout M0: sessione corrente (`scope=local`), idempotente. App Attest resta una difesa futura.
+
+## Client iOS e prova crittografica (15 ottobre 2026)
+
+Client SwiftUI in `ios/`, SwiftPM + xtool su Linux. M0 funzionale confermata
+dall'utente; M0.5 completata su iPhone reale con rapporto CryptoKit verificato
+dal codice Web Crypto esistente. `ios/ChatCrypto` implementa il protocollo 1:1 v1:
+P-256, HKDF-SHA-256, AES-GCM, JWK, impronte, revisioni, scadenza e allegati.
+La prova usa esclusivamente chiavi sintetiche pubbliche e nessuna chat reale.
+Procedura ed evidenza: `docs/IOS-CRYPTO-INTEROP.md`.
+
+M1 deve aggiungere feed, profilo e post con immagine; solo auth native e bootstrap
+sono già bearer. Gli adapter delle altre API sono lavoro da implementare, senza
+disattivare le protezioni web o ricorrere al client amministrativo per operazioni
+utente. Le chiavi crypto persistenti e la registrazione dispositivi appartengono
+alla successiva integrazione chat, non sono implementate dalla sola prova M0.5.
+
+Supabase applica ora MFA anche in SQL: `private.member()` richiede aal2 se il
+chiamante ha un fattore verificato; il solo profilo attivo proprio resta leggibile
+per consentire il challenge. I ban temporanei usano `banned_until`, quelli
+permanenti conservano `disabled`; la scadenza è valutata dalle RLS senza cron.
+I 56 warning sulle RPC autenticate intenzionali restano visibili e non equivalgono
+a una certificazione di sicurezza. La checklist cloud completa è ancora aperta.
 
 ## Federazione: trasporto locale in anteprima
 
@@ -57,7 +79,7 @@ Le cerchie sono implementate localmente con membership privata, inviti accettati
 
 Gli eventi sono implementati localmente: visibilità per cerchia o follower approvati, risposte idempotenti, commenti e aggiornamenti, annullamento, modifica dei dettagli riservata all’organizzatore e album collaborativo disponibile solo dopo l’inizio, con RLS su `events`, `event_responses`, `event_updates` e `event_photos`. Anche qui manca il collaudo cloud.
 
-Le sezioni 6–9 restano domini futuri. Il digest e la scoperta intenzionale richiedono query server-side spiegabili, senza profili comportamentali o cronologia delle aperture. Collaborazioni, album condivisi, reazioni, risposte, menzioni e condivisioni interne richiedono vincoli idempotenti e devono rispettare blocchi, rimozioni, quote, export e cancellazione account. Ogni dominio va consegnato con migrazione, API, demo offline e test, senza anticipare strutture parziali nello schema di produzione.
+Le sezioni 6–9 (digest, collaborazioni, espressività e scoperta) sono implementate localmente; resta il collaudo cloud. Il digest e la scoperta intenzionale richiedono query server-side spiegabili, senza profili comportamentali o cronologia delle aperture. Collaborazioni, album condivisi, reazioni, risposte, menzioni e condivisioni interne implementano vincoli idempotenti e devono rispettare blocchi, rimozioni, quote, export e cancellazione account. Ogni dominio va consegnato con migrazione, API, demo offline e test, senza anticipare strutture parziali nello schema di produzione.
 
 La prima schermata carica 40 post, 300 commenti recenti, 100 messaggi recenti e 50 notifiche. Sono disponibili API per paginare post e conversazioni; ricerca interroga anche il database. I contatori commenti/like della schermata attuale derivano dai record caricati: prima di una beta con attività intensa vanno sostituiti da aggregazioni RLS sul DB e va completata la navigazione delle conversazioni più vecchie. L’esportazione scorre tutte le pagine, non solo il feed caricato.
 

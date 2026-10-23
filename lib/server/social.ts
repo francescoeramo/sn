@@ -2,6 +2,7 @@ import 'server-only';
 import { z } from 'zod';
 import {
   LIMITS,
+  moderateAccountInput,
   postInput,
   userId,
   encryptedMessageInput,
@@ -336,8 +337,8 @@ export async function snapshot(existingIdentity?: Identity) {
   };
 }
 
-export async function mutate(input: unknown, includeSnapshot = true) {
-  const { db, user, profile } = await identity();
+export async function mutate(input: unknown, includeSnapshot = true, existingIdentity?: Identity) {
+  const { db, user, profile } = existingIdentity ?? (await identity());
   const obj = z.object({ type: z.string() }).passthrough().parse(input);
   switch (obj.type) {
     case 'complete-onboarding':
@@ -1021,17 +1022,12 @@ export async function mutate(input: unknown, includeSnapshot = true) {
       break;
     }
     case 'moderate-account': {
-      const v = z
-        .object({
-          user_id: userId,
-          disabled: z.boolean(),
-          reason: z.string().trim().min(10).max(500),
-        })
-        .parse(obj);
+      const v = moderateAccountInput.parse(obj);
       checked(
-        await db.rpc('set_account_disabled', {
+        await db.rpc('set_account_ban', {
           target: v.user_id,
           next_disabled: v.disabled,
+          duration: v.duration,
           decision_reason: v.reason,
         }),
       );

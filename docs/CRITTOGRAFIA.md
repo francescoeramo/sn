@@ -37,3 +37,18 @@ Il contesto v1 accetta `expires_at: null` per i nuovi messaggi ordinari. Il camp
 La lettura è comunicata dal browser del destinatario quando il messaggio decifrato è visibile nella conversazione in primo piano. Il server verifica autore della ricevuta e revisione, ma non può dimostrare che una persona abbia letto: un client alterato può omettere la ricevuta. L’interfaccia aggiorna gli stati tramite polling a chat aperta.
 
 «Elimina per me» usa una preferenza privata sincronizzata; «Elimina per tutti» rimuove il ciphertext e invia una tombstone ai browser al successivo aggiornamento. Un browser offline e le copie esportate restano fuori dal controllo del server. Le impostazioni della modalità temporanea sono condivise dai due partecipanti e non cambiano lo storico.
+
+
+## Client iOS M0.5 — 15 ottobre 2026
+
+Il modulo `ios/ChatCrypto` implementa il protocollo 1:1 v1 con CryptoKit di sistema,
+conservando JWK P-256, HKDF, AAD e concatenazione ciphertext/tag del codice web.
+La prova sul telefono è completata: 35 controlli, tre risposte su tre dispositivi e
+allegato, con ritorno verificato da `lib/crypto/chat.ts`. Due XCTest del modulo
+crypto sono eseguiti su Linux con swift-crypto; non sono il runner della sessione.
+Procedura in [IOS-CRYPTO-INTEROP.md](IOS-CRYPTO-INTEROP.md),
+[rapporto](evidence/ios-crypto-interop-2026-10-15.json).
+
+Questi vettori contengono solo chiavi sintetiche pubbliche e non sono dispositivi
+registrati. M0.5 non fornisce chat UI, persistenza delle chiavi iOS o trasferimento
+storico. Non estende le garanzie del protocollo a forward secrecy o audit indipendente.

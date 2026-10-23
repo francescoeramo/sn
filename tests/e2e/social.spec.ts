@@ -799,11 +799,36 @@ test('note della comunità: proposta, revisione motivata e post originale conser
   await accounts.getByRole('button', { name: 'Sospendi' }).first().click();
   const suspension = page.getByRole('dialog', { name: /Sospendere Giulia Rossi/ });
   await expect(suspension).toContainText('perderà subito l’accesso');
+  await expect(suspension.getByLabel('Durata del ban').locator('option')).toHaveText([
+    '3 giorni',
+    '1 mese',
+    '6 mesi',
+    '1 anno',
+    'Permanente',
+  ]);
+  await suspension.getByLabel('Durata del ban').selectOption('6_months');
+  await suspension.screenshot({ path: test.info().outputPath('ban-duration.png') });
   await suspension.getByLabel('Motivo della decisione').fill('Violazione verificata delle regole.');
   await suspension.getByRole('button', { name: 'Sospendi account' }).click();
   await expect(page.getByRole('status')).toContainText('Account sospeso');
+  await expect(accounts).toContainText('ban temporaneo');
+  await expect(accounts).toContainText('Scadenza del ban');
   await accounts.getByRole('button', { name: 'Ripristina' }).click();
   const restoration = page.getByRole('dialog', { name: /Ripristinare Giulia Rossi/ });
+  await restoration
+    .getByLabel('Motivo della decisione')
+    .fill('Verifica completata, accesso ripristinato.');
+  await restoration.getByRole('button', { name: 'Ripristina account' }).click();
+  await expect(page.getByRole('status')).toContainText('Account ripristinato');
+  await accounts.getByRole('button', { name: 'Sospendi' }).first().click();
+  await suspension.getByLabel('Durata del ban').selectOption('permanent');
+  await suspension
+    .getByLabel('Motivo della decisione')
+    .fill('Violazione grave verificata delle regole.');
+  await suspension.getByRole('button', { name: 'Sospendi account' }).click();
+  await expect(accounts).toContainText('ban permanente');
+  await expect(accounts.getByText('Scadenza del ban')).toHaveCount(0);
+  await accounts.getByRole('button', { name: 'Ripristina' }).click();
   await restoration
     .getByLabel('Motivo della decisione')
     .fill('Verifica completata, accesso ripristinato.');

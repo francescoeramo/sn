@@ -1,6 +1,6 @@
 # SN — manuale operativo del progetto
 
-> Guida per chi prende in carico sviluppo e responsabilità operative. Stato verificato nel repository al 25 settembre 2026. Il manuale riunisce le informazioni principali in un solo file: aggiornare questo documento quando cambia architettura, sicurezza, roadmap o procedura operativa.
+> Guida per chi prende in carico sviluppo e responsabilità operative. Aggiornato al 15 ottobre 2026: stato iOS M0/M0.5, Supabase e passaggio a M1. Il manuale riunisce le informazioni principali in un solo file: aggiornare questo documento quando cambia architettura, sicurezza, roadmap o procedura operativa.
 
 ## 1. In breve
 
@@ -70,6 +70,46 @@ Il client non deve poter assegnarsi ruoli, scrivere notifiche o modificare campi
 
 Login, signup e recupero hanno rate limit applicativo tramite RPC e chiave HMAC dell’email; signup è subordinato a invito valido e ai controlli del trigger Auth. Le nuove password richiedono 8–128 caratteri, almeno una minuscola, una maiuscola e un numero. Il recupero PKCE va completato nello stesso browser. TOTP è facoltativa; le sessioni possono essere elencate/revocate. L’assegnazione del moderatore è in `private.admins`, mai in `user_metadata`.
 
+### Verifica avvisi Supabase e MFA database (15 ottobre 2026)
+
+I 56 avvisi `authenticated_security_definer_function_executable` identificano RPC
+privilegiate intenzionalmente esposte agli utenti autenticati: nessuna risulta
+eseguibile da `anon`, tutte fissano `search_path`. Le autorizzazioni applicative
+sono controllate dalle funzioni e dai loro helper, non dal solo grant EXECUTE.
+Non revocare o convertire in blocco le RPC per nascondere gli avvisi.
+
+La revisione ha riprodotto un bypass della MFA sulle chiamate dirette al database:
+la protezione AAL2 era nel server SN, ma `private.member()` non la verificava.
+Corretto con `20261015171422_enforce_mfa_database_access.sql`, applicata al cloud:
+per account con fattore verificato serve un JWT aal2. Il profilo attivo del solo
+chiamante resta leggibile prima della MFA per i challenge web/iOS; le mutazioni
+richiedono comunque member(). Policy restrittive aggiungono lo stesso controllo
+alle preferenze, menzioni, reazioni, condivisioni e ricevute; anche le RPC sessioni
+ora lo verificano. Gli utenti senza fattore verificato continuano con aal1.
+
+I 56 warning restano visibili dopo la correzione perché il linter rileva il grant,
+non certifica i controlli nel corpo. La verifica non è un audit indipendente
+completo. La protezione Supabase per password compromesse richiede Pro o superiore;
+nessun upgrade è stato attivato. La correzione MFA non sostituisce tale protezione.
+
+### Ban degli account (15 ottobre 2026)
+
+Il pannello web Moderazione → Gestione account consente ban di 3 giorni (72 ore),
+1 mese, 6 mesi, 1 anno o permanenti. Mesi e anni sono di calendario UTC, con
+scadenza mostrata nel fuso del dispositivo. Il motivo resta obbligatorio (10–500
+caratteri); moderatori e proprio account non sono bersagli consentiti. Ripristina
+revoca anticipatamente qualsiasi ban. Il ban permanente non cancella i contenuti.
+
+`profiles.disabled` conserva i ban permanenti precedenti; `profiles.banned_until`
+registra quelli temporanei. RLS, controlli API e visibilità dei contenuti valutano
+la scadenza a ogni richiesta, senza cron e senza richiedere un nuovo token.
+`set_account_ban` è la nuova RPC; `set_account_disabled` resta compatibile per i
+vecchi client. L'audit conserva motivo e scadenza anche dopo il ripristino.
+La federazione viene disattivata al ban e non si riattiva automaticamente.
+Migrazione `20261015170711_timed_account_bans.sql` applicata a `sndb`; verifica
+ruolo moderatore e lettura elenco account eseguita con ruolo `authenticated`.
+I comandi restano sul sito web: il client iPhone M0 non ha ancora il pannello.
+
 ### API principali
 
 La route catch-all è il catalogo effettivo: leggere il relativo handler prima di cambiare contratti. Sintesi delle route esposte:
@@ -102,7 +142,7 @@ Il database è Postgres via Supabase. Le migrazioni in `supabase/migrations/` so
 
 Le RLS sono parte dell’implementazione, non accessori: proteggono profili privati, follow reciproci, blocchi, messaggi, membership e visibilità. I trigger applicano inviti, quote, campi server-only, notifiche e invarianti atomici. Quando si aggiunge una funzionalità, completare schema + RLS + API + demo locale + export + cancellazione + test prima di considerarla finita.
 
-Ordine delle migrazioni attuale: `20260909094232_initial_social.sql`, `20260909200015_ephemeral_chat.sql`, `20260909201015_encrypted_chat.sql`, `20260910090400_community_notes.sql`, `20260910173013_bookmarks_and_content_warnings.sql`, `20260911085314_chat_lifecycle.sql`, `20260911174749_moderation_audit_log.sql`, `20260911181601_post_full_text_search.sql`, `20260912153500_account_sessions.sql`, `20260912155500_polls.sql`, `20260912162500_profile_onboarding.sql`, `20260912164500_auth_rate_limits.sql`, `20260913171500_group_chat_foundation.sql`, `20260913180500_encrypted_group_messages.sql`, `20260914172524_group_message_notifications.sql`, `20260918085035_federation_opt_in.sql`, `20260918085645_moderator_account_controls.sql`, `20260918090815_moderation_account_reasons.sql`, `20260919133813_federation_actor_keys.sql`, `20260919134357_federation_inbox.sql`, `20260919134959_federation_delivery_queue.sql`, `20260919135337_federation_post_delivery.sql`, `20260919135717_federation_withdrawal_queue.sql`, `20260920101500_federation_reactions.sql`, `20260921124522_federation_remote_objects.sql`, `20260922113000_federation_remote_moderation.sql`, `20260922153000_federation_instance_moderation.sql`, `20260923160225_circles.sql`, `20260924163022_complete_circle_management.sql`, `20260925162757_circle_images.sql`, `20260925163701_simple_events.sql`, `20260925180000_event_details_and_album.sql`, `20260926120000_user_digest.sql`, `20260926130000_collaborative_posts.sql`, `20260926140000_expressiveness.sql`, `20260926150000_intentional_discovery.sql`, `20260927113305_fix_storage_upload_policy.sql`, `20260927114503_restore_post_insert_policy.sql`, `20260927114924_fix_post_returning_read_policy.sql`, `20260927120738_allow_reaction_upsert.sql`, `20261001100000_username_dots.sql`, `20261001113000_profile_connections_and_post_media.sql`, `20261001120000_reliable_shares_and_notifications.sql`, `20261002140006_story_views.sql`.
+Ordine delle migrazioni attuale: `20260909094232_initial_social.sql`, `20260909200015_ephemeral_chat.sql`, `20260909201015_encrypted_chat.sql`, `20260910090400_community_notes.sql`, `20260910173013_bookmarks_and_content_warnings.sql`, `20260911085314_chat_lifecycle.sql`, `20260911174749_moderation_audit_log.sql`, `20260911181601_post_full_text_search.sql`, `20260912153500_account_sessions.sql`, `20260912155500_polls.sql`, `20260912162500_profile_onboarding.sql`, `20260912164500_auth_rate_limits.sql`, `20260913171500_group_chat_foundation.sql`, `20260913180500_encrypted_group_messages.sql`, `20260914172524_group_message_notifications.sql`, `20260918085035_federation_opt_in.sql`, `20260918085645_moderator_account_controls.sql`, `20260918090815_moderation_account_reasons.sql`, `20260919133813_federation_actor_keys.sql`, `20260919134357_federation_inbox.sql`, `20260919134959_federation_delivery_queue.sql`, `20260919135337_federation_post_delivery.sql`, `20260919135717_federation_withdrawal_queue.sql`, `20260920101500_federation_reactions.sql`, `20260921124522_federation_remote_objects.sql`, `20260922113000_federation_remote_moderation.sql`, `20260922153000_federation_instance_moderation.sql`, `20260923160225_circles.sql`, `20260924163022_complete_circle_management.sql`, `20260925162757_circle_images.sql`, `20260925163701_simple_events.sql`, `20260925180000_event_details_and_album.sql`, `20260926120000_user_digest.sql`, `20260926130000_collaborative_posts.sql`, `20260926140000_expressiveness.sql`, `20260926150000_intentional_discovery.sql`, `20260927113305_fix_storage_upload_policy.sql`, `20260927114503_restore_post_insert_policy.sql`, `20260927114924_fix_post_returning_read_policy.sql`, `20260927120738_allow_reaction_upsert.sql`, `20261001100000_username_dots.sql`, `20261001113000_profile_connections_and_post_media.sql`, `20261001120000_reliable_shares_and_notifications.sql`, `20261002140006_story_views.sql`, `20261015164952_restrict_rls_auto_enable_execution.sql`, `20261015170711_timed_account_bans.sql`, `20261015171422_enforce_mfa_database_access.sql`.
 
 ## 5. Funzionalità: stato reale
 
@@ -184,9 +224,9 @@ Variabili lette dal progetto (`.env.example` è il riferimento):
 
 Le email Auth di conferma, recupero e avviso di password cambiata hanno template italiani in `supabase/templates/`. Il Supabase locale le mostra in Inbucket; sul progetto cloud occorre copiare i template nella dashboard Auth e configurare Resend come SMTP secondo `docs/EMAIL.md`. `sn.help@proton.me` è il recapito di assistenza, ma non è un mittente utilizzabile con Resend senza controllo DNS del dominio `proton.me`. Il mittente effettivo deve appartenere a un dominio verificato. La modifica ai file locali non configura automaticamente il servizio cloud.
 
-### Collegamento cloud previsto
+### Collegamento e stato cloud
 
-Non usare progetti Supabase estranei a SN. La documentazione identifica un progetto Free dedicato in regione UE come destinazione prevista, ma non è stata fatta modifica cloud. Prima di collegare: compilare `.env.local`; generare `FEDERATION_KEY_SECRET` con `openssl rand -base64 32` e `CRON_SECRET` robusto; applicare migrazioni in ordine sul progetto dedicato; configurare Site URL/Redirect URL incluse callback; abilitare conferma email e signup anonimo disattivato; password minima 12, JWT 5 minuti e link email 15 minuti; configurare/testare SMTP Resend e template secondo `docs/EMAIL.md` prima di invitare utenti. Assegnare moderatore inserendo l’UUID del primo account in `private.admins`. Non committare credenziali o codici invito.
+Non usare progetti Supabase estranei a SN. Il progetto dedicato `sndb` in regione UE è collegato e attivo: 47 migrazioni applicate e controlli Auth/RLS/MFA eseguiti. Il collaudo cloud completo della beta resta aperto. Per configurare un nuovo ambiente: compilare `.env.local`; generare `FEDERATION_KEY_SECRET` con `openssl rand -base64 32` e `CRON_SECRET` robusto; applicare migrazioni in ordine sul progetto dedicato; configurare Site URL/Redirect URL incluse callback; abilitare conferma email e signup anonimo disattivato; password minima 12, JWT 5 minuti e link email 15 minuti; configurare/testare SMTP Resend e template secondo `docs/EMAIL.md` prima di invitare utenti. Assegnare moderatore inserendo l’UUID del primo account in `private.admins`. Non committare credenziali o codici invito.
 
 L’invito si genera con `node scripts/create-invite.mjs email@example.org`; lo script mostra l’SQL da eseguire nel progetto corretto. Verificare destinatario e database prima di eseguire l’SQL.
 
@@ -240,7 +280,33 @@ Ogni blocco deve arrivare completo su migrazione, API, demo IndexedDB, RLS, expo
 
 Altri elementi da roadmap lunga/brief e non parte della beta: dirette (servizio separato, mai nel piccolo endpoint upload), app nativa (adapter Auth bearer mantenendo regole dominio), protocollo E2EE evoluto/recupero dispositivi, ulteriore federazione. Consultare il brief prima di stimare o promettere queste funzioni.
 
-L’**adapter bearer lato server** per l’app nativa M0 è già presente (`native/auth/login|refresh|logout|mfa`, `tokenDatabase`, `identityFrom`), descritto in `docs/ARCHITETTURA.md` e in `docs/PIANO-APP-NATIVA.md`. Resta un’infrastruttura di prova: l’app nativa non è autorizzata né disponibile per gli utenti finché il proprietario non la approva e la matrice su iPhone non è completata.
+L’**adapter bearer lato server** per l’app nativa M0 è già presente (`native/auth/login|refresh|logout|mfa`, `tokenDatabase`, `identityFrom`), descritto in `docs/ARCHITETTURA.md` e in `docs/PIANO-APP-NATIVA.md`. È usato dal prototipo di sviluppo verificato su iPhone; non equivale a distribuzione pubblica o completamento del client social. Lo sviluppo è richiesto dal proprietario, il rilascio resta separato.
+
+### Ambiente iOS attuale (15 ottobre 2026)
+
+Il client SwiftUI usa SwiftPM e xtool su Linux. Swift 6.4.1, SDK Darwin iPhoneOS 27.0,
+target iOS 17 e iPhone con iOS 27.0.1. Build, firma, installazione e runtime verificati.
+I flussi M0 (login, verifica sessione, rinnovo, logout/riapertura, recupero offline e MFA)
+sono confermati dall'utente. Le conferme non costituiscono esecuzione integrale della
+matrice tecnica: runner XCTest sessione/SwiftUI e casi concorrenti runtime restano aperti.
+
+M0.5 è completata: `ios/ChatCrypto` usa CryptoKit su iOS e swift-crypto su Linux;
+il codice web esistente verifica il rapporto recuperato via USB dal telefono.
+Evidenza: `docs/evidence/ios-crypto-interop-2026-10-15.json`, piattaforma ios-cryptokit,
+35 controlli, tre risposte su tre dispositivi e allegato corretto. Due XCTest crypto
+Linux e sei test Web Crypto superati; nessun messaggio reale o modifica cloud per M0.5.
+
+Il prossimo incremento è M1: feed, profilo e pubblicazione con immagine. L'interfaccia
+attuale resta Login/MFA/Sessione. Solo auth native e bootstrap supportano il bearer:
+feed paginato, media e scritture devono ancora essere adattati mantenendo sicurezza
+e comportamento web. Un nuovo login MFA su iPhone dopo la correzione SQL non è stato
+osservato direttamente: includerlo nella regressione M1 senza riaprire la prova crypto.
+
+`SNApiBaseURL` attuale: `http://192.168.1.9:3000`, con eccezione ATS specifica e
+consenso rete locale. L'IP è configurazione di sviluppo da verificare alla nuova rete.
+`xtool dev run --usb` installa; aprire l'icona manualmente. Niente VM macOS/Xcode.
+Usare `ios/README.md`, `docs/PIANO-APP-NATIVA.md`, `docs/IOS-CRYPTO-INTEROP.md` e
+`docs/OPENCODE.md`. L'app non è distribuita pubblicamente.
 
 ## 10. Regole pratiche per chi interviene
 
@@ -270,3 +336,31 @@ Questo manuale è il punto di ingresso, ma i dettagli normativi/operativi restan
 ## 12. Audit di sicurezza del 19 ottobre 2026
 
 Le correzioni e l’ordine di rilascio sono in `docs/SECURITY-AUDIT-2026-10-19.md`: intenzione di cancellazione separata dai ban, MFA sulle letture di inviti, filtri blocchi nelle connessioni e upload Storage solo tramite server dopo prenotazione RLS dei byte misurati. Le quattro nuove migrazioni sono state applicate a `sndb` e verificate il 19 ottobre 2026; evidenza in `docs/evidence/cloud-security-2026-10-19.json`. I vecchi account disabilitati non vengono interpretati come richieste di cancellazione.
+
+## 13. Client iOS M1 — 23 ottobre 2026
+
+Feed cronologico finito e paginato, proprio profilo e post con una foto sono ora
+implementati in SwiftUI. Build Darwin senza avvisi; bearer esteso a posts/media e
+scritture ristrette native/post e native/upload con identità verificata, MFA, RLS e
+quote del sito. Origin web preservato, nessuna modifica cloud o al protocollo crypto.
+Verifica: 29 test server, 8 controlli eseguibili modelli Swift, typecheck/lint mirato.
+SNTests e collaudo runtime M1 restano aperti: non dichiarare M1 conclusa.
+
+Sviluppo su hotspot personale **USB**, server vincolato a `172.20.10.3:3000`, indirizzo
+osservato nella sessione e da ricontrollare. Nessun uso della LAN universitaria per
+collegare app e backend. Installazione USB e verifica completate al 100% (exit 0)
+al secondo tentativo; il primo aveva restituito provisioning Apple 409, causa
+transitoria non accertata. Nessun cambio account o toolchain. Aprire SN a mano e
+collaudare MFA, feed, paginazione, foto, pubblicazione, riapertura e accessibilità.
+`ios/README.md` documenta il passaggio e prevale sui riferimenti storici a M1 non
+implementata e al vecchio indirizzo Wi-Fi.
+
+Aggiornamento runtime della stessa sessione: UFW bloccava il traffico sull’interfaccia
+USB (log kernel confermato). Regola aggiunta esclusivamente da `172.20.10.1` a
+`172.20.10.3:3000/tcp` su `enp8s0f3u1c4i2`; procedura e rimozione in `ios/README.md`.
+L’utente ha poi confermato accesso, feed e foto nel profilo. Log server: login/MFA,
+bootstrap e lettura media con esito 200. Due tentativi MFA precedenti avevano avuto
+503. L’utente ha infine confermato pubblicazione e nuova foto visibile nel post; native/post
+200 e successivo bootstrap 200 osservati. Il percorso principale M1 è funzionale
+sull’iPhone via USB. Paginazione oltre la prima finestra, riapertura dopo invio e
+regressione/accessibilità estese restano aperte; non equivalgono al collaudo già fatto.

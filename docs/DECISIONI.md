@@ -53,3 +53,18 @@ Il proprietario approva come sviluppo successivo eventi semplici, digest opt-in,
 Gli eventi seguono il completamento delle cerchie e il collaudo cloud. Non includono ticketing, pagamenti, mappe esterne o geolocalizzazione obbligatoria. Il digest parte disattivato, contiene al massimo cinque elementi e non registra le aperture. Album e collaborazioni usano inviti accettati, permessi revocabili e una sola visibilità comprensibile. Reazioni, risposte, menzioni e condivisioni interne non introducono classifiche o copie pubbliche. Esplora resta intenzionale e spiegabile; sono esclusi feed «Per te», scorrimento infinito, streak e ranking opaco.
 
 Ogni sezione deve arrivare come blocco completo con schema, API, demo IndexedDB, RLS, privacy, blocchi, quote, export, cancellazione e test desktop/mobile. Il lavoro non autorizza pubblicità, sponsorizzazioni o profilazione individuale.
+
+
+## 15 ottobre 2026 — stato nativo e moderazione
+
+Il proprietario ha richiesto la continuazione del client SwiftUI con SwiftPM e xtool
+su Linux. M0 funzionale è confermata dall'utente; M0.5 è verificata con CryptoKit su
+iPhone, rapporto recuperato via USB e verificato dal codice web. Si prosegue con
+M1 (feed, profilo e post con immagine). Non è autorizzazione al rilascio pubblico.
+
+Richiesti e implementati ban di 3 giorni, 1 mese, 6 mesi, 1 anno o permanenti, con
+motivo obbligatorio, scadenza automatica e revoca anticipata. Il ruolo moderatore è
+stato assegnato a francescoeramo su richiesta esplicita. Il controllo MFA database
+è stato rafforzato dopo la verifica degli advisor. Nessun upgrade a pagamento.
+Le dichiarazioni storiche sulle migrazioni da applicare non descrivono lo stato
+attuale di sndb: le 47 migrazioni sono allineate, il collaudo completo resta aperto.

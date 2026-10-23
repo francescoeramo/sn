@@ -7,6 +7,26 @@ export const LIMITS = {
   videoSeconds: 20,
 };
 export const userId = z.string().uuid();
+export const banDuration = z.enum(['3_days', '1_month', '6_months', '1_year', 'permanent']);
+export const moderateAccountInput = z.object({
+  user_id: userId,
+  disabled: z.boolean(),
+  reason: z.string().trim().min(10).max(500),
+  duration: banDuration.default('permanent'),
+});
+// UTC calendar months, clamped to the final day like Postgres interval arithmetic.
+export function banExpiry(duration: z.infer<typeof banDuration>, at: Date): string | null {
+  if (duration === 'permanent') return null;
+  if (duration === '3_days') return new Date(at.getTime() + 72 * 3600000).toISOString();
+  const date = new Date(at);
+  const day = date.getUTCDate();
+  const months = duration === '1_month' ? 1 : duration === '6_months' ? 6 : 12;
+  date.setUTCDate(1);
+  date.setUTCMonth(date.getUTCMonth() + months);
+  const last = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0)).getUTCDate();
+  date.setUTCDate(Math.min(day, last));
+  return date.toISOString();
+}
 export const postInput = z
   .object({
     body: z.string().trim().max(2200),

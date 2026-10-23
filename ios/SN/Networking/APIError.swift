@@ -8,7 +8,7 @@ enum APIError: Error, Equatable, Sendable {
 
     var code: String? {
         switch self {
-        case .transport: return "auth_unavailable"
+        case .transport: return "connection_unavailable"
         case .unauthorized(let code): return code
         case .server(_, _, let code): return code
         }
@@ -29,7 +29,7 @@ enum APIError: Error, Equatable, Sendable {
 
     /// Errore di rete/transitorio: i token restano, l'app non esce (R4, F5).
     var isConnectivityFailure: Bool {
-        code == "auth_unavailable"
+        code == "auth_unavailable" || code == "connection_unavailable"
     }
 }
 

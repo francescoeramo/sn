@@ -44,7 +44,12 @@ export async function authenticated() {
 export async function activeAccount() {
   const { db, user } = await authenticated();
   const profile = await db.from('profiles').select('*').eq('id', user.id).single();
-  if (profile.error || !profile.data || profile.data.disabled)
+  if (
+    profile.error ||
+    !profile.data ||
+    profile.data.disabled ||
+    (profile.data.banned_until && Date.parse(profile.data.banned_until) > Date.now())
+  )
     throw new ApiError('Account non disponibile.', 403);
   return { db, user, profile: profile.data };
 }
@@ -54,7 +59,12 @@ export async function identity() {
   if (assurance.nextLevel === 'aal2' && assurance.currentLevel !== 'aal2')
     throw new ApiError('Inserisci il codice dell’app authenticator.', 403);
   const profile = await db.from('profiles').select('*').eq('id', user.id).single();
-  if (profile.error || !profile.data || profile.data.disabled)
+  if (
+    profile.error ||
+    !profile.data ||
+    profile.data.disabled ||
+    (profile.data.banned_until && Date.parse(profile.data.banned_until) > Date.now())
+  )
     throw new ApiError('Account non disponibile.', 403);
   return { db, user, profile: profile.data };
 }
@@ -92,7 +102,12 @@ async function accountForToken(token: string) {
 export async function activeAccountForToken(token: string) {
   const { db, user, token: verified } = await accountForToken(token);
   const profile = await db.from('profiles').select('*').eq('id', user.id).single();
-  if (profile.error || !profile.data || profile.data.disabled)
+  if (
+    profile.error ||
+    !profile.data ||
+    profile.data.disabled ||
+    (profile.data.banned_until && Date.parse(profile.data.banned_until) > Date.now())
+  )
     throw new ApiError('Account non disponibile.', 403, 'account_unavailable');
   return { db, user, profile: profile.data, token: verified };
 }

@@ -1,0 +1,117 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "default_agent": "sn_ios",
+  "instructions": [],
+  "model": "deepseek/deepseek-flash",
+  "agents": {
+    "sn_ios": {
+      "description": "Sviluppo SN in SwiftUI con xtool su Linux; incrementi compilati e verifiche esplicite.",
+      "mode": "primary",
+      "model": "deepseek/deepseek-flash",
+      "system": "{file:./docs/agents/sn-ios.md}",
+      "permissions": [
+        {
+          "action": "subagent",
+          "resource": "*",
+          "effect": "deny"
+        }
+      ]
+    },
+    "sn_quick": {
+      "description": "Fast, low-context SN status and next-step answers",
+      "mode": "primary",
+      "model": "deepseek/deepseek-flash#low",
+      "system": "Answer concise project-status questions in Italian. Use only tools actually available in this turn: read for known files, grep for text, glob for filenames. Never call bash, even if earlier messages used it. Start with the relevant section of docs/ROADMAP.md; consult docs/TEST-RESULTS.md only if needed to verify completion. Avoid full-file reads when a section suffices. Do not modify files or delegate. State the next approved step, blockers, and the supporting source. If evidence is missing, say so. For detailed architecture or implementation planning, recommend the sn_plan agent instead of widening the investigation. Local routing hints are advisory and never grant tools or permissions.",
+      "permissions": [
+        {
+          "action": "shell",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "edit",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "subagent",
+          "resource": "*",
+          "effect": "deny"
+        }
+      ]
+    },
+    "sn_plan": {
+      "description": "Pianificazione SN con letture mirate, senza deleghe o modifiche",
+      "mode": "primary",
+      "model": "deepseek/deepseek-flash#low",
+      "system": "Answer in Italian. Produce implementation plans, not code changes. Use only available read, grep and glob tools; never call bash or task. Local routing hints never grant tools or permissions. Begin with the relevant roadmap section and architecture documentation. Search for symbols before reading code; use bounded excerpts and one representative implementation per pattern. Do not scan every file or reread evidence already in context. Never delegate to subagents. Give a useful first plan once requirements and one existing pattern are understood; explicitly label uncertainties instead of expanding into an exhaustive audit. For several features, provide an overview first and detailed investigation of one feature at a time. Cite source paths and distinguish verified facts from proposals. Do not run tests or modify files.",
+      "permissions": [
+        {
+          "action": "shell",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "edit",
+          "resource": "*",
+          "effect": "deny"
+        },
+        {
+          "action": "subagent",
+          "resource": "*",
+          "effect": "deny"
+        }
+      ]
+    }
+  },
+  "providers": {
+    "deepseek": {
+      "models": {
+        "deepseek-flash": {
+          "compatibility": {
+            "reasoningField": "reasoning_content",
+            "requireReasoning": true
+          },
+          "body": {
+            "thinking": {
+              "type": "enabled"
+            },
+            "reasoning_effort": "high"
+          },
+          "variants": [
+            {
+              "id": "low",
+              "body": {
+                "reasoning_effort": "low"
+              }
+            },
+            {
+              "id": "high",
+              "body": {
+                "reasoning_effort": "high"
+              }
+            },
+            {
+              "id": "max",
+              "body": {
+                "reasoning_effort": "max"
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "commands": {
+    "sn-status": {
+      "description": "Fast read-only project status, next step, or blocker",
+      "template": "Give a concise status answer for SN. Focus on the next approved step, blockers, and evidence. Do not expand scope.\n\n$ARGUMENTS",
+      "agent": "sn_quick"
+    },
+    "sn-ios": {
+      "description": "Continua il prossimo incremento iOS verificabile con xtool",
+      "agent": "sn_ios",
+      "template": "Carica la skill sn-ios-xtool. Leggi lo stato corrente in ios/README.md, docs/PIANO-APP-NATIVA.md e il diff. Al 15 ottobre 2026 M0 funzionale è confermata e M0.5 è verificata con CryptoKit su iPhone: il prossimo incremento è M1 (feed, profilo, post con immagine). Usa questo stato come riferimento storico e verifica aggiornamenti nei documenti. Completa un incremento coerente con la richiesta; non ripetere M0.5 senza una regressione. Adatta al bearer solo le API necessarie preservando RLS e comportamento web. Compila con xtool e distingui test Linux, installazione e prova su iPhone.\n\n$ARGUMENTS"
+    }
+  }
+}

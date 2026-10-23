@@ -37,6 +37,11 @@ actor MockAPI: APIClientProtocol {
         logoutCount += 1
     }
 
+    func posts(accessToken: String, before: String) async throws -> FeedPage { throw APIError.transport }
+    func media(accessToken: String, path: String) async throws -> Data { throw APIError.transport }
+    func upload(accessToken: String, jpeg: Data) async throws -> UploadedMedia { throw APIError.transport }
+    func publish(accessToken: String, post: NewPost) async throws { throw APIError.transport }
+
     func bootstrap(accessToken: String) async throws -> Bootstrap {
         try bootstrapResult.get()
     }

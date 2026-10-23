@@ -23,6 +23,7 @@ async function deliver(item: Delivery) {
       .eq('federation_enabled', true)
       .eq('is_private', false)
       .eq('disabled', false)
+      .or(`banned_until.is.null,banned_until.lte.${new Date().toISOString()}`)
       .maybeSingle(),
     db
       .from('federation_actor_keys')

@@ -25,6 +25,7 @@ import {
   mfaAction,
   nativeRefreshInput,
   nativeMfaInput,
+  postInput,
 } from '@/lib/core/rules';
 import {
   database,
@@ -164,7 +165,7 @@ export async function GET(request: NextRequest, { params }: Context) {
       return json(await savedPage(cursor));
     }
     if (route === 'posts') {
-      const { db } = await identity();
+      const { db } = await identityFrom(request);
       const before = z.iso
         .datetime({ offset: true })
         .parse(request.nextUrl.searchParams.get('before'));
@@ -172,7 +173,7 @@ export async function GET(request: NextRequest, { params }: Context) {
         await db
           .from('posts')
           .select(
-            '*, media:post_media(*), notes:community_notes(*), poll:polls(*,options:poll_options(*))',
+            '*, media:post_media(*), notes:community_notes(*), poll:polls(*,options:poll_options(*)), circle_links:circle_posts(post_id)',
           )
           .lt('created_at', before)
           .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
@@ -216,7 +217,7 @@ export async function GET(request: NextRequest, { params }: Context) {
         .string()
         .regex(/^[0-9a-f-]{36}\/[0-9a-f-]{36}$/)
         .parse(request.nextUrl.searchParams.get('path'));
-      const { db } = await identity();
+      const { db } = await identityFrom(request);
       const blob = checked(await db.storage.from('media').download(path));
       return new NextResponse(blob, {
         headers: {
@@ -272,7 +273,17 @@ export async function POST(request: NextRequest, { params }: Context) {
   try {
     const route = (await params).path.join('/');
     if (isNativeAuthRoute(route)) return await nativeAuth(route, request);
-    sameOrigin(request);
+    // Narrow native write allowlist. Require a bearer before identityFrom so there
+    // is no cookie fallback; all web mutations retain their Origin check.
+    const nativeWrite = route === 'native/post' || route === 'native/upload';
+    if (nativeWrite) requireBearer(request);
+    else sameOrigin(request);
+    const nativeIdentity = nativeWrite ? await identityFrom(request) : undefined;
+    if (route === 'native/post') {
+      const value = postInput.parse(await body(request));
+      if (value.kind !== 'post') throw new ApiError('Formato non disponibile.', 400);
+      return json(await mutate({ ...value, type: 'post' }, false, nativeIdentity));
+    }
     if (route === 'auth/recover') {
       const data = passwordResetRequest.parse(await body(request));
       await enforceAuthRate(data.email, 'recover');
@@ -467,10 +478,10 @@ export async function POST(request: NextRequest, { params }: Context) {
         .parse(await body(request));
       return json(await deleteAccount(data.password));
     }
-    if (route === 'upload') {
+    if (route === 'upload' || route === 'native/upload') {
       if (Number(request.headers.get('content-length')) > LIMITS.file + 20000)
         throw new ApiError('Il file supera 3 MB.', 413);
-      const { db, user } = await identity();
+      const { db, user } = nativeIdentity ?? (await identity());
       const contentType = request.headers.get('content-type');
       if (!contentType?.startsWith('multipart/form-data;'))
         throw new ApiError('Formato non valido.', 415);
@@ -513,8 +524,8 @@ export async function POST(request: NextRequest, { params }: Context) {
       );
       checked(
         // Only this measured, reserved body may reach privileged Storage insertion.
-        await adminDatabase().storage
-          .from('media')
+        await adminDatabase()
+          .storage.from('media')
           .upload(path, bytes, { contentType: file.type, upsert: false, cacheControl: '0' }),
       );
       return json({ path, mime: file.type });
