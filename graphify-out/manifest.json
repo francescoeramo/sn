@@ -1294,5 +1294,11 @@
     "seen": 1792835491.0511808,
     "ast_hash": "f8942ab25198e5d41f042c43cd439c56",
     "semantic_hash": ""
+  },
+  "docs/evidence/ios-m1-accessibility-2026-10-24.json": {
+    "mtime": 1792835519.4657497,
+    "seen": 1792835532.3012152,
+    "ast_hash": "f3a50cbfa2c47e659750823fcc84db55",
+    "semantic_hash": ""
   }
 }
