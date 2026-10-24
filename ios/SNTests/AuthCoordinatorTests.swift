@@ -337,6 +337,78 @@ final class AuthCoordinatorTests: XCTestCase {
         } catch { }
         let sent = await api.publishedPosts
         XCTAssertEqual(sent.count, 1)
+        XCTAssertTrue(coordinator.offline)
+        XCTAssertNotNil(store.tokens)
+    }
+
+    func testRejectedPublicationClearsInvalidSessionWithoutRetry() async {
+        let api = MockAPI()
+        await api.setBootstrapResult(.success(bootstrap()))
+        await api.setPublishResult(.failure(.unauthorized(code: "session_invalid")))
+        let store = MemoryTokenStore()
+        store.tokens = tokens()
+        let coordinator = AuthCoordinator(api: api, store: store)
+        await coordinator.restore()
+        do {
+            try await coordinator.sendPost(body: "Testo", alt: "", path: nil)
+            XCTFail("must reject invalid session")
+        } catch { }
+        XCTAssertEqual(coordinator.state, .signedOut)
+        XCTAssertNil(store.tokens)
+        let sent = await api.publishedPosts
+        let refreshes = await api.refreshCount
+        XCTAssertEqual(sent.count, 1)
+        XCTAssertEqual(refreshes, 0, "a rejected write must not be refreshed and repeated")
+    }
+
+    func testOfflineUploadKeepsTokensAndSuccessfulUploadRecoversConnection() async throws {
+        let api = MockAPI()
+        await api.setBootstrapResult(.success(bootstrap()))
+        let store = MemoryTokenStore()
+        store.tokens = tokens()
+        let coordinator = AuthCoordinator(api: api, store: store)
+        await coordinator.restore()
+        do {
+            _ = try await coordinator.uploadPhoto(jpeg: Data([1]), uploaded: nil)
+            XCTFail("offline upload must fail")
+        } catch { }
+        XCTAssertTrue(coordinator.offline)
+        XCTAssertNotNil(store.tokens)
+        let failedAttempts = await api.uploadCount
+        XCTAssertEqual(failedAttempts, 1)
+        await api.setUploadResult(.success(UploadedMedia(path: "uploaded", mime: "image/jpeg")))
+        let path = try await coordinator.uploadPhoto(jpeg: Data([1]), uploaded: nil)
+        XCTAssertEqual(path, "uploaded")
+        XCTAssertFalse(coordinator.offline)
+        XCTAssertNil(coordinator.lastErrorMessage)
+        _ = try await coordinator.uploadPhoto(jpeg: Data([1]), uploaded: path)
+        let totalAttempts = await api.uploadCount
+        XCTAssertEqual(totalAttempts, 2, "known upload paths are reused")
+    }
+
+    func testLatePublicationErrorCannotChangeLoggedOutState() async {
+        let api = MockAPI()
+        await api.setBootstrapResult(.success(bootstrap()))
+        await api.setPublishResult(.failure(.transport))
+        await api.suspendPublish()
+        let store = MemoryTokenStore()
+        store.tokens = tokens()
+        let coordinator = AuthCoordinator(api: api, store: store)
+        await coordinator.restore()
+        let sending = Task {
+            do {
+                try await coordinator.sendPost(body: "Testo", alt: "", path: nil)
+                XCTFail("must remain cancelled after logout")
+            } catch is CancellationError { }
+            catch { XCTFail("late errors must be ignored after logout") }
+        }
+        await api.waitForPublish()
+        await coordinator.logout()
+        await api.releasePublish()
+        await sending.value
+        XCTAssertEqual(coordinator.state, .signedOut)
+        XCTAssertFalse(coordinator.offline)
+        XCTAssertNil(coordinator.lastErrorMessage)
     }
 
 }

@@ -284,22 +284,42 @@ final class AuthCoordinator: ObservableObject {
 
     /// Writes are never automatically retried: a lost response may already have committed.
     func uploadPhoto(jpeg: Data?, uploaded: String?) async throws -> String? {
-        let requestEpoch = epoch
         var path = uploaded
         if path == nil, let jpeg {
-            let token = try await validAccessToken()
-            let result = try await api.upload(accessToken: token, jpeg: jpeg)
-            guard requestEpoch == epoch else { throw CancellationError() }
+            let result = try await write { [api] token in
+                try await api.upload(accessToken: token, jpeg: jpeg)
+            }
             path = result.path
         }
         return path
     }
 
     func sendPost(body: String, alt: String, path: String?, contentWarning: String = "") async throws {
+        let post = NewPost(body: body, media_path: path, alt: alt, content_warning: contentWarning)
+        try await write { [api] token in
+            try await api.publish(accessToken: token, post: post)
+        }
+    }
+
+    /// Proactive refresh is allowed before sending, but a write is attempted only once.
+    private func write<T: Sendable>(_ operation: @Sendable (String) async throws -> T) async throws -> T {
         let requestEpoch = epoch
-        let token = try await validAccessToken()
-        try await api.publish(accessToken: token, post: NewPost(body: body, media_path: path, alt: alt, content_warning: contentWarning))
-        guard requestEpoch == epoch else { throw CancellationError() }
+        do {
+            let token = try await validAccessToken()
+            guard requestEpoch == epoch else { throw CancellationError() }
+            try Task.checkCancellation()
+            let result = try await operation(token)
+            guard requestEpoch == epoch else { throw CancellationError() }
+            connectionRecovered()
+            lastErrorMessage = nil
+            return result
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            guard requestEpoch == epoch else { throw CancellationError() }
+            handleFeedError(error)
+            throw error
+        }
     }
 
     private func read<T: Sendable>(_ operation: @Sendable (String) async throws -> T) async throws -> T {

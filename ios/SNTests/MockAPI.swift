@@ -8,6 +8,22 @@ actor MockAPI: APIClientProtocol {
     var bootstrapResult: Result<Bootstrap, APIError> = .failure(.transport)
     var mediaResult: Result<Data, APIError> = .failure(.transport)
     var publishResult: Result<Void, APIError> = .success(())
+    var uploadResult: Result<UploadedMedia, APIError> = .failure(.transport)
+    func setUploadResult(_ result: Result<UploadedMedia, APIError>) { uploadResult = result }
+    private(set) var uploadCount = 0
+    private var holdPublish = false
+    private var publishGate: CheckedContinuation<Void, Never>?
+    private var publishStarted: CheckedContinuation<Void, Never>?
+    func suspendPublish() { holdPublish = true }
+    func waitForPublish() async {
+        if !publishedPosts.isEmpty { return }
+        await withCheckedContinuation { publishStarted = $0 }
+    }
+    func releasePublish() {
+        holdPublish = false
+        publishGate?.resume()
+        publishGate = nil
+    }
     func setPublishResult(_ result: Result<Void, APIError>) { publishResult = result }
     private(set) var publishedPosts: [NewPost] = []
     private(set) var mediaCount = 0
@@ -80,9 +96,19 @@ actor MockAPI: APIClientProtocol {
         mediaCount += 1
         return try mediaResult.get()
     }
-    func upload(accessToken: String, jpeg: Data) async throws -> UploadedMedia { throw APIError.transport }
+    func upload(accessToken: String, jpeg: Data) async throws -> UploadedMedia {
+        uploadCount += 1
+        return try uploadResult.get()
+    }
     func publish(accessToken: String, post: NewPost) async throws {
         publishedPosts.append(post)
+        if holdPublish {
+            await withCheckedContinuation { continuation in
+                publishGate = continuation
+                publishStarted?.resume()
+                publishStarted = nil
+            }
+        }
         try publishResult.get()
     }
 

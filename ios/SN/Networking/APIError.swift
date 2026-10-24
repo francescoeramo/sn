@@ -31,6 +31,15 @@ enum APIError: Error, Equatable, Sendable {
     var isConnectivityFailure: Bool {
         code == "auth_unavailable" || code == "connection_unavailable"
     }
+
+    /// A lost response or timeout may follow a successful commit. Do not offer a blind resend.
+    var mayHaveCommitted: Bool {
+        switch self {
+        case .transport: return true
+        case .unauthorized: return false
+        case .server(let status, _, _): return status == 408 || status >= 500
+        }
+    }
 }
 
 struct APIErrorBody: Decodable {

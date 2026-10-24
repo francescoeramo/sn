@@ -139,7 +139,7 @@ struct ComposePostView: View {
             await coordinator.probe()
         } catch let error as APIError {
             self.error = ErrorMessages.message(for: error)
-            if case .server(let status, _, _) = error, (400..<500).contains(status) {} else { uncertain = true }
+            uncertain = error.mayHaveCommitted
         } catch { uncertain = true }
     }
 }

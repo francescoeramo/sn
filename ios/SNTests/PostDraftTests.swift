@@ -2,6 +2,14 @@ import XCTest
 @testable import SN
 
 final class PostDraftTests: XCTestCase {
+    func testOnlyConfirmedRejectionsAllowManualResend() {
+        XCTAssertTrue(APIError.transport.mayHaveCommitted)
+        XCTAssertTrue(APIError.server(status: 408, message: "Timeout", code: nil).mayHaveCommitted)
+        XCTAssertTrue(APIError.server(status: 503, message: "Unavailable", code: nil).mayHaveCommitted)
+        XCTAssertFalse(APIError.unauthorized(code: nil).mayHaveCommitted)
+        XCTAssertFalse(APIError.server(status: 400, message: "Invalid", code: nil).mayHaveCommitted)
+        XCTAssertFalse(APIError.server(status: 429, message: "Limit", code: nil).mayHaveCommitted)
+    }
     func testOldPhotoCompletionCannotPublishOrStopNewSelection() {
         var draft = PostDraft()
         draft.body = "Testo"

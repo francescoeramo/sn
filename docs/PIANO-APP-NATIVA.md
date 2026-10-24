@@ -314,3 +314,14 @@ unità UTF-16 e valore inoltrato al contratto server esistente. Conservati R4
 verificate. Runtime del nuovo avviso ancora da confermare, M1 estesa resta aperta.
 Wi-Fi autorizzato: backend e app usano `192.168.1.9:3000`; procedure correnti e
 prove residue in `ios/README.md`. Nessun avanzamento a M2, modifica cloud o crypto.
+
+## 12. Consolidamento M1 — 24 ottobre 2026
+
+Composer con revisioni di selezione foto: completamenti tardivi non sostituiscono
+la foto corrente o sbloccano Pubblica. R4/R6 applicati anche alle scritture: nessun
+retry dopo l'invio, sessione invalida ripulita, esiti dopo logout ignorati,
+errori rete conservano token. 408/5xx/esito perso richiedono controllo del feed.
+26 XCTest Linux e build Darwin superati; installazione corrente nel README.
+Il backend di sviluppo è ora un servizio utente transitorio, separato dall'agente.
+Riuscita pubblicazione con avviso e lettura dopo riavvio backend confermate
+dall'utente; non equivalgono alla regressione integrale M1 o a completamento M2.

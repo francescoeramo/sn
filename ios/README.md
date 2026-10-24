@@ -30,6 +30,15 @@ Darwin superati; nuova build non ancora installata a questo punto del registro.
 Detector meccanico sulle due viste modificate: nessun rilievo. Screenshot USB
 non disponibile (`screenshotr: Invalid service`); nessuna verifica visiva inventata.
 
+**Incremento 2 — scritture e sessione:** upload/pubblicazione aggiornano offline e
+recupero come le letture; un rifiuto definitivo della sessione cancella token e
+dati locali, errori arrivati dopo logout vengono scartati. Una sola scrittura per
+tentativo: nessun refresh+retry dopo un rifiuto. Timeout HTTP 408, 5xx e risposte
+perse conservano il blocco del reinvio a esito incerto; rifiuti espliciti 4xx
+(escluso 408) consentono correzione manuale. Casi di regressione riprodotti prima
+del fix; **26 XCTest Linux e build Darwin superati**. Installazione finale ancora
+da eseguire dopo il prossimo incremento.
+
 ## Ripresa del 24 ottobre 2026 — avvisi sui contenuti
 
 Riprese le modifiche non committate del composer: ora è possibile aggiungere un

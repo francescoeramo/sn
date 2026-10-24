@@ -2,6 +2,12 @@
 
 ## iOS — 24 ottobre 2026
 
+Incremento scritture: **26 XCTest Linux superati**, build Darwin superata. Prima
+del fix, cinque assertion fallite nei casi offline, rifiuto sessione e risposta
+tardiva dopo logout; dopo il fix nessun fallimento. Verificati anche mancato retry,
+riuso del percorso upload e classificazione di 408/5xx come esito potenzialmente
+committato. Nessuna prova di revoca sul cloud o runtime del nuovo percorso.
+
 Incremento composer successivo: **22 XCTest Linux superati** (18 sessione e 4
 bozza), con selezioni foto sostituite/rimosse e limite avviso con emoji; build
 Darwin superata. Detector meccanico delle viste: nessun rilievo. Lettura media

@@ -409,3 +409,11 @@ Il composer invalida selezioni foto superate, blocca invio durante preparazione 
 permette rimozione anche durante caricamento. Nessuna persistenza della bozza.
 22 XCTest Linux e build Darwin superati; installazione del nuovo incremento
 ancora da eseguire. Stato e comandi in `ios/README.md`.
+
+### Consolidamento M1, incremento 2 — 24 ottobre 2026
+
+Gestione sessione coerente anche durante upload/pubblicazione: rifiuto definitivo
+chiude localmente la sessione, rete assente conserva i token e attiva il recupero,
+risposte tardive dopo logout ignorate. Scritture mai ritentate automaticamente;
+408/5xx/esito perso restano ambigui. Regressioni riprodotte prima del fix,
+26 XCTest Linux e build Darwin superati. Nessun cambio server/cloud o crypto.
