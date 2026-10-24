@@ -43,6 +43,7 @@ struct FeedPost: Decodable, Identifiable, Sendable {
 struct FeedPage: Decodable, Sendable {
     let posts: [FeedPost]
     let nextCursor: String?
+    var nextPostId: String? = nil
 }
 
 struct PostCursor: Codable, Equatable, Sendable {

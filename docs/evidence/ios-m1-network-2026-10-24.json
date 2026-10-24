@@ -1,0 +1,21 @@
+{
+  "platform": "ios-device",
+  "transport": "real Wi-Fi backend, read-only bootstrap",
+  "checks": [
+    {
+      "name": "normal_account_connected_before_test",
+      "passed": true
+    },
+    {
+      "name": "timeout_shows_offline_but_preserves_signed_in_UI",
+      "passed": true
+    },
+    {
+      "name": "automatic_recovery_without_relaunch",
+      "passed": true,
+      "initial_scan": "spanned the offline-to-online transition",
+      "stable_followup": "signed-in tabs present and offline message absent, without relaunch"
+    }
+  ],
+  "status": "passed"
+}

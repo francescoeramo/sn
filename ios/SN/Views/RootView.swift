@@ -24,7 +24,11 @@ struct RootView: View {
             guard !didRestore else { return }
             didRestore = true
             #if DEBUG
-            await CryptoProbeDiagnostics.run()
+            if ProcessInfo.processInfo.environment["SN_RUN_M1_CHECKS"] == "1" {
+                await M1DeviceChecks.run()
+            } else if ProcessInfo.processInfo.environment["SN_M1_UI_FIXTURE"] != "1" {
+                await CryptoProbeDiagnostics.run()
+            }
             #endif
             await coordinator.restore()
         }

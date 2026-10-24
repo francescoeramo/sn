@@ -104,7 +104,7 @@ actor MockAPI: APIClientProtocol {
         logoutTokens.append(accessToken)
     }
 
-    func posts(accessToken: String, before: String) async throws -> FeedPage {
+    func posts(accessToken: String, before: String, postId: String?) async throws -> FeedPage {
         postCursors.append(before)
         return try postsResult.get()
     }

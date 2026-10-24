@@ -12,7 +12,10 @@ vi.mock('@/lib/server/supabase', async (importOriginal) => {
   const original = await importOriginal<typeof import('@/lib/server/supabase')>();
   const query = {
     select: () => query,
-    lt: () => query,
+    lt: (key: string, value: string) => {
+      fixture.queryCalls.push(['lt', key, value]);
+      return query;
+    },
     eq: (key: string, value: string) => {
       fixture.queryCalls.push(['eq', key, value]);
       return query;
@@ -254,4 +257,34 @@ it('exactly 40 profile posts have no next page without a lookahead row', async (
   const page = await (await get('profile/posts', 'Bearer valid')).json();
   expect(page.posts).toHaveLength(40);
   expect(page.nextCursor).toBeNull();
+});
+
+it('feed accepts a validated timestamp/id cursor without dropping timestamp ties', async () => {
+  const before = '2026-10-24T09:00:00.123456+00:00';
+  const post_id = '00000000-0000-4000-8000-000000000046';
+  fixture.rows = Array.from({ length: 40 }, (_, i) => ({
+    id: `00000000-0000-4000-8000-${String(45 - i).padStart(12, '0')}`,
+    created_at: before,
+  }));
+  const query = new URLSearchParams({ before, post_id });
+  const response = await get(`posts?${query}`, 'Bearer valid');
+  expect(response.status).toBe(200);
+  expect(fixture.queryCalls).toContainEqual([
+    'or',
+    `created_at.lt.${before},and(created_at.eq.${before},id.lt.${post_id})`,
+  ]);
+  expect(fixture.queryCalls).not.toContainEqual(['lt', 'created_at', before]);
+  expect(fixture.queryCalls).toContainEqual(['order', 'id', { ascending: false }]);
+  const page = await response.json();
+  expect(page.nextCursor).toBe(before);
+  expect(page.nextPostId).toBe(fixture.rows[39].id);
+});
+
+it('feed retains the timestamp-only web contract and rejects invalid tie-breakers', async () => {
+  const before = '2026-10-24T09:00:00Z';
+  expect((await get(`posts?before=${before}`, 'Bearer valid')).status).toBe(200);
+  expect(fixture.queryCalls).toContainEqual(['lt', 'created_at', before]);
+  fixture.queryCalls.length = 0;
+  expect((await get(`posts?before=${before}&post_id=invalid`, 'Bearer valid')).status).toBe(400);
+  expect(fixture.queryCalls).toHaveLength(0);
 });

@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 
 /// Client HTTP verso il server SN. Il bearer è passato esplicitamente dai chiamanti:
 /// il client non conosce cookie né stato di sessione.
@@ -37,8 +40,13 @@ struct APIClient: APIClientProtocol {
         return try decode(Bootstrap.self, from: data)
     }
 
-    func posts(accessToken: String, before: String) async throws -> FeedPage {
-        let data = try await request(path: query("/api/posts", name: "before", value: before), method: "GET", token: accessToken, body: nil)
+    func posts(accessToken: String, before: String, postId: String?) async throws -> FeedPage {
+        var components = URLComponents()
+        components.path = "/api/posts"
+        components.queryItems = [URLQueryItem(name: "before", value: before)]
+        if let postId { components.queryItems?.append(URLQueryItem(name: "post_id", value: postId)) }
+        let path = components.string!.replacingOccurrences(of: "+", with: "%2B")
+        let data = try await request(path: path, method: "GET", token: accessToken, body: nil)
         return try decode(FeedPage.self, from: data)
     }
 

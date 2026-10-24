@@ -924,15 +924,15 @@
     "semantic_hash": ""
   },
   "docs/MANUALE-PROGETTO.md": {
-    "mtime": 1792832490.464289,
-    "seen": 1792832514.9646442,
-    "ast_hash": "6fe31db27a10bf5980ab62b4d61d8021",
+    "mtime": 1792832632.5824375,
+    "seen": 1792832643.008166,
+    "ast_hash": "aaeea4ca7cebf622156cd0b86fd449e6",
     "semantic_hash": ""
   },
   "docs/PIANO-APP-NATIVA.md": {
-    "mtime": 1792832490.4662888,
-    "seen": 1792832514.9646456,
-    "ast_hash": "626c4076cd01bd115c1da929f36d084e",
+    "mtime": 1792832641.4325168,
+    "seen": 1792832643.0081682,
+    "ast_hash": "292221a23ba815c4aa0ca8dbe41a3f65",
     "semantic_hash": ""
   },
   "docs/PIANO-PROFILI-CAROUSEL-HOME.md": {
@@ -954,9 +954,9 @@
     "semantic_hash": ""
   },
   "docs/TEST-RESULTS.md": {
-    "mtime": 1792832490.4652889,
-    "seen": 1792832514.9646502,
-    "ast_hash": "f1139ab7bd81f669b3a27aa48b1e3415",
+    "mtime": 1792832632.5824375,
+    "seen": 1792832643.0081728,
+    "ast_hash": "f24d22c9ea8f3e8ab530eddc64131431",
     "semantic_hash": ""
   },
   "docs/VERIFICA.md": {
@@ -966,9 +966,9 @@
     "semantic_hash": ""
   },
   "ios/README.md": {
-    "mtime": 1792832490.464289,
-    "seen": 1792832514.9646528,
-    "ast_hash": "6f9615e26cb8e55b76fd5eb954576da6",
+    "mtime": 1792832632.5814376,
+    "seen": 1792832643.0081754,
+    "ast_hash": "d12c962d6377943a7fa924f59e36dc7a",
     "semantic_hash": ""
   },
   "ios/project.yml": {
@@ -1032,9 +1032,9 @@
     "semantic_hash": ""
   },
   "docs/OPENCODE.md": {
-    "mtime": 1792832533.4256077,
-    "seen": 1792832535.285938,
-    "ast_hash": "82c59ea2765df59d581dd74440ebe4d7",
+    "mtime": 1792832632.5834377,
+    "seen": 1792832643.0081675,
+    "ast_hash": "f6696b8ff13b33900494777642bd2fb0",
     "semantic_hash": ""
   },
   "docs/agents/sn-ios.md": {

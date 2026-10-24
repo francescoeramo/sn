@@ -1,0 +1,243 @@
+{
+  "platform": "ios-device",
+  "input": "CoreDevice HID",
+  "data": "85 synthetic posts through URLSession/URLProtocol",
+  "checks": [
+    {
+      "name": "fixture_banner_present",
+      "passed": true
+    },
+    {
+      "name": "profile_first_page",
+      "passed": true,
+      "posts": 40
+    },
+    {
+      "name": "profile_tab_selected",
+      "passed": true
+    },
+    {
+      "name": "fixture_banner_present",
+      "passed": true
+    },
+    {
+      "name": "fixture_banner_present",
+      "passed": true
+    },
+    {
+      "name": "profile_audit_dark",
+      "passed": false,
+      "issues": [
+        {
+          "element_rect_value": "{{129.5, 69}, {134, 14.333333333333329}}",
+          "issue_classification": "testTypeContrast",
+          "font_size": 12.0,
+          "ml_generated_description": null,
+          "long_description_extra_info": [
+            "The text contrast ratio is 1.02. This is based on color #545455 compared with color #535354. "
+          ],
+          "foreground_color": "#545455",
+          "background_color": "#535354"
+        },
+        {
+          "element_rect_value": "{{16, -11.33333333333303}, {361, 44}}",
+          "issue_classification": "testTypeContrast",
+          "font_size": 17.0,
+          "ml_generated_description": null,
+          "long_description_extra_info": [
+            "The text contrast ratio is 1.01. This is based on color #303030 compared with color #313131. "
+          ],
+          "foreground_color": "#303030",
+          "background_color": "#313131"
+        },
+        {
+          "element_rect_value": "{{32, 79.500000000000313}, {149.66666666666666, 20.333333333333329}}",
+          "issue_classification": "testTypeContrast",
+          "font_size": 17.0,
+          "ml_generated_description": null,
+          "long_description_extra_info": [
+            "The text contrast ratio is 1.02. This is based on color #4A4A4B compared with color #4B4B4C. "
+          ],
+          "foreground_color": "#4A4A4B",
+          "background_color": "#4B4B4C"
+        }
+      ]
+    },
+    {
+      "name": "profile_dark_capture_fixture",
+      "passed": true
+    },
+    {
+      "name": "fixture_banner_present",
+      "passed": true
+    },
+    {
+      "name": "fixture_banner_present",
+      "passed": true
+    },
+    {
+      "name": "profile_audit_light",
+      "passed": false,
+      "issues": [
+        {
+          "element_rect_value": "{{129.5, 69}, {134, 14.333333333333329}}",
+          "issue_classification": "testTypeContrast",
+          "font_size": 12.0,
+          "ml_generated_description": null,
+          "long_description_extra_info": [
+            "The text contrast ratio is 1.01. This is based on color #F8F8F9 compared with color #F9F9FA. "
+          ],
+          "foreground_color": "#F8F8F9",
+          "background_color": "#F9F9FA"
+        },
+        {
+          "element_rect_value": "{{16, 149}, {361, 44}}",
+          "issue_classification": "testTypeContrast",
+          "font_size": 17.0,
+          "ml_generated_description": null,
+          "long_description_extra_info": [
+            "The text contrast ratio is 4.00. This is based on color #FFFFFF compared with color #7F7F7F. Current font size is 17 points."
+          ],
+          "foreground_color": "#FFFFFF",
+          "background_color": "#7F7F7F"
+        },
+        {
+          "element_rect_value": "{{16, 254.66666666666666}, {361, 38.666666666666657}}",
+          "issue_classification": "testTypeContrast",
+          "font_size": 13.0,
+          "ml_generated_description": null,
+          "long_description_extra_info": [
+            "The text contrast ratio is 3.29. This is based on color #F2F2F7 compared with color #85858B. Current font size is 13 points."
+          ],
+          "foreground_color": "#F2F2F7",
+          "background_color": "#85858B"
+        },
+        {
+          "element_rect_value": "{{32, 304.33333333333337}, {86.333333333333329, 14.333333333333314}}",
+          "issue_classification": "testTypeContrast",
+          "font_size": 12.0,
+          "ml_generated_description": null,
+          "long_description_extra_info": [
+            "The text contrast ratio is 1.76. This is based on color #FFFFFF compared with color #C3C3C3. "
+          ],
+          "foreground_color": "#FFFFFF",
+          "background_color": "#C3C3C3"
+        },
+        {
+          "element_rect_value": "{{32, 785}, {86.333333333333329, 14.333333333333371}}",
+          "issue_classification": "testTypeContrast",
+          "font_size": 12.0,
+          "ml_generated_description": null,
+          "long_description_extra_info": [
+            "The text contrast ratio is 1.00. This is based on color #F7F7F7 compared with color #F7F7F8. "
+          ],
+          "foreground_color": "#F7F7F7",
+          "background_color": "#F7F7F8"
+        },
+        {
+          "element_rect_value": "{{32, 811.33333333333337}, {136.66666666666666, 20.333333333333258}}",
+          "issue_classification": "testTypeContrast",
+          "font_size": 17.0,
+          "ml_generated_description": null,
+          "long_description_extra_info": [
+            "The text contrast ratio is 1.01. This is based on color #F6F6F6 compared with color #F6F5F6. "
+          ],
+          "foreground_color": "#F6F6F6",
+          "background_color": "#F6F5F6"
+        }
+      ]
+    },
+    {
+      "name": "profile_light_capture_fixture",
+      "passed": true
+    },
+    {
+      "name": "fixture_banner_present",
+      "passed": true
+    },
+    {
+      "name": "fixture_banner_present",
+      "passed": true
+    },
+    {
+      "name": "profile_audit_maximum_dynamic_type",
+      "passed": false,
+      "issues": [
+        {
+          "element_rect_value": "{{129.5, 69}, {134, 14.333333333333329}}",
+          "issue_classification": "testTypeContrast",
+          "font_size": 12.0,
+          "ml_generated_description": null,
+          "long_description_extra_info": [
+            "The text contrast ratio is 1.01. This is based on color #F8F8F9 compared with color #F9F9FA. "
+          ],
+          "foreground_color": "#F8F8F9",
+          "background_color": "#F9F9FA"
+        },
+        {
+          "element_rect_value": "{{16, 149}, {361, 44}}",
+          "issue_classification": "testTypeContrast",
+          "font_size": 17.0,
+          "ml_generated_description": null,
+          "long_description_extra_info": [
+            "The text contrast ratio is 4.00. This is based on color #FFFFFF compared with color #7F7F7F. Current font size is 17 points."
+          ],
+          "foreground_color": "#FFFFFF",
+          "background_color": "#7F7F7F"
+        },
+        {
+          "element_rect_value": "{{16, 254.66666666666666}, {361, 38.666666666666657}}",
+          "issue_classification": "testTypeContrast",
+          "font_size": 13.0,
+          "ml_generated_description": null,
+          "long_description_extra_info": [
+            "The text contrast ratio is 3.29. This is based on color #F2F2F7 compared with color #85858B. Current font size is 13 points."
+          ],
+          "foreground_color": "#F2F2F7",
+          "background_color": "#85858B"
+        },
+        {
+          "element_rect_value": "{{32, 304.33333333333337}, {86.333333333333329, 14.333333333333314}}",
+          "issue_classification": "testTypeContrast",
+          "font_size": 12.0,
+          "ml_generated_description": null,
+          "long_description_extra_info": [
+            "The text contrast ratio is 1.76. This is based on color #FFFFFF compared with color #C3C3C3. "
+          ],
+          "foreground_color": "#FFFFFF",
+          "background_color": "#C3C3C3"
+        },
+        {
+          "element_rect_value": "{{32, 785}, {86.333333333333329, 14.333333333333371}}",
+          "issue_classification": "testTypeContrast",
+          "font_size": 12.0,
+          "ml_generated_description": null,
+          "long_description_extra_info": [
+            "The text contrast ratio is 1.00. This is based on color #F7F7F7 compared with color #F7F7F8. "
+          ],
+          "foreground_color": "#F7F7F7",
+          "background_color": "#F7F7F8"
+        },
+        {
+          "element_rect_value": "{{32, 811.33333333333337}, {136.66666666666666, 20.333333333333258}}",
+          "issue_classification": "testTypeContrast",
+          "font_size": 17.0,
+          "ml_generated_description": null,
+          "long_description_extra_info": [
+            "The text contrast ratio is 1.01. This is based on color #F6F6F6 compared with color #F6F5F6. "
+          ],
+          "foreground_color": "#F6F6F6",
+          "background_color": "#F6F5F6"
+        }
+      ]
+    },
+    {
+      "name": "profile_maximum_dynamic_type_capture_fixture",
+      "passed": true
+    }
+  ],
+  "settings_restored": true,
+  "status": "failed",
+  "tested_before_final_contrast_fix": true,
+  "requires_rerun": true
+}

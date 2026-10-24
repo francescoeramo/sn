@@ -18,17 +18,17 @@ struct ComposePostView: View {
                 Section {
                     TextField("Cosa vuoi condividere?", text: $draft.body, axis: .vertical)
                         .lineLimit(5...12)
-                    Text("\(draft.body.utf16.count)/2200").font(.caption).foregroundStyle(.secondary)
+                    Text("\(draft.body.utf16.count)/2200").font(.caption).foregroundStyle(.primary)
                 }
                 Section {
                     Toggle("Aggiungi un avviso sui contenuti", isOn: $draft.warningEnabled)
                     if draft.warningEnabled {
                         TextField("Argomento da segnalare", text: $draft.contentWarning, axis: .vertical)
                             .lineLimit(1...4)
-                        Text("\(draft.warning.utf16.count)/160").font(.caption).foregroundStyle(.secondary)
+                        Text("\(draft.warning.utf16.count)/160").font(.caption).foregroundStyle(.primary)
                         if draft.warning.isEmpty {
                             Text("Scrivi un breve avviso oppure disattivalo.")
-                                .font(.footnote).foregroundStyle(.secondary)
+                                .font(.footnote).foregroundStyle(.primary)
                         } else if draft.warning.utf16.count > 160 {
                             Text("Accorcia l’avviso a 160 caratteri per pubblicare.")
                                 .font(.footnote).foregroundStyle(.red)
@@ -50,7 +50,7 @@ struct ComposePostView: View {
                     if let jpeg = draft.jpeg, let image = UIImage(data: jpeg) {
                         Image(uiImage: image).resizable().scaledToFit().accessibilityLabel("Foto selezionata")
                         TextField("Descrizione per chi usa VoiceOver", text: $draft.alt, axis: .vertical)
-                        Text("\(draft.alt.utf16.count)/300").font(.caption).foregroundStyle(.secondary)
+                        Text("\(draft.alt.utf16.count)/300").font(.caption).foregroundStyle(.primary)
                         if draft.alt.utf16.count > 300 {
                             Text("Accorcia la descrizione della foto a 300 caratteri per pubblicare.")
                                 .font(.footnote).foregroundStyle(.red)
@@ -61,7 +61,7 @@ struct ComposePostView: View {
                     }
                 }
                 Section {
-                    Text("Il post seguirà la visibilità del tuo profilo.").font(.footnote).foregroundStyle(.secondary)
+                    Text("Il post seguirà la visibilità del tuo profilo.").font(.footnote).foregroundStyle(.primary)
                     if let error { Text(error).foregroundStyle(.red) }
                     if sending { ProgressView("Pubblicazione…") }
                     if uncertain {

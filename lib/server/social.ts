@@ -180,6 +180,7 @@ export async function snapshot(existingIdentity?: Identity) {
       )
       .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
       .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
       .limit(40),
     db.from('comments').select('*').order('created_at', { ascending: false }).limit(300),
     db.from('likes').select('*').limit(1000),
@@ -334,6 +335,7 @@ export async function snapshot(existingIdentity?: Identity) {
     isAdmin: usage.isAdmin,
     user_id: user.id,
     nextCursor: posts.length === 40 ? posts.at(-1).created_at : null,
+    nextPostId: posts.length === 40 ? posts.at(-1).id : null,
   };
 }
 

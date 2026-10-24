@@ -1,7 +1,7 @@
 import Foundation
 
 // Synthetic wire-contract checks, runnable on Linux without UIKit or XCTest.
-let payload = Data(#"{"user_id":"u","me":{"id":"u","username":"fra","display_name":"Fra"},"profiles":[{"id":"u","username":"fra","display_name":"Fra","bio":"Ciao"}],"posts":[{"id":"p","author_id":"u","body":"Ciao","kind":"post","media_path":null,"media_type":null,"alt":"","created_at":"2026-10-23T12:30:00.123+00:00","content_warning":"avviso"}],"nextCursor":"2026-10-23T12:30:00+00:00","circlePosts":[{"post_id":"circle-post"}]}"#.utf8)
+let payload = Data(#"{"user_id":"u","me":{"id":"u","username":"fra","display_name":"Fra"},"profiles":[{"id":"u","username":"fra","display_name":"Fra","bio":"Ciao"}],"posts":[{"id":"p","author_id":"u","body":"Ciao","kind":"post","media_path":null,"media_type":null,"alt":"","created_at":"2026-10-23T12:30:00.123+00:00","content_warning":"avviso"}],"nextCursor":"2026-10-23T12:30:00+00:00","nextPostId":"p","circlePosts":[{"post_id":"circle-post"}]}"#.utf8)
 let snapshot = try JSONDecoder().decode(Bootstrap.self, from: payload)
 precondition(snapshot.posts.count == 1 && snapshot.profiles[0].bio == "Ciao")
 precondition(snapshot.posts[0].date != nil)
@@ -25,4 +25,6 @@ precondition(profile.posts.isEmpty)
 precondition(profile.nextCursor?.created_at == "2026-10-24T09:00:00.123456+00:00")
 let terminal = try JSONDecoder().decode(ProfilePostsPage.self, from: Data(#"{"posts":[],"nextCursor":null}"#.utf8))
 precondition(terminal.nextCursor == nil)
-print("13 controlli contratto Swift superati: bootstrap, date, allegati, cerchie, warning, null JSON, tipo post, compatibilità M0, profilo e cursore")
+precondition(snapshot.nextPostId == "p")
+precondition(oldSnapshot.nextPostId == nil)
+print("15 controlli contratto Swift superati: bootstrap, date, allegati, cerchie, warning, null JSON, tipo post, compatibilità M0, profilo e cursore")

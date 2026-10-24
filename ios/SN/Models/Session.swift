@@ -91,6 +91,7 @@ struct Bootstrap: Decodable, Sendable {
     var posts: [FeedPost] = []
     var profiles: [FeedProfile] = []
     var nextCursor: String? = nil
+    var nextPostId: String? = nil
     var circlePosts: [CirclePostLink] = []
     var follows: [FeedFollow] = []
 
@@ -109,12 +110,13 @@ struct Bootstrap: Decodable, Sendable {
         posts = try values.decodeIfPresent([FeedPost].self, forKey: .posts) ?? []
         profiles = try values.decodeIfPresent([FeedProfile].self, forKey: .profiles) ?? []
         nextCursor = try values.decodeIfPresent(String.self, forKey: .nextCursor)
+        nextPostId = try values.decodeIfPresent(String.self, forKey: .nextPostId)
         circlePosts = try values.decodeIfPresent([CirclePostLink].self, forKey: .circlePosts) ?? []
         follows = try values.decodeIfPresent([FeedFollow].self, forKey: .follows) ?? []
     }
 
     enum CodingKeys: String, CodingKey {
         case userId = "user_id"
-        case me, posts, profiles, nextCursor, circlePosts, follows
+        case me, posts, profiles, nextCursor, nextPostId, circlePosts, follows
     }
 }

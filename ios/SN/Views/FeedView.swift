@@ -13,7 +13,7 @@ struct FeedView: View {
                 List {
                     if let message = coordinator.lastErrorMessage {
                         Section {
-                            Text(message).foregroundStyle(.secondary)
+                            Text(message).foregroundStyle(.primary)
                             Button("Riprova") { Task { await coordinator.probe() } }
                         }
                     }
@@ -40,7 +40,7 @@ struct FeedView: View {
                         .disabled(coordinator.isLoadingMore || coordinator.isProbing)
                     } else if !coordinator.homePosts.isEmpty {
                         Label("Sei in pari", systemImage: "checkmark")
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(.primary)
                     }
                 }
                 .listStyle(.plain)
@@ -58,14 +58,14 @@ struct FeedView: View {
                 List {
                     Section {
                         Text(me?.displayName ?? me?.username ?? "Il tuo profilo").font(.title2.bold())
-                        if let me { Text("@\(me.username)").foregroundStyle(.secondary) }
+                        if let me { Text("@\(me.username)").foregroundStyle(.primary) }
                         if let bio = coordinator.profiles.first(where: { $0.id == me?.id })?.bio, !bio.isEmpty {
                             Text(bio)
                         }
                     }
-                    Section("I tuoi post") {
+                    Section {
                         if let message = coordinator.profileError {
-                            Text(message).foregroundStyle(.secondary)
+                            Text(message).foregroundStyle(.primary)
                             Button("Riprova") {
                                 Task { await coordinator.loadProfile(refresh: true) }
                             }.disabled(coordinator.isLoadingProfile)
@@ -73,7 +73,7 @@ struct FeedView: View {
                         if !coordinator.profileHasLoaded && coordinator.isLoadingProfile {
                             ProgressView("Caricamento dei tuoi post…")
                         } else if coordinator.profileHasLoaded && coordinator.profilePosts.isEmpty {
-                            Text("Non hai ancora pubblicato post.").foregroundStyle(.secondary)
+                            Text("Non hai ancora pubblicato post.").foregroundStyle(.primary)
                         }
                         ForEach(coordinator.profilePosts) { post in
                             PostRow(post: post, author: nil)
@@ -89,8 +89,10 @@ struct FeedView: View {
                             }.disabled(coordinator.isLoadingProfile)
                         } else if coordinator.profileHasLoaded && !coordinator.profilePosts.isEmpty {
                             Label("Hai caricato tutti i tuoi post", systemImage: "checkmark")
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(.primary)
                         }
+                    } header: {
+                        Text("I tuoi post").foregroundStyle(.primary)
                     }
                     Section {
                         NavigationLink("Sessione e accesso") { SessionView(me: me) }
@@ -117,12 +119,12 @@ private struct PostRow: View {
             if let author {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(author.display_name.isEmpty ? author.username : author.display_name).font(.headline)
-                    Text("@\(author.username)").font(.subheadline).foregroundStyle(.secondary)
+                    Text("@\(author.username)").font(.subheadline).foregroundStyle(.primary)
                 }
             }
             if let date = post.date {
                 Text(date, format: .dateTime.day().month(.abbreviated).hour().minute())
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(.caption).foregroundStyle(.primary)
             }
             if let warning = post.content_warning, !warning.isEmpty, !revealed {
                 Text(warning).font(.headline)
@@ -134,7 +136,7 @@ private struct PostRow: View {
                         PrivatePostImage(path: media.media_path, alt: media.alt)
                     } else {
                         Label("Allegato non ancora disponibile nell’app", systemImage: "paperclip")
-                            .font(.footnote).foregroundStyle(.secondary)
+                            .font(.footnote).foregroundStyle(.primary)
                     }
                 }
             }

@@ -21,6 +21,7 @@ final class AuthCoordinator: ObservableObject {
     @Published private(set) var feed: [FeedPost] = []
     @Published private(set) var profiles: [FeedProfile] = []
     @Published private(set) var nextCursor: String?
+    private var nextPostId: String?
     @Published private(set) var isLoadingMore = false
     @Published private(set) var connectionGeneration = 0
     @Published private(set) var profilePosts: [FeedPost] = []
@@ -47,6 +48,7 @@ final class AuthCoordinator: ObservableObject {
 
     private let api: APIClientProtocol
     private let store: TokenStore
+    private let defaults: UserDefaults
     private var tokens: TokenPair?
     private var pendingMfaFactorId: String?
     private var refreshTask: Task<TokenPair, Error>?
@@ -54,9 +56,10 @@ final class AuthCoordinator: ObservableObject {
     private var epoch = 0
     private let meKey = "sn.me"
 
-    init(api: APIClientProtocol, store: TokenStore) {
+    init(api: APIClientProtocol, store: TokenStore, defaults: UserDefaults = .standard) {
         self.api = api
         self.store = store
+        self.defaults = defaults
     }
 
     // MARK: - Avvio
@@ -184,6 +187,7 @@ final class AuthCoordinator: ObservableObject {
             feed = bootstrap.posts
             profiles = bootstrap.profiles
             nextCursor = bootstrap.nextCursor
+            nextPostId = bootstrap.nextPostId ?? bootstrap.posts.last?.id
             cachedMe = bootstrap.me
             connectionRecovered()
             lastErrorMessage = nil
@@ -211,15 +215,17 @@ final class AuthCoordinator: ObservableObject {
         guard !isLoadingMore, !isProbing, let cursor = nextCursor else { return }
         let requestEpoch = epoch
         isLoadingMore = true
+        let postId = nextPostId
         defer { isLoadingMore = false }
         do {
             let page = try await read { [api] token in
-                try await api.posts(accessToken: token, before: cursor)
+                try await api.posts(accessToken: token, before: cursor, postId: postId)
             }
             guard requestEpoch == epoch else { return }
-            let known = Set(feed.map(\.id))
-            feed.append(contentsOf: page.posts.filter { !known.contains($0.id) })
+            var known = Set(feed.map(\.id))
+            feed.append(contentsOf: page.posts.filter { known.insert($0.id).inserted })
             nextCursor = page.nextCursor
+            nextPostId = page.nextPostId ?? page.posts.last?.id
             connectionRecovered()
             lastErrorMessage = nil
         } catch is CancellationError {
@@ -413,6 +419,7 @@ final class AuthCoordinator: ObservableObject {
         currentUserId = nil
         profiles = []
         nextCursor = nil
+        nextPostId = nil
         profilePosts = []
         profileNextCursor = nil
         profileHasLoaded = false
@@ -497,14 +504,14 @@ final class AuthCoordinator: ObservableObject {
 
     private var cachedMe: Me? {
         get {
-            guard let data = UserDefaults.standard.data(forKey: meKey) else { return nil }
+            guard let data = defaults.data(forKey: meKey) else { return nil }
             return try? JSONDecoder().decode(Me.self, from: data)
         }
         set {
             if let newValue, let data = try? JSONEncoder().encode(newValue) {
-                UserDefaults.standard.set(data, forKey: meKey)
+                defaults.set(data, forKey: meKey)
             } else {
-                UserDefaults.standard.removeObject(forKey: meKey)
+                defaults.removeObject(forKey: meKey)
             }
         }
     }

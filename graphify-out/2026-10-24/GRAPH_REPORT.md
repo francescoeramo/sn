@@ -1,7 +1,7 @@
 # Graph Report - sn  (2026-10-24)
 
 ## Corpus Check
-- 197 files · ~154,415 words
+- 197 files · ~154,518 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 11 file(s) not represented in the graph (top: (none) 5, .resolved 2, .example 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `98efe92d`
+- Built from commit: `ababdb14`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -136,24 +136,24 @@
 2. `MockAPI` - 71 edges
 3. `ApiError` - 46 edges
 4. `SocialApp()` - 43 edges
-5. `POST()` - 31 edges
-6. `MemoryTokenStore` - 31 edges
+5. `MemoryTokenStore` - 31 edges
+6. `POST()` - 31 edges
 7. `AuthCoordinatorTests` - 30 edges
 8. `checked()` - 30 edges
 9. `Risultati delle verifiche` - 28 edges
 10. `adminDatabase()` - 27 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `Modifiche al workflow` --references--> `body()`  [INFERRED]
-  docs/OPENCODE.md → app/api/[...path]/route.ts
-- `Sicurezza e confini dei test` --references--> `authenticated()`  [INFERRED]
-  docs/ARCHITETTURA.md → lib/server/supabase.ts
 - `Interfaccia e dati` --references--> `SocialApp()`  [INFERRED]
   docs/MANUALE-PROGETTO.md → components/social-app.tsx
 - `Server e autenticazione` --references--> `adminDatabase()`  [INFERRED]
   docs/MANUALE-PROGETTO.md → lib/server/supabase.ts
 - `Ban degli account (15 ottobre 2026)` --references--> `authenticated()`  [INFERRED]
   docs/MANUALE-PROGETTO.md → lib/server/supabase.ts
+- `Modifiche al workflow` --references--> `body()`  [INFERRED]
+  docs/OPENCODE.md → app/api/[...path]/route.ts
+- `4.6 Logout e revoca (F2, F4)` --references--> `AuthCoordinator`  [INFERRED]
+  docs/PIANO-APP-NATIVA.md → ios/SN/Auth/AuthCoordinator.swift
 
 ## Import Cycles
 - None detected.
@@ -501,7 +501,7 @@ Cohesion: 0.29
 Nodes (6): CodingKeys, alt, body, content_warning, kind, media_path
 
 ## Knowledge Gaps
-- **77 isolated node(s):** `Combine`, `loading`, `signedOut`, `mfaRequired`, `signedIn` (+72 more)
+- **77 isolated node(s):** `.canPublish`, `.hasChanges`, `.warning`, `Combine`, `accessToken` (+72 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 776 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 - **66 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -509,15 +509,15 @@ Nodes (6): CodingKeys, alt, body, content_warning, kind, media_path
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `4.12 Ordine di esecuzione` connect `4. Specifica M0` to `AuthCoordinator`, `APIClient`, `ApiError`?**
-  _High betweenness centrality (0.188) - this node is a cross-community bridge._
+  _High betweenness centrality (0.181) - this node is a cross-community bridge._
 - **Are the 30 inferred relationships involving `AuthCoordinator` (e.g. with `4.12 Ordine di esecuzione` and `4.6 Logout e revoca (F2, F4)`) actually correct?**
   _`AuthCoordinator` has 30 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `Combine`, `loading`, `signedOut` to the rest of the system?**
+- **What connects `.canPublish`, `.hasChanges`, `.warning` to the rest of the system?**
   _77 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `ap/[...path]/route.ts` be split into smaller, more focused modules?**
   _Cohesion score 0.05833848690991548 - nodes in this community are weakly interconnected._
 - **Why does `AuthCoordinator` connect `AuthCoordinator` to `APIClientProtocol`, `ComposePostView`, `4. Specifica M0`, `.testLateProfileResponseAfterLogoutIsDiscarded`, `SNApp`, `.restore`, `FeedPost`, `View`, `Foundation`, `FeedView.swift`, `MockAPI`?**
-  _High betweenness centrality (0.182) - this node is a cross-community bridge._
+  _High betweenness centrality (0.151) - this node is a cross-community bridge._
 - **Are the 25 inferred relationships involving `MockAPI` (e.g. with `.testAmbiguousPublicationIsNotAutomaticallyRetried()` and `.testCachedImageDoesNotPretendConnectionRecovered()`) actually correct?**
   _`MockAPI` has 25 INFERRED edges - model-reasoned connections that need verification._
 - **Should `api/[...path]/route.ts` be split into smaller, more focused modules?**

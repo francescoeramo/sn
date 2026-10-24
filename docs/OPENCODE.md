@@ -139,3 +139,38 @@ Fonti:
 - [Schema OpenCode](https://opencode.ai/config.json)
 - [Skill OpenCode](https://opencode.ai/docs/skills/)
 - [xtool ufficiale](https://github.com/xtool-org/xtool)
+
+
+## Collaudo automatizzato M1 — 24 ottobre 2026, passaggio finale
+
+Rapporto corrente: [IOS-M1-VERIFICA.md](IOS-M1-VERIFICA.md) (dal README iOS:
+`../docs/IOS-M1-VERIFICA.md`). 32 XCTest Linux con APIClient/URLSession reali e
+trasporto sintetico, 15 controlli modelli e 77 test server/regole superati;
+typecheck/lint e build Darwin superati. Prova interna su iPhone: 18 controlli
+superati, incluso Keychain separato e ridimensionamento foto. Prova SwiftUI con
+HID: feed e profilo 40 → 80 → 85, pulsanti e fine esplicita verificati. Nessun
+post di test inserito nel cloud. Timeout del backend reale: sessione conservata e
+recupero senza rilancio, con campione stabile successivo alla transizione.
+
+Trovato e corretto un difetto reale: timestamp uguali al confine della pagina
+facevano saltare 45 post su 85 nel feed. Ora bootstrap/posts aggiungono
+`nextPostId`, iOS invia `before` + `post_id`, ordinamento e confronto data/UUID;
+il contratto web a sola data rimane accettato. Nessuna migrazione o modifica cloud.
+
+Aumentato il contrasto di metadati e contatori usando il colore primario di
+sistema, preservando layout e stili tipografici. Build finale installata e
+verificata al 100%; composer aperto via HID e ispezionato sul telefono. Restano
+aperti: nuovo audit dopo l'ultima correzione del contrasto (i precedenti audit
+validi riportano rilievi, alcuni incoerenti con i pixel della schermata), prova
+rapida del picker nativo e ascolto VoiceOver completo. Non dichiarare M1
+integralmente collaudata o iniziare M2 come se tutti i gate fossero chiusi.
+
+Automazione: `scripts/check-ios-m1-device.py`, modalità solo DEBUG
+`SN_M1_UI_FIXTURE=1` e `SN_RUN_M1_CHECKS=1`; dati locali, token in memoria e
+preferenze isolate. Il runner controlla il segnale di collaudo prima/dopo audit e
+prima di salvare screenshot. Campioni di altre app scartati ed eliminati; nessun
+contenuto personale nei rapporti versionati. Durante la sessione usbmuxd è
+terminato con SIGABRT/invalid pointer ed è stato riavviato; nessun cambio toolchain.
+Rete e backend: servizio utente `sn-ios-dev` attivo a `192.168.1.9:3000`.
+A fine prove ripristinati tema scuro, dimensione testo iniziale e avvio normale
+senza flag di test; non reinstallare né ripetere crypto M0.5.

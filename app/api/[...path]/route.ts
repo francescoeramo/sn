@@ -201,18 +201,31 @@ export async function GET(request: NextRequest, { params }: Context) {
       const before = z.iso
         .datetime({ offset: true })
         .parse(request.nextUrl.searchParams.get('before'));
-      const posts = checked(
-        await db
-          .from('posts')
-          .select(
-            '*, media:post_media(*), notes:community_notes(*), poll:polls(*,options:poll_options(*)), circle_links:circle_posts(post_id)',
+      const postId = request.nextUrl.searchParams.get('post_id');
+      const cursor =
+        postId === null
+          ? undefined
+          : postCursorInput.parse({ created_at: before, post_id: postId });
+      let query = db
+        .from('posts')
+        .select(
+          '*, media:post_media(*), notes:community_notes(*), poll:polls(*,options:poll_options(*)), circle_links:circle_posts(post_id)',
+        )
+        .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
+        .limit(40);
+      query = cursor
+        ? query.or(
+            `created_at.lt.${cursor.created_at},and(created_at.eq.${cursor.created_at},id.lt.${cursor.post_id})`,
           )
-          .lt('created_at', before)
-          .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
-          .order('created_at', { ascending: false })
-          .limit(40),
-      );
-      return json({ posts, nextCursor: posts.length === 40 ? posts.at(-1).created_at : null });
+        : query.lt('created_at', before);
+      const posts = checked(await query);
+      return json({
+        posts,
+        nextCursor: posts.length === 40 ? posts.at(-1).created_at : null,
+        nextPostId: posts.length === 40 ? posts.at(-1).id : null,
+      });
     }
     if (route === 'search') {
       const { db } = await identity();
