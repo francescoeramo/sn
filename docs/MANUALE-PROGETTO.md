@@ -427,5 +427,7 @@ lookahead per fine esatta. Nessuna nuova tabella o modifica cloud. Il client
 mantiene dati/cursore in errore, li cancella al logout e ricarica dopo pubblicazione,
 anche concorrente. 30 XCTest Linux, 13 controlli modelli, 75 test server/regole,
 typecheck/lint e build Darwin superati. Installazione finale dei tre incrementi
-con Verifying 100%, exit 0. Runtime del nuovo profilo richiesto ma ancora da
-confermare; paginazione device oltre 40 e accessibilità restano aperte.
+con Verifying 100%, exit 0. L'utente conferma il nuovo tab Profilo funzionante.
+Log del 24 ottobre: refresh/bootstrap/profile/posts/media tutti 200;
+profile/posts in 400 ms, media in 575–733 ms. Paginazione device oltre 40 e
+accessibilità restano aperte; la conferma non certifica l'intera matrice M1.

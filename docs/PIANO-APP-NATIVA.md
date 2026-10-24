@@ -334,5 +334,7 @@ solo post ordinari non scaduti e senza cerchia. Pagine finite da 40, ordine
 data/UUID, cursore composto e lookahead. Nessuna modifica schema/cloud; API web
 esistenti invariate. Client con stati propri, retry/refresh, pulizia al logout e
 invalidation dopo pubblicazione concorrente. 30 XCTest Linux, 13 controlli modelli,
-75 test server/regole e build/installazione superati. Runtime esteso M1 aperto;
-nessun avanzamento a M2. Dettagli ed esito utente in `ios/README.md`.
+75 test server/regole e build/installazione superati. Tab Profilo funzionante
+confermato dall'utente, con refresh/bootstrap/profile/posts/media 200 nei log.
+Runtime esteso M1 aperto (paginazione oltre 40, accessibilità); nessun avanzamento
+a M2. Dettagli ed esito utente in `ios/README.md`.

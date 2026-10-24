@@ -44,7 +44,8 @@ foto tardive; gestione sessione/offline anche nelle scritture; archivio proprio
 indipendente (`profile/posts`, cursore composto). 30 XCTest Linux, 13 controlli
 modelli e 75 test server/regole superati; build finale installata su iPhone.
 Backend in servizio utente `sn-ios-dev` per sopravvivere al riavvio dell'agente.
-Runtime del nuovo profilo e paginazione oltre 40 ancora da confermare; non iniziare
+Runtime del nuovo profilo confermato dall'utente; refresh/bootstrap/profile/posts/media
+200 osservati. Paginazione oltre 40 e accessibilità restano aperte: non iniziare
 M2 dichiarando concluso il collaudo M1. Fare riferimento al README corrente.
 
 - M0: login, verifica sessione, rinnovo, logout/riapertura, offline e MFA confermati

@@ -9,7 +9,10 @@ incompleto, binding dell'autore all'utente verificato, MFA/bearer, archivio sepa
 deduplica, errore/ripresa, logout e pubblicazione concorrente. Quest'ultimo caso è
 stato riprodotto prima del fix. I test server usano stub: non certificano RLS o
 PostgREST cloud. Build Darwin e installazione finale dei tre incrementi superate
-(Verifying 100%, exit 0); runtime del nuovo archivio ancora da confermare.
+(Verifying 100%, exit 0). L'utente conferma il nuovo tab Profilo funzionante su
+iPhone. Log del 24 ottobre: refresh 200 in 547 ms, bootstrap 200 in 1689 ms,
+profile/posts 200 in 400 ms, media 200 in 575–733 ms. Paginazione oltre 40 e
+accessibilità sul telefono restano non verificate.
 
 Incremento scritture: **26 XCTest Linux superati**, build Darwin superata. Prima
 del fix, cinque assertion fallite nei casi offline, rifiuto sessione e risposta

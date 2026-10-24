@@ -55,7 +55,9 @@ Verifiche finali: **30 XCTest Linux, 13 controlli modelli Swift, 75 test server 
 regole**, typecheck, lint mirato e build Darwin superati. Il test pubblicazione
 concorrente ha fallito prima della correzione e superato dopo. Tutti e tre gli
 incrementi sono installati: `xtool dev run --usb`, Verifying 100%, exit 0.
-Runtime del nuovo archivio richiesto all'utente, ancora da confermare. Paginazione
+L'utente conferma il tab Profilo funzionante sulla nuova build. Log del 24 ottobre:
+refresh 200 (547 ms), bootstrap 200 (1689 ms), profile/posts 200 (400 ms) e media
+200 (575–733 ms). È conferma del percorso reale su iPhone/Wi-Fi; paginazione
 oltre 40 post e accessibilità sul device restano aperte.
 
 ## Ripresa del 24 ottobre 2026 — avvisi sui contenuti
