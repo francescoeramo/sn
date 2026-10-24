@@ -7,6 +7,9 @@ actor MockAPI: APIClientProtocol {
     var mfaResult: Result<TokenPair, APIError> = .failure(.transport)
     var bootstrapResult: Result<Bootstrap, APIError> = .failure(.transport)
     var mediaResult: Result<Data, APIError> = .failure(.transport)
+    var publishResult: Result<Void, APIError> = .success(())
+    func setPublishResult(_ result: Result<Void, APIError>) { publishResult = result }
+    private(set) var publishedPosts: [NewPost] = []
     private(set) var mediaCount = 0
     func setMediaResult(_ result: Result<Data, APIError>) { mediaResult = result }
 
@@ -78,7 +81,10 @@ actor MockAPI: APIClientProtocol {
         return try mediaResult.get()
     }
     func upload(accessToken: String, jpeg: Data) async throws -> UploadedMedia { throw APIError.transport }
-    func publish(accessToken: String, post: NewPost) async throws { throw APIError.transport }
+    func publish(accessToken: String, post: NewPost) async throws {
+        publishedPosts.append(post)
+        try publishResult.get()
+    }
 
     func bootstrap(accessToken: String) async throws -> Bootstrap {
         try bootstrapResult.get()

@@ -32,6 +32,13 @@ Il prompt dell'agente è in `docs/agents/sn-ios.md`.
 
 ## Stato da cui riprendere
 
+Aggiornamento 24 ottobre 2026: M1 implementata e installata, inclusi recupero
+connessione, cache media RAM e composer con avvisi. 18 XCTest Linux, 10 controlli
+modelli e 30 test server mirati superati. Il collaudo runtime esteso resta aperto;
+non ripartire dall'implementazione M1 descritta nelle note storiche sotto.
+Wi-Fi ora autorizzato e backend a `192.168.1.9:3000`.
+Seguire [ios/README.md](../ios/README.md) per il prossimo passo.
+
 - M0: login, verifica sessione, rinnovo, logout/riapertura, offline e MFA confermati
   dall'utente. La matrice tecnica completa e gli XCTest sessione/SwiftUI non sono
   dichiarati eseguiti; il login MFA dopo il rafforzamento SQL resta una regressione M1.

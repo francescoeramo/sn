@@ -295,10 +295,10 @@ final class AuthCoordinator: ObservableObject {
         return path
     }
 
-    func sendPost(body: String, alt: String, path: String?) async throws {
+    func sendPost(body: String, alt: String, path: String?, contentWarning: String = "") async throws {
         let requestEpoch = epoch
         let token = try await validAccessToken()
-        try await api.publish(accessToken: token, post: NewPost(body: body, media_path: path, alt: alt))
+        try await api.publish(accessToken: token, post: NewPost(body: body, media_path: path, alt: alt, content_warning: contentWarning))
         guard requestEpoch == epoch else { throw CancellationError() }
     }
 

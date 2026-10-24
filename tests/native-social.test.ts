@@ -145,3 +145,25 @@ it.each([
   fixture.mfa = true;
   expect((await get(route, 'Bearer valid')).status).toBe(403);
 });
+
+it('native post preserves and validates the shared content warning contract', async () => {
+  const data = {
+    body: 'Contenuto',
+    kind: 'post',
+    media_path: null,
+    alt: '',
+    content_warning: '  Tema sensibile  ',
+  };
+  expect((await post('native/post', 'Bearer valid', data)).status).toBe(200);
+  expect(mutate).toHaveBeenCalledWith(
+    expect.objectContaining({ type: 'post', content_warning: 'Tema sensibile' }),
+    false,
+    fixture.identity,
+  );
+  vi.mocked(mutate).mockClear();
+  expect(
+    (await post('native/post', 'Bearer valid', { ...data, content_warning: 'x'.repeat(161) }))
+      .status,
+  ).toBe(400);
+  expect(mutate).not.toHaveBeenCalled();
+});

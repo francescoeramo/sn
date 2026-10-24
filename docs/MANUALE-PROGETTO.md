@@ -386,3 +386,16 @@ con backoff 3–30 secondi e ripresa foto fallite. Cache privata solo RAM e down
 condiviso per percorso, svuotati al logout. 16 XCTest locali e build Darwin superati.
 Primo download ancora da misurare sul telefono: non dichiarare risolta tutta la
 lentezza grazie ai soli test di cache. Stato installazione in `ios/README.md`.
+
+### Ripresa iOS — 24 ottobre 2026
+
+Completato e installato l'incremento non committato degli avvisi sui contenuti nel
+composer: toggle, testo fino a 160 caratteri UTF-16, conferma scarto e trasporto
+nel contratto native/post già esistente. Nessuna modifica cloud, API o crypto.
+18 XCTest Linux, 10 controlli modelli, 30 test server mirati e lint superati;
+build Darwin e installazione USB con Verifying 100%, exit 0.
+L'utente conferma accesso funzionante prima dell'installazione; nuovo flusso con
+avviso e prestazioni foto ancora da provare su device. M2 non iniziata.
+Wi-Fi esplicitamente autorizzato: computer `192.168.1.9`, backend vincolato a tale
+indirizzo, base URL e ATS allineati. Nessuna regola firewall modificata.
+Per stato e prossime prove prevale `ios/README.md` sui paragrafi storici USB.

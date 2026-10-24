@@ -1,5 +1,22 @@
 # Risultati delle verifiche
 
+## iOS — 24 ottobre 2026
+
+- `bash scripts/check-ios-session.sh`: 18 XCTest Linux superati, incluso avviso
+  nel payload e nessun retry automatico dopo esito ambiguo. Shim Combine;
+  non copre SwiftUI/Keychain o runner Darwin.
+- `swiftc` sui modelli e `ios/ContractChecks/main.swift`: 10 controlli superati.
+- `npm test -- tests/native-social.test.ts tests/native-auth.test.ts tests/security-api.test.ts`:
+  30 test superati, incluso avviso normalizzato e rifiuto oltre 160 caratteri.
+- ESLint di `tests/native-social.test.ts` e `git diff --check`: superati.
+- `xtool dev build` e `xtool dev run --usb`: riusciti, Verifying 100%, exit 0.
+- Backend Wi-Fi `192.168.1.9:3000`, bootstrap senza token dal computer: 401 in
+  1,20 s. Nessuna misura media autenticata o prova della nuova build dal telefono.
+
+L'utente conferma app aperta/accesso prima dell'installazione. Nuovo composer con
+avviso e regressione prestazioni/recupero attendono prova runtime. Stato corrente
+e istruzioni prevalenti in [README iOS](../ios/README.md); le sezioni sotto sono storiche.
+
 ## Stato corrente al 15 ottobre 2026
 
 | Ambito | Evidenza acquisita | Limite |

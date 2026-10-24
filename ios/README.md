@@ -1,7 +1,39 @@
 # SN per iOS: SwiftUI e xtool
 
-Aggiornato al 23 ottobre 2026: M1 implementata e installata via USB; collaudo runtime aperto.
+Aggiornato al 24 ottobre 2026: M1 installata via USB, backend raggiungibile via Wi-Fi; collaudo runtime esteso aperto.
 Il client nativo usa le API SN; backend Next.js e Supabase restano condivisi con il sito.
+
+## Ripresa del 24 ottobre 2026 — avvisi sui contenuti
+
+Riprese le modifiche non committate del composer: ora è possibile aggiungere un
+avviso facoltativo (massimo 160 unità UTF-16), obbligatoriamente non vuoto quando
+attivato. Il valore passa a `native/post` tramite il contratto condiviso esistente;
+il server lo normalizza e lo valida. Nessuna nuova API o migrazione. Annullare
+richiede conferma anche quando la bozza contiene soltanto un avviso; rimuovere la
+foto azzera la sua descrizione. Conservato il blocco del reinvio a esito incerto.
+
+L'utente conferma app aperta e accesso funzionante all'inizio della sessione.
+`xtool dev build` superato e `xtool dev run --usb` completato con **Verifying 100%,
+exit 0** per la nuova build. Aprirla manualmente; pubblicazione con avviso e
+rivelazione nel feed non ancora confermate sul telefono.
+
+Verifiche del 24 ottobre: 18 XCTest Linux sul coordinatore reale (shim Combine,
+non SwiftUI/Keychain), 10 controlli modelli Swift, 30 test server mirati e lint del
+test modificato superati. I nuovi casi coprono trasporto dell'avviso, validazione
+server oltre 160 caratteri e mancato retry automatico della pubblicazione.
+
+**Rete corrente:** Wi-Fi autorizzato dall'utente, `wlo1` a `192.168.1.9/24`;
+nessuna interfaccia hotspot USB attiva. `SNApiBaseURL` e ATS aggiornati a
+`http://192.168.1.9:3000`. Backend avviato con
+`npm exec next dev -- --hostname 192.168.1.9 --port 3000`.
+UFW consente già 3000/tcp da `192.168.1.0/24`; nessuna regola modificata.
+Bootstrap senza token dal computer: 401 in 1,20 secondi (prima richiesta), non
+prova della raggiungibilità dal telefono. I paragrafi USB sotto sono storici.
+
+Prossime prove: riaprire SN sulla stessa rete, inviare testo/foto con avviso,
+verificare il contenuto nascosto e «Mostra contenuto», misurare primo download e
+recupero offline. Paginazione su device, VoiceOver e Dynamic Type restano aperti.
+M1 non dichiarata completamente collaudata; M2 non iniziata.
 
 ## Stato attuale e prossimo incremento
 

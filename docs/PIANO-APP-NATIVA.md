@@ -304,3 +304,13 @@ con la sessione, evitano trasferimenti ripetuti tra feed e profilo. Cancellazion
 HTTP distinte dagli errori di connessione. 16 XCTest Linux e build xtool superati.
 Velocità del primo download e regressione del recupero sulla nuova build restano
 prove su iPhone da confermare. Nessuna modifica alle API, al cloud o alla crypto.
+
+## 11. Composer con avvisi — 24 ottobre 2026
+
+Riprese e completate le modifiche locali: avviso facoltativo nel post, limite 160
+unità UTF-16 e valore inoltrato al contratto server esistente. Conservati R4
+(nessun retry di scritture) e la conferma scarto della bozza. 18 XCTest Linux,
+10 controlli modelli e 30 test server superati; build Darwin e installazione USB
+verificate. Runtime del nuovo avviso ancora da confermare, M1 estesa resta aperta.
+Wi-Fi autorizzato: backend e app usano `192.168.1.9:3000`; procedure correnti e
+prove residue in `ios/README.md`. Nessun avanzamento a M2, modifica cloud o crypto.

@@ -6,6 +6,8 @@ struct ComposePostView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var bodyText = ""
     @State private var alt = ""
+    @State private var warningEnabled = false
+    @State private var contentWarning = ""
     @State private var selection: PhotosPickerItem?
     @State private var jpeg: Data?
     @State private var uploadedPath: String?
@@ -23,6 +25,25 @@ struct ComposePostView: View {
                         .lineLimit(5...12)
                     Text("\(bodyText.utf16.count)/2200").font(.caption).foregroundStyle(.secondary)
                 }
+                Section {
+                    Toggle("Aggiungi un avviso sui contenuti", isOn: $warningEnabled)
+                    if warningEnabled {
+                        TextField("Argomento da segnalare", text: $contentWarning, axis: .vertical)
+                            .lineLimit(1...4)
+                        Text("\(contentWarning.utf16.count)/160").font(.caption).foregroundStyle(.secondary)
+                        if contentWarning.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            Text("Scrivi un breve avviso oppure disattivalo.")
+                                .font(.footnote).foregroundStyle(.secondary)
+                        } else if contentWarning.utf16.count > 160 {
+                            Text("Accorcia l’avviso a 160 caratteri per pubblicare.")
+                                .font(.footnote).foregroundStyle(.red)
+                        }
+                    }
+                } footer: {
+                    if warningEnabled {
+                        Text("Nel feed testo e foto resteranno nascosti finché chi legge sceglierà Mostra contenuto.")
+                    }
+                }
                 Section("Foto") {
                     PhotosPicker(selection: $selection, matching: .images) {
                         Label("Scegli una foto", systemImage: "photo")
@@ -38,6 +59,7 @@ struct ComposePostView: View {
                         }
                         Button("Rimuovi foto", role: .destructive) {
                             self.jpeg = nil
+                            alt = ""
                             selection = nil
                             uploadedPath = nil
                         }
@@ -58,21 +80,32 @@ struct ComposePostView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Annulla") {
-                        if bodyText.isEmpty && jpeg == nil { dismiss() }
+                        if !hasDraft { dismiss() }
                         else { confirmDiscard = true }
                     }.disabled(sending)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Pubblica") { Task { await publish() } }
-                        .disabled(sending || preparing || uncertain || bodyText.utf16.count > 2200 || alt.utf16.count > 300 || (bodyText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && jpeg == nil))
+                        .disabled(sending || preparing || uncertain || !validDraft)
                 }
             }
-            .interactiveDismissDisabled(sending || !bodyText.isEmpty || jpeg != nil)
+            .interactiveDismissDisabled(sending || hasDraft)
             .confirmationDialog("Scartare questo post?", isPresented: $confirmDiscard, titleVisibility: .visible) {
                 Button("Scarta post", role: .destructive) { dismiss() }
             }
             .task(id: selection) { await preparePhoto() }
         }
+    }
+
+    private var hasDraft: Bool {
+        !bodyText.isEmpty || jpeg != nil || !contentWarning.isEmpty
+    }
+
+    private var validDraft: Bool {
+        bodyText.utf16.count <= 2200 && alt.utf16.count <= 300
+            && (!bodyText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || jpeg != nil)
+            && (!warningEnabled || (!contentWarning.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                                    && contentWarning.utf16.count <= 160))
     }
 
     private func preparePhoto() async {
@@ -97,7 +130,7 @@ struct ComposePostView: View {
     }
 
     private func publish() async {
-        guard !sending else { return }
+        guard !sending, validDraft else { return }
         sending = true
         error = nil
         defer { sending = false }
@@ -108,7 +141,10 @@ struct ComposePostView: View {
             return
         }
         do {
-            try await coordinator.sendPost(body: bodyText, alt: alt, path: uploadedPath)
+            try await coordinator.sendPost(
+                body: bodyText, alt: alt, path: uploadedPath,
+                contentWarning: warningEnabled ? contentWarning.trimmingCharacters(in: .whitespacesAndNewlines) : ""
+            )
             dismiss()
             await coordinator.probe()
         } catch let error as APIError {

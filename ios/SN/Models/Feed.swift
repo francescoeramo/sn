@@ -54,14 +54,16 @@ struct NewPost: Encodable, Sendable {
     var body: String
     var media_path: String?
     var alt: String
+    var content_warning: String = ""
     let kind = "post"
 
-    enum CodingKeys: String, CodingKey { case body, media_path, alt, kind }
+    enum CodingKeys: String, CodingKey { case body, media_path, alt, content_warning, kind }
     func encode(to encoder: Encoder) throws {
         var values = encoder.container(keyedBy: CodingKeys.self)
         try values.encode(body, forKey: .body)
         try values.encode(media_path, forKey: .media_path) // Required nullable field, including text-only posts.
         try values.encode(alt, forKey: .alt)
+        try values.encode(content_warning, forKey: .content_warning)
         try values.encode(kind, forKey: .kind)
     }
 }

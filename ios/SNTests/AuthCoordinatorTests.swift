@@ -307,4 +307,36 @@ final class AuthCoordinatorTests: XCTestCase {
         XCTAssertNotNil(coordinator.lastErrorMessage)
     }
 
+    func testPublishPreservesContentWarning() async throws {
+        let api = MockAPI()
+        await api.setBootstrapResult(.success(bootstrap()))
+        let store = MemoryTokenStore()
+        store.tokens = tokens()
+        let coordinator = AuthCoordinator(api: api, store: store)
+        await coordinator.restore()
+        try await coordinator.sendPost(body: "Contenuto", alt: "", path: nil, contentWarning: "Tema sensibile")
+        let sent = await api.publishedPosts
+        XCTAssertEqual(sent.count, 1)
+        let data = try JSONEncoder().encode(try XCTUnwrap(sent.first))
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        XCTAssertEqual(object["content_warning"] as? String, "Tema sensibile")
+        XCTAssertTrue(object["media_path"] is NSNull)
+    }
+
+    func testAmbiguousPublicationIsNotAutomaticallyRetried() async {
+        let api = MockAPI()
+        await api.setBootstrapResult(.success(bootstrap()))
+        await api.setPublishResult(.failure(.transport))
+        let store = MemoryTokenStore()
+        store.tokens = tokens()
+        let coordinator = AuthCoordinator(api: api, store: store)
+        await coordinator.restore()
+        do {
+            try await coordinator.sendPost(body: "Contenuto", alt: "", path: nil, contentWarning: "Avviso")
+            XCTFail("lost response must remain uncertain")
+        } catch { }
+        let sent = await api.publishedPosts
+        XCTAssertEqual(sent.count, 1)
+    }
+
 }
