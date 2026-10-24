@@ -1032,9 +1032,9 @@
     "semantic_hash": ""
   },
   "docs/OPENCODE.md": {
-    "mtime": 1792831542.6567957,
-    "seen": 1792831544.7501025,
-    "ast_hash": "cc27ed456634b42b0776c24a14021f55",
+    "mtime": 1792832533.4256077,
+    "seen": 1792832535.285938,
+    "ast_hash": "82c59ea2765df59d581dd74440ebe4d7",
     "semantic_hash": ""
   },
   "docs/agents/sn-ios.md": {
@@ -1206,9 +1206,9 @@
     "semantic_hash": ""
   },
   "docs/IOS-M1-INTERFACCIA.md": {
-    "mtime": 1792831902.894797,
-    "seen": 1792831904.7801747,
-    "ast_hash": "bbe286f03b5510b37958b8be8121397a",
+    "mtime": 1792832533.4246078,
+    "seen": 1792832535.2859356,
+    "ast_hash": "16d971eecc3aa22908b7248e5937ccc4",
     "semantic_hash": ""
   },
   "ios/SN/Auth/TokenStoreProtocol.swift": {
