@@ -2,6 +2,15 @@
 
 ## iOS — 24 ottobre 2026
 
+Storico del profilo: **30 XCTest Linux**, **13 controlli JSON Swift**, **75 test
+server/regole** su native-social/native-auth/security-api/rules; typecheck e lint
+mirato superati. Coperti cursore composto/data uguale, lookahead 40/41, input
+incompleto, binding dell'autore all'utente verificato, MFA/bearer, archivio separato,
+deduplica, errore/ripresa, logout e pubblicazione concorrente. Quest'ultimo caso è
+stato riprodotto prima del fix. I test server usano stub: non certificano RLS o
+PostgREST cloud. Build Darwin e installazione finale dei tre incrementi superate
+(Verifying 100%, exit 0); runtime del nuovo archivio ancora da confermare.
+
 Incremento scritture: **26 XCTest Linux superati**, build Darwin superata. Prima
 del fix, cinque assertion fallite nei casi offline, rifiuto sessione e risposta
 tardiva dopo logout; dopo il fix nessun fallimento. Verificati anche mancato retry,

@@ -325,3 +325,14 @@ errori rete conservano token. 408/5xx/esito perso richiedono controllo del feed.
 Il backend di sviluppo è ora un servizio utente transitorio, separato dall'agente.
 Riuscita pubblicazione con avviso e lettura dopo riavvio backend confermate
 dall'utente; non equivalgono alla regressione integrale M1 o a completamento M2.
+
+## 13. Archivio del proprio profilo — 24 ottobre 2026
+
+M1 ora ha uno storico indipendente dal bootstrap/feed: lettura autenticata
+`GET /api/profile/posts`, autore sempre uguale al chiamante, RLS e MFA preservate,
+solo post ordinari non scaduti e senza cerchia. Pagine finite da 40, ordine
+data/UUID, cursore composto e lookahead. Nessuna modifica schema/cloud; API web
+esistenti invariate. Client con stati propri, retry/refresh, pulizia al logout e
+invalidation dopo pubblicazione concorrente. 30 XCTest Linux, 13 controlli modelli,
+75 test server/regole e build/installazione superati. Runtime esteso M1 aperto;
+nessun avanzamento a M2. Dettagli ed esito utente in `ios/README.md`.

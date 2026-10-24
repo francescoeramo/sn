@@ -46,6 +46,20 @@ struct APIClient: APIClientProtocol {
         try await request(path: query("/api/media", name: "path", value: path), method: "GET", token: accessToken, body: nil)
     }
 
+    func profilePosts(accessToken: String, before: PostCursor?) async throws -> ProfilePostsPage {
+        var components = URLComponents()
+        components.path = "/api/profile/posts"
+        if let before {
+            components.queryItems = [
+                URLQueryItem(name: "before", value: before.created_at),
+                URLQueryItem(name: "post_id", value: before.post_id),
+            ]
+        }
+        let path = components.string!.replacingOccurrences(of: "+", with: "%2B")
+        let data = try await request(path: path, method: "GET", token: accessToken, body: nil)
+        return try decode(ProfilePostsPage.self, from: data)
+    }
+
     func upload(accessToken: String, jpeg: Data) async throws -> UploadedMedia {
         let boundary = "SN-\(UUID().uuidString)"
         var body = Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"file\"; filename=\"photo.jpg\"\r\nContent-Type: image/jpeg\r\n\r\n".utf8)

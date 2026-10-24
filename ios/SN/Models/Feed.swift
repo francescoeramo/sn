@@ -45,6 +45,16 @@ struct FeedPage: Decodable, Sendable {
     let nextCursor: String?
 }
 
+struct PostCursor: Codable, Equatable, Sendable {
+    let created_at: String
+    let post_id: String
+}
+
+struct ProfilePostsPage: Decodable, Sendable {
+    let posts: [FeedPost]
+    let nextCursor: PostCursor?
+}
+
 struct UploadedMedia: Decodable, Sendable {
     let path: String
     let mime: String

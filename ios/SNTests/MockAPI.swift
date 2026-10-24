@@ -30,6 +30,22 @@ actor MockAPI: APIClientProtocol {
     func setMediaResult(_ result: Result<Data, APIError>) { mediaResult = result }
 
     var postsResult: Result<FeedPage, APIError> = .failure(.transport)
+    var profilePostsResult: Result<ProfilePostsPage, APIError> = .failure(.transport)
+    private(set) var profileCursors: [PostCursor?] = []
+    func setProfilePostsResult(_ result: Result<ProfilePostsPage, APIError>) { profilePostsResult = result }
+    private var profileGate: CheckedContinuation<Void, Never>?
+    private var profileStarted: CheckedContinuation<Void, Never>?
+    private var holdProfile = false
+    func suspendProfile() { holdProfile = true }
+    func waitForProfile() async {
+        if !profileCursors.isEmpty { return }
+        await withCheckedContinuation { profileStarted = $0 }
+    }
+    func releaseProfile() {
+        holdProfile = false
+        profileGate?.resume()
+        profileGate = nil
+    }
     private(set) var postCursors: [String] = []
     var refreshDelayNanoseconds: UInt64 = 0
     private var refreshGate: CheckedContinuation<Void, Never>?
@@ -95,6 +111,18 @@ actor MockAPI: APIClientProtocol {
     func media(accessToken: String, path: String) async throws -> Data {
         mediaCount += 1
         return try mediaResult.get()
+    }
+    func profilePosts(accessToken: String, before: PostCursor?) async throws -> ProfilePostsPage {
+        profileCursors.append(before)
+        let response = profilePostsResult
+        if holdProfile {
+            await withCheckedContinuation { continuation in
+                profileGate = continuation
+                profileStarted?.resume()
+                profileStarted = nil
+            }
+        }
+        return try response.get()
     }
     func upload(accessToken: String, jpeg: Data) async throws -> UploadedMedia {
         uploadCount += 1

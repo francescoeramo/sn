@@ -39,6 +39,25 @@ perse conservano il blocco del reinvio a esito incerto; rifiuti espliciti 4xx
 del fix; **26 XCTest Linux e build Darwin superati**. Installazione finale ancora
 da eseguire dopo il prossimo incremento.
 
+**Incremento 3 — storico proprio:** il Profilo ora usa `GET /api/profile/posts`,
+con query legata all'utente verificato e RLS. Pagine da 40 post ordinari non scaduti,
+esclusi i post delle cerchie, ordine data/UUID e cursore composto per non perdere
+post con lo stesso timestamp. Una riga di lookahead distingue la pagina finale.
+Letture bearer/MFA senza fallback cookie quando Authorization è presente; il
+percorso web a cookie resta disponibile. Nessun cambio schema o cloud.
+
+Il tab ha caricamento, errore con Riprova, refresh, fine esplicita e cursore propri;
+non dipende più dalla finestra del feed. Errori conservano l'archivio già letto;
+logout elimina l'archivio e scarta risposte tardive. Una pubblicazione durante il
+caricamento invalida la risposta vecchia e richiede una nuova lettura.
+
+Verifiche finali: **30 XCTest Linux, 13 controlli modelli Swift, 75 test server e
+regole**, typecheck, lint mirato e build Darwin superati. Il test pubblicazione
+concorrente ha fallito prima della correzione e superato dopo. Tutti e tre gli
+incrementi sono installati: `xtool dev run --usb`, Verifying 100%, exit 0.
+Runtime del nuovo archivio richiesto all'utente, ancora da confermare. Paginazione
+oltre 40 post e accessibilità sul device restano aperte.
+
 ## Ripresa del 24 ottobre 2026 — avvisi sui contenuti
 
 Riprese le modifiche non committate del composer: ora è possibile aggiungere un
@@ -78,12 +97,12 @@ M1 non dichiarata completamente collaudata; M2 non iniziata.
 | M0 — sessione | Flussi principali funzionanti su iPhone: login, verifica sessione, rinnovo, logout/riapertura, recupero offline, MFA | Conferme dell'utente nella sessione del 15 ottobre; test server in `tests/native-auth.test.ts` |
 | M0.5 — crypto 1:1 | Completata su iPhone con CryptoKit, in entrambe le direzioni web ↔ iPhone | [Rapporto](../docs/evidence/ios-crypto-interop-2026-10-15.json): 35 controlli, tre risposte su tre dispositivi, allegato verificato |
 | M1 — feed, profilo, post con immagine | Implementato e installato via USB, collaudo runtime aperto | Contratto in [PIANO-APP-NATIVA.md](../docs/PIANO-APP-NATIVA.md) |
-| XCTest sessione | 16 test di logica eseguiti su Linux; runner Darwin/SwiftUI ancora non eseguito | `bash scripts/check-ios-session.sh`; shim di Combine, API/store in memoria |
+| XCTest sessione/bozza | 30 test di logica eseguiti su Linux; runner Darwin/SwiftUI ancora non eseguito | `bash scripts/check-ios-session.sh`; shim di Combine, API/store in memoria |
 
 La versione 0.2 contiene feed cronologico con aggiornamento manuale, paginazione
 esplicita, avvisi sui contenuti, lettura autenticata delle immagini, proprio profilo
-e composizione di un post con una foto tramite PhotosPicker. Il profilo mostra i
-propri post nella finestra caricata, non uno storico completo indipendente. Storie,
+e composizione di un post con una foto tramite PhotosPicker. Il profilo carica i
+propri post ordinari con pagine indipendenti dal feed. Storie,
 video, chat UI, interazioni e modifica profilo restano alle tappe successive.
 
 Le scritture non vengono ritentate automaticamente. Una risposta di pubblicazione
@@ -198,7 +217,7 @@ swiftc -module-cache-path /tmp/sn-swift-model-cache ios/SN/Models/Session.swift 
 /tmp/sn-ios-model-contract
 ```
 
-Sono otto controlli con dati sintetici dei modelli JSON, non test runtime SwiftUI
+Sono tredici controlli con dati sintetici dei modelli JSON, non test runtime SwiftUI
 né il runner XCTest delle sessioni.
 
 ## Prove ripetibili

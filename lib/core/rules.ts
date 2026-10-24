@@ -88,10 +88,11 @@ export const postInput = z
   );
 export const bookmarkInput = z.object({ post_id: userId, saved: z.boolean() });
 export const storyViewInput = z.object({ story_id: userId });
-export const savedCursorInput = z.object({
+export const postCursorInput = z.object({
   created_at: z.iso.datetime({ offset: true }),
   post_id: userId,
 });
+export const savedCursorInput = postCursorInput;
 export const EPHEMERAL_OPTIONS = [
   { label: '1 ora', seconds: 3600 },
   { label: '3 ore', seconds: 10800 },

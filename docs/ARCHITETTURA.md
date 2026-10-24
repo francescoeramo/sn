@@ -18,6 +18,17 @@ La durata massima video è controllata nel browser. Il server verifica dimension
 
 ## App nativa: adapter bearer (M0, lato server)
 
+**Aggiornamento M1 al 24 ottobre 2026:** feed/media accettano bearer e le scritture
+ristrette `native/post`/`native/upload` riusano dominio, RLS e quote. Il nuovo
+`GET /api/profile/posts` legge soltanto l'archivio ordinario del chiamante (nessun
+parametro autore): identità verificata/MFA, post non scaduti, anti-join sulle
+cerchie, 40 risultati più lookahead, ordine `created_at desc,id desc`. Cursore
+`{ created_at, post_id }`, query `before` + `post_id`, validati insieme; nessun
+offset, cache pubblica o client amministrativo. Il percorso cookie web è
+preservato, un Authorization invalido non lo può selezionare. Il client iOS usa
+stato/cursore separati dal feed e scarta esiti di epoch precedenti. Nessuna
+migrazione nuova; i paragrafi M0/M0.5 sotto descrivono il precedente perimetro.
+
 Il percorso nativo è un client delle API SN; server e database restano invariati. L’autenticazione è **server-mediated**: l’app invia email e password al server, il server parla con Supabase e restituisce i token; nessuna chiave privilegiata lascia il server.
 
 - Endpoint dedicati, in `app/api/[...path]/route.ts`, selezionati dal **percorso** e non da header del client (niente fiducia in `X-SN-Client`): `native/auth/login`, `native/auth/refresh`, `native/auth/logout`, `native/auth/mfa`. Allowlist esplicita, default-deny.

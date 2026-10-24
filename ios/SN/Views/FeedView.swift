@@ -63,22 +63,43 @@ struct FeedView: View {
                             Text(bio)
                         }
                     }
-                    Section("I tuoi post nella finestra caricata") {
-                        let posts = coordinator.regularPosts.filter { $0.author_id == me?.id }
-                        if posts.isEmpty { Text("Nessun post in questa finestra.").foregroundStyle(.secondary) }
-                        ForEach(posts) { post in
+                    Section("I tuoi post") {
+                        if let message = coordinator.profileError {
+                            Text(message).foregroundStyle(.secondary)
+                            Button("Riprova") {
+                                Task { await coordinator.loadProfile(refresh: true) }
+                            }.disabled(coordinator.isLoadingProfile)
+                        }
+                        if !coordinator.profileHasLoaded && coordinator.isLoadingProfile {
+                            ProgressView("Caricamento dei tuoi post…")
+                        } else if coordinator.profileHasLoaded && coordinator.profilePosts.isEmpty {
+                            Text("Non hai ancora pubblicato post.").foregroundStyle(.secondary)
+                        }
+                        ForEach(coordinator.profilePosts) { post in
                             PostRow(post: post, author: nil)
                         }
-                        if coordinator.nextCursor != nil {
-                            Button("Carica i post precedenti") { Task { await coordinator.loadMore() } }
-                                .disabled(coordinator.isLoadingMore || coordinator.isProbing)
+                        if coordinator.profileNextCursor != nil {
+                            Button {
+                                Task { await coordinator.loadProfile() }
+                            } label: {
+                                HStack {
+                                    Text("Carica i post precedenti")
+                                    if coordinator.isLoadingProfile { ProgressView() }
+                                }
+                            }.disabled(coordinator.isLoadingProfile)
+                        } else if coordinator.profileHasLoaded && !coordinator.profilePosts.isEmpty {
+                            Label("Hai caricato tutti i tuoi post", systemImage: "checkmark")
+                                .foregroundStyle(.secondary)
                         }
                     }
                     Section {
                         NavigationLink("Sessione e accesso") { SessionView(me: me) }
                     }
                 }
-                .refreshable { await coordinator.probe() }
+                .refreshable { await coordinator.loadProfile(refresh: true) }
+                .task(id: "\(coordinator.profileGeneration)-\(coordinator.connectionGeneration)") {
+                    await coordinator.loadProfile(refresh: true)
+                }
                 .navigationTitle("Profilo")
             }
             .tabItem { Label("Profilo", systemImage: "person.crop.circle") }

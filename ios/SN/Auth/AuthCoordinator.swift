@@ -23,6 +23,13 @@ final class AuthCoordinator: ObservableObject {
     @Published private(set) var nextCursor: String?
     @Published private(set) var isLoadingMore = false
     @Published private(set) var connectionGeneration = 0
+    @Published private(set) var profilePosts: [FeedPost] = []
+    @Published private(set) var profileNextCursor: PostCursor?
+    @Published private(set) var isLoadingProfile = false
+    @Published private(set) var profileHasLoaded = false
+    @Published private(set) var profileError: String?
+    @Published private(set) var profileGeneration = 0
+    private var profileRefreshPending = false
     private let imageCache: NSCache<NSString, NSData> = {
         let cache = NSCache<NSString, NSData>()
         cache.totalCostLimit = 16 * 1024 * 1024
@@ -223,6 +230,54 @@ final class AuthCoordinator: ObservableObject {
         }
     }
 
+    /// Own archive has an independent cursor; it never consumes the home feed window.
+    func loadProfile(refresh: Bool = false) async {
+        guard tokens != nil else { return }
+        if isLoadingProfile {
+            if refresh { profileRefreshPending = true }
+            return
+        }
+        guard refresh || !profileHasLoaded || profileNextCursor != nil else { return }
+        let replacing = refresh || !profileHasLoaded
+        let cursor = replacing ? nil : profileNextCursor
+        let requestEpoch = epoch
+        let requestGeneration = profileGeneration
+        isLoadingProfile = true
+        defer {
+            if requestEpoch == epoch {
+                isLoadingProfile = false
+                if profileRefreshPending {
+                    profileRefreshPending = false
+                    Task { await self.loadProfile(refresh: true) }
+                }
+            }
+        }
+        do {
+            let page = try await read { [api] token in
+                try await api.profilePosts(accessToken: token, before: cursor)
+            }
+            guard requestEpoch == epoch else { return }
+            guard requestGeneration == profileGeneration else {
+                profileRefreshPending = true
+                return
+            }
+            var known = replacing ? Set<String>() : Set(profilePosts.map(\.id))
+            let additions = page.posts.filter { known.insert($0.id).inserted }
+            profilePosts = replacing ? additions : profilePosts + additions
+            profileNextCursor = page.nextCursor
+            profileHasLoaded = true
+            profileError = nil
+            connectionRecovered()
+            lastErrorMessage = nil
+        } catch is CancellationError {
+            return
+        } catch {
+            guard requestEpoch == epoch else { return }
+            profileError = ErrorMessages.message(for: (error as? APIError) ?? .transport)
+            handleFeedError(error)
+        }
+    }
+
     /// Private media are reused only in memory for this session, never on disk.
     func image(path: String) async throws -> Data {
         guard tokens != nil else { throw APIError.unauthorized(code: "session_invalid") }
@@ -299,6 +354,7 @@ final class AuthCoordinator: ObservableObject {
         try await write { [api] token in
             try await api.publish(accessToken: token, post: post)
         }
+        profileGeneration += 1
     }
 
     /// Proactive refresh is allowed before sending, but a write is attempted only once.
@@ -357,6 +413,12 @@ final class AuthCoordinator: ObservableObject {
         currentUserId = nil
         profiles = []
         nextCursor = nil
+        profilePosts = []
+        profileNextCursor = nil
+        profileHasLoaded = false
+        profileError = nil
+        isLoadingProfile = false
+        profileRefreshPending = false
         cachedMe = nil
         lastVerifiedAt = nil
     }

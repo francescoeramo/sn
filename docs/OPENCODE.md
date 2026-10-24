@@ -39,6 +39,14 @@ non ripartire dall'implementazione M1 descritta nelle note storiche sotto.
 Wi-Fi ora autorizzato e backend a `192.168.1.9:3000`.
 Seguire [ios/README.md](../ios/README.md) per il prossimo passo.
 
+Incrementi successivi della stessa giornata: composer protetto dalle selezioni
+foto tardive; gestione sessione/offline anche nelle scritture; archivio proprio
+indipendente (`profile/posts`, cursore composto). 30 XCTest Linux, 13 controlli
+modelli e 75 test server/regole superati; build finale installata su iPhone.
+Backend in servizio utente `sn-ios-dev` per sopravvivere al riavvio dell'agente.
+Runtime del nuovo profilo e paginazione oltre 40 ancora da confermare; non iniziare
+M2 dichiarando concluso il collaudo M1. Fare riferimento al README corrente.
+
 - M0: login, verifica sessione, rinnovo, logout/riapertura, offline e MFA confermati
   dall'utente. La matrice tecnica completa e gli XCTest sessione/SwiftUI non sono
   dichiarati eseguiti; il login MFA dopo il rafforzamento SQL resta una regressione M1.

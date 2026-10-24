@@ -13,6 +13,14 @@ connessione senza riferimenti obbligatori a USB. Nessun cambiamento al sistema
 visivo; validazione/race provate con XCTest, resa del nuovo composer ancora da
 verificare sul telefono (screenshotr non disponibile nella sessione).
 
+L'ulteriore incremento del 24 ottobre sostituisce il filtro della finestra del
+feed nel proprio profilo con un archivio indipendente. La sezione si chiama
+«I tuoi post», mostra caricamento/errore, richiede «Carica i post precedenti» e
+termina con «Hai caricato tutti i tuoi post». Il pull-to-refresh agisce soltanto
+sull'archivio. Mantiene lista/sezioni e tipografia di sistema; le descrizioni
+della vecchia finestra sotto sono storiche. La build aggiornata è installata,
+ma non è ancora disponibile una nuova cattura del profilo.
+
 ## Overview
 
 M1 aggiunge feed finito, proprio profilo e composizione con una foto. La struttura

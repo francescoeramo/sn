@@ -411,4 +411,101 @@ final class AuthCoordinatorTests: XCTestCase {
         XCTAssertNil(coordinator.lastErrorMessage)
     }
 
+    func testProfileArchiveHasIndependentPaginationAndRefresh() async {
+        let api = MockAPI()
+        var initial = bootstrap()
+        initial.posts = [post("feed-only", author: "friend")]
+        initial.nextCursor = "feed-cursor"
+        await api.setBootstrapResult(.success(initial))
+        let cursor = PostCursor(created_at: "2026-10-24T09:00:00Z", post_id: "mine")
+        await api.setProfilePostsResult(.success(ProfilePostsPage(posts: [post("mine")], nextCursor: cursor)))
+        let store = MemoryTokenStore()
+        store.tokens = tokens()
+        let coordinator = AuthCoordinator(api: api, store: store)
+        await coordinator.restore()
+        await coordinator.loadProfile()
+        await api.setProfilePostsResult(.success(ProfilePostsPage(posts: [post("mine"), post("older"), post("older")], nextCursor: nil)))
+        await coordinator.loadProfile()
+        await coordinator.loadProfile() // the last page is terminal
+        XCTAssertEqual(coordinator.profilePosts.map(\.id), ["mine", "older"])
+        XCTAssertEqual(coordinator.feed.map(\.id), ["feed-only"])
+        XCTAssertEqual(coordinator.nextCursor, "feed-cursor")
+        let cursors = await api.profileCursors
+        XCTAssertEqual(cursors, [nil, cursor])
+        await api.setProfilePostsResult(.success(ProfilePostsPage(posts: [post("new")], nextCursor: nil)))
+        await coordinator.loadProfile(refresh: true)
+        XCTAssertEqual(coordinator.profilePosts.map(\.id), ["new"])
+        await coordinator.logout()
+        XCTAssertTrue(coordinator.profilePosts.isEmpty)
+        XCTAssertFalse(coordinator.profileHasLoaded)
+        XCTAssertNil(coordinator.profileNextCursor)
+    }
+
+    func testFailedProfilePageKeepsArchiveAndCursorForRetry() async {
+        let api = MockAPI()
+        await api.setBootstrapResult(.success(bootstrap()))
+        let cursor = PostCursor(created_at: "2026-10-24T09:00:00Z", post_id: "mine")
+        await api.setProfilePostsResult(.success(ProfilePostsPage(posts: [post("mine")], nextCursor: cursor)))
+        let store = MemoryTokenStore()
+        store.tokens = tokens()
+        let coordinator = AuthCoordinator(api: api, store: store)
+        await coordinator.restore()
+        await coordinator.loadProfile()
+        await api.setProfilePostsResult(.failure(.transport))
+        await coordinator.loadProfile()
+        XCTAssertEqual(coordinator.profilePosts.map(\.id), ["mine"])
+        XCTAssertEqual(coordinator.profileNextCursor, cursor)
+        XCTAssertNotNil(coordinator.profileError)
+        XCTAssertFalse(coordinator.isLoadingProfile)
+        XCTAssertNotNil(store.tokens)
+        await api.setProfilePostsResult(.success(ProfilePostsPage(posts: [post("older")], nextCursor: nil)))
+        await coordinator.loadProfile()
+        XCTAssertEqual(coordinator.profilePosts.map(\.id), ["mine", "older"])
+        XCTAssertNil(coordinator.profileError)
+        XCTAssertFalse(coordinator.offline)
+    }
+
+    func testLateProfileResponseAfterLogoutIsDiscarded() async {
+        let api = MockAPI()
+        await api.setBootstrapResult(.success(bootstrap()))
+        await api.setProfilePostsResult(.success(ProfilePostsPage(posts: [post("private")], nextCursor: nil)))
+        await api.suspendProfile()
+        let store = MemoryTokenStore()
+        store.tokens = tokens()
+        let coordinator = AuthCoordinator(api: api, store: store)
+        await coordinator.restore()
+        let loading = Task { await coordinator.loadProfile() }
+        await api.waitForProfile()
+        await coordinator.logout()
+        await api.releaseProfile()
+        await loading.value
+        XCTAssertEqual(coordinator.state, .signedOut)
+        XCTAssertTrue(coordinator.profilePosts.isEmpty)
+        XCTAssertFalse(coordinator.profileHasLoaded)
+        XCTAssertFalse(coordinator.isLoadingProfile)
+        XCTAssertNil(coordinator.profileError)
+    }
+
+    func testPublicationDuringProfileLoadRefreshesStaleArchive() async throws {
+        let api = MockAPI()
+        await api.setBootstrapResult(.success(bootstrap()))
+        await api.setProfilePostsResult(.success(ProfilePostsPage(posts: [post("old")], nextCursor: nil)))
+        await api.suspendProfile()
+        let store = MemoryTokenStore()
+        store.tokens = tokens()
+        let coordinator = AuthCoordinator(api: api, store: store)
+        await coordinator.restore()
+        let loading = Task { await coordinator.loadProfile() }
+        await api.waitForProfile()
+        try await coordinator.sendPost(body: "Nuovo", alt: "", path: nil)
+        await api.setProfilePostsResult(.success(ProfilePostsPage(posts: [post("new"), post("old")], nextCursor: nil)))
+        await api.releaseProfile()
+        await loading.value
+        for _ in 0..<100 {
+            if coordinator.profilePosts.first?.id == "new" { break }
+            await Task.yield()
+        }
+        XCTAssertEqual(coordinator.profilePosts.map(\.id), ["new", "old"])
+    }
+
 }

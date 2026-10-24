@@ -20,6 +20,7 @@ import {
   userId,
   publicDeviceInput,
   savedCursorInput,
+  postCursorInput,
   passwordResetRequest,
   passwordUpdate,
   mfaAction,
@@ -150,6 +151,37 @@ export async function GET(request: NextRequest, { params }: Context) {
       return json(checked(await db.rpc('my_sessions')));
     }
     if (route === 'bootstrap') return json(await snapshot(await identityFrom(request)));
+    if (route === 'profile/posts') {
+      const { db, user } = await identityFrom(request);
+      const before = request.nextUrl.searchParams.get('before');
+      const postId = request.nextUrl.searchParams.get('post_id');
+      const cursor =
+        before !== null || postId !== null
+          ? postCursorInput.parse({ created_at: before, post_id: postId })
+          : undefined;
+      let query = db
+        .from('posts')
+        .select('*, media:post_media(*), circle_links:circle_posts(post_id)')
+        .eq('author_id', user.id)
+        .eq('kind', 'post')
+        .is('circle_links', null)
+        .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
+        .limit(41);
+      if (cursor)
+        query = query.or(
+          `created_at.lt.${cursor.created_at},and(created_at.eq.${cursor.created_at},id.lt.${cursor.post_id})`,
+        );
+      const rows = checked(await query);
+      const posts = rows.slice(0, 40);
+      const last = posts.at(-1);
+      return json({
+        posts,
+        nextCursor:
+          rows.length > 40 && last ? { created_at: last.created_at, post_id: last.id } : null,
+      });
+    }
     if (route === 'profile/connections') {
       const { db } = await identity();
       const target = userId.parse(request.nextUrl.searchParams.get('id'));

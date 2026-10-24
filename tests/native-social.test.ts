@@ -4,6 +4,8 @@ import { NextRequest } from 'next/server';
 const fixture = vi.hoisted(() => ({
   mfa: false,
   calls: [] as string[],
+  rows: [] as { id: string; created_at: string }[],
+  queryCalls: [] as [string, ...unknown[]][],
   identity: { db: {}, user: { id: 'native-user' }, profile: { id: 'native-user' } },
 }));
 vi.mock('@/lib/server/supabase', async (importOriginal) => {
@@ -11,9 +13,28 @@ vi.mock('@/lib/server/supabase', async (importOriginal) => {
   const query = {
     select: () => query,
     lt: () => query,
-    or: () => query,
-    order: () => query,
-    limit: async () => ({ data: [], error: null }),
+    eq: (key: string, value: string) => {
+      fixture.queryCalls.push(['eq', key, value]);
+      return query;
+    },
+    is: (key: string, value: null) => {
+      fixture.queryCalls.push(['is', key, value]);
+      return query;
+    },
+    or: (filter: string) => {
+      fixture.queryCalls.push(['or', filter]);
+      return query;
+    },
+    order: (key: string, options: object) => {
+      fixture.queryCalls.push(['order', key, options]);
+      return query;
+    },
+    limit: (count: number) => {
+      fixture.queryCalls.push(['limit', count]);
+      return query;
+    },
+    then: (resolve: (value: { data: typeof fixture.rows; error: null }) => unknown) =>
+      Promise.resolve({ data: fixture.rows, error: null }).then(resolve),
   };
   fixture.identity.db = {
     from: () => query,
@@ -69,12 +90,14 @@ function get(route: string, token: string) {
     new NextRequest(`https://sn.test/api/${route}`, {
       headers: { authorization: token, cookie: 'valid-web-session' },
     }),
-    { params: Promise.resolve({ path: [route.split('?')[0]] }) },
+    { params: Promise.resolve({ path: route.split('?')[0].split('/') }) },
   );
 }
 beforeEach(() => {
   fixture.mfa = false;
   fixture.calls.length = 0;
+  fixture.queryCalls.length = 0;
+  fixture.rows = [];
   vi.mocked(mutate).mockClear();
 });
 it.each(['native/post', 'native/upload'])(
@@ -137,6 +160,7 @@ it('native upload retains multipart validation', async () => {
   expect((await post('native/upload', 'Bearer valid')).status).toBe(415);
 });
 it.each([
+  'profile/posts',
   'posts?before=2026-10-23T12%3A00%3A00Z',
   'media?path=00000000-0000-4000-8000-000000000001%2F00000000-0000-4000-8000-000000000002',
 ])('%s supports bearer reads and rejects invalid credentials', async (route) => {
@@ -166,4 +190,68 @@ it('native post preserves and validates the shared content warning contract', as
       .status,
   ).toBe(400);
   expect(mutate).not.toHaveBeenCalled();
+});
+
+it('own profile archive binds the author to the verified user and excludes circle posts', async () => {
+  const response = await get('profile/posts?id=someone-else', 'Bearer valid');
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual({ posts: [], nextCursor: null });
+  expect(fixture.queryCalls).toEqual(
+    expect.arrayContaining([
+      ['eq', 'author_id', 'native-user'],
+      ['eq', 'kind', 'post'],
+      ['is', 'circle_links', null],
+      ['order', 'created_at', { ascending: false }],
+      ['order', 'id', { ascending: false }],
+      ['limit', 41],
+    ]),
+  );
+  expect(
+    fixture.queryCalls.some(
+      ([op, value]) => op === 'or' && String(value).startsWith('expires_at.is.null,expires_at.gt.'),
+    ),
+  ).toBe(true);
+  expect(response.headers.get('cache-control')).toContain('no-store');
+  expect(response.headers.get('set-cookie')).toBeNull();
+});
+
+it('own profile cursor breaks timestamp ties and uses a lookahead row', async () => {
+  const created_at = '2026-10-24T09:00:00.123456+00:00';
+  fixture.rows = Array.from({ length: 41 }, (_, i) => ({
+    id: `00000000-0000-4000-8000-${String(100 - i).padStart(12, '0')}`,
+    created_at,
+  }));
+  const first = await (await get('profile/posts', 'Bearer valid')).json();
+  expect(first.posts).toHaveLength(40);
+  expect(first.nextCursor).toEqual({ created_at, post_id: fixture.rows[39].id });
+  expect(first.posts.at(-1).id).not.toBe(fixture.rows[40].id);
+  const query = new URLSearchParams({ before: created_at, post_id: first.nextCursor.post_id });
+  fixture.rows = [fixture.rows[40]];
+  const second = await (await get(`profile/posts?${query}`, 'Bearer valid')).json();
+  expect(second.posts).toHaveLength(1);
+  expect(second.nextCursor).toBeNull();
+  expect(fixture.queryCalls).toContainEqual([
+    'or',
+    `created_at.lt.${created_at},and(created_at.eq.${created_at},id.lt.${first.nextCursor.post_id})`,
+  ]);
+});
+
+it.each([
+  'before=2026-10-24T09%3A00%3A00Z',
+  'post_id=00000000-0000-4000-8000-000000000001',
+  'before=invalid&post_id=00000000-0000-4000-8000-000000000001',
+  'before=2026-10-24T09%3A00%3A00Z&post_id=invalid',
+])('own profile rejects malformed or incomplete cursor: %s', async (query) => {
+  expect((await get(`profile/posts?${query}`, 'Bearer valid')).status).toBe(400);
+  expect(fixture.queryCalls).toHaveLength(0);
+});
+
+it('exactly 40 profile posts have no next page without a lookahead row', async () => {
+  fixture.rows = Array.from({ length: 40 }, (_, i) => ({
+    id: String(i),
+    created_at: '2026-10-24T09:00:00Z',
+  }));
+  const page = await (await get('profile/posts', 'Bearer valid')).json();
+  expect(page.posts).toHaveLength(40);
+  expect(page.nextCursor).toBeNull();
 });

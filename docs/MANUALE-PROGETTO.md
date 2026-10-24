@@ -417,3 +417,15 @@ chiude localmente la sessione, rete assente conserva i token e attiva il recuper
 risposte tardive dopo logout ignorate. Scritture mai ritentate automaticamente;
 408/5xx/esito perso restano ambigui. Regressioni riprodotte prima del fix,
 26 XCTest Linux e build Darwin superati. Nessun cambio server/cloud o crypto.
+
+### Consolidamento M1, incremento 3 — 24 ottobre 2026
+
+Profilo con archivio paginato proprio, indipendente dal feed. `GET /api/profile/posts`
+lega author_id all'identità verificata; bearer/MFA, RLS e no-store preservati.
+40 post ordinari non scaduti e senza cerchia per pagina, cursore data/UUID e
+lookahead per fine esatta. Nessuna nuova tabella o modifica cloud. Il client
+mantiene dati/cursore in errore, li cancella al logout e ricarica dopo pubblicazione,
+anche concorrente. 30 XCTest Linux, 13 controlli modelli, 75 test server/regole,
+typecheck/lint e build Darwin superati. Installazione finale dei tre incrementi
+con Verifying 100%, exit 0. Runtime del nuovo profilo richiesto ma ancora da
+confermare; paginazione device oltre 40 e accessibilità restano aperte.
