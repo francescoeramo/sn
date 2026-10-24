@@ -6,6 +6,13 @@ le prove sul telefono sono in [../ios/README.md](../ios/README.md).
 Questa estensione conserva l’interfaccia SwiftUI di M0. Non introduce un nuovo
 sistema visivo e non modifica `PRODUCT.md`, `DESIGN.md` o `.impeccable/design.json`.
 
+Aggiornamento 24 ottobre: il composer aggiunge avviso facoltativo fino a 160 unità
+UTF-16 normalizzate. Bozza protetta anche mentre si prepara una foto; selezioni
+superate ignorate, rimozione disponibile durante caricamento/errore. Messaggi di
+connessione senza riferimenti obbligatori a USB. Nessun cambiamento al sistema
+visivo; validazione/race provate con XCTest, resa del nuovo composer ancora da
+verificare sul telefono (screenshotr non disponibile nella sessione).
+
 ## Overview
 
 M1 aggiunge feed finito, proprio profilo e composizione con una foto. La struttura

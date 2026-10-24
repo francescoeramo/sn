@@ -2,6 +2,13 @@
 
 ## iOS — 24 ottobre 2026
 
+Incremento composer successivo: **22 XCTest Linux superati** (18 sessione e 4
+bozza), con selezioni foto sostituite/rimosse e limite avviso con emoji; build
+Darwin superata. Detector meccanico delle viste: nessun rilievo. Lettura media
+sul device confermata dall'utente dopo riavvio backend; GET media 200 in 497–831 ms.
+Nuova logica del composer ancora da collaudare su iPhone; cattura USB non riuscita
+per servizio screenshotr non disponibile. Nessuna prova VoiceOver/Dynamic Type.
+
 - `bash scripts/check-ios-session.sh`: 18 XCTest Linux superati, incluso avviso
   nel payload e nessun retry automatico dopo esito ambiguo. Shim Combine;
   non copre SwiftUI/Keychain o runner Darwin.

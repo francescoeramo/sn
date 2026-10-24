@@ -38,8 +38,8 @@ enum ErrorMessages {
             .en: "Invalid session. Sign in again.",
         ],
         "connection_unavailable": [
-            .it: "Nessuna connessione. Controlla il collegamento USB e riprova.",
-            .en: "No connection. Check the USB connection and try again.",
+            .it: "Nessuna connessione. Controlla la connessione e riprova.",
+            .en: "No connection. Check your connection and try again.",
         ],
         "auth_unavailable": [
             .it: "Il servizio non risponde. Riprova tra poco.",

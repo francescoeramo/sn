@@ -21,7 +21,7 @@ public protocol ObservableObject: AnyObject {}
     public init(wrappedValue: Value) { self.wrappedValue = wrappedValue }
 }
 SWIFT
-for source in Auth/AuthCoordinator.swift Auth/TokenStoreProtocol.swift Networking/APIClientProtocol.swift Networking/APIError.swift Models/Session.swift Models/Feed.swift Localization/ErrorMessages.swift; do
+for source in Auth/AuthCoordinator.swift Auth/TokenStoreProtocol.swift Networking/APIClientProtocol.swift Networking/APIError.swift Models/Session.swift Models/Feed.swift Models/PostDraft.swift Localization/ErrorMessages.swift; do
     cp "$repo_dir/ios/SN/$source" "$check_dir/Sources/SN/"
 done
 cp "$repo_dir/ios/SNTests/"*.swift "$check_dir/Tests/SNTests/"

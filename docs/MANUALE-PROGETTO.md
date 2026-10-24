@@ -399,3 +399,13 @@ avviso e prestazioni foto ancora da provare su device. M2 non iniziata.
 Wi-Fi esplicitamente autorizzato: computer `192.168.1.9`, backend vincolato a tale
 indirizzo, base URL e ATS allineati. Nessuna regola firewall modificata.
 Per stato e prossime prove prevale `ios/README.md` sui paragrafi storici USB.
+
+### Consolidamento M1, incremento 1 — 24 ottobre 2026
+
+L'utente conferma invio del post con avviso e, dopo il riavvio del backend,
+lettura nuovamente funzionante; media 200 in 497–831 ms. Il server ora gira nel
+servizio utente transitorio `sn-ios-dev` per sopravvivere al riavvio dell'agente.
+Il composer invalida selezioni foto superate, blocca invio durante preparazione e
+permette rimozione anche durante caricamento. Nessuna persistenza della bozza.
+22 XCTest Linux e build Darwin superati; installazione del nuovo incremento
+ancora da eseguire. Stato e comandi in `ios/README.md`.

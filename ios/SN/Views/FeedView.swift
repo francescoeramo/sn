@@ -21,7 +21,7 @@ struct FeedView: View {
                         ContentUnavailableView {
                             Label(coordinator.offline ? "Connessione assente" : "Il tuo feed è ancora vuoto", systemImage: coordinator.offline ? "cable.connector.slash" : "text.bubble")
                         } description: {
-                            Text(coordinator.offline ? "La sessione è conservata. Ricollega il telefono via USB e riprova." : "Qui troverai i post condivisi con te. Puoi iniziare scrivendone uno.")
+                            Text(coordinator.offline ? "La sessione è conservata. Controlla la connessione e riprova." : "Qui troverai i post condivisi con te. Puoi iniziare scrivendone uno.")
                         }
                     }
                     ForEach(coordinator.homePosts) { post in

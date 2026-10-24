@@ -4,14 +4,9 @@ import PhotosUI
 struct ComposePostView: View {
     @EnvironmentObject private var coordinator: AuthCoordinator
     @Environment(\.dismiss) private var dismiss
-    @State private var bodyText = ""
-    @State private var alt = ""
-    @State private var warningEnabled = false
-    @State private var contentWarning = ""
+    @State private var draft = PostDraft()
     @State private var selection: PhotosPickerItem?
-    @State private var jpeg: Data?
-    @State private var uploadedPath: String?
-    @State private var preparing = false
+    @State private var photoTask: Task<Void, Never>?
     @State private var sending = false
     @State private var error: String?
     @State private var uncertain = false
@@ -21,26 +16,26 @@ struct ComposePostView: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("Cosa vuoi condividere?", text: $bodyText, axis: .vertical)
+                    TextField("Cosa vuoi condividere?", text: $draft.body, axis: .vertical)
                         .lineLimit(5...12)
-                    Text("\(bodyText.utf16.count)/2200").font(.caption).foregroundStyle(.secondary)
+                    Text("\(draft.body.utf16.count)/2200").font(.caption).foregroundStyle(.secondary)
                 }
                 Section {
-                    Toggle("Aggiungi un avviso sui contenuti", isOn: $warningEnabled)
-                    if warningEnabled {
-                        TextField("Argomento da segnalare", text: $contentWarning, axis: .vertical)
+                    Toggle("Aggiungi un avviso sui contenuti", isOn: $draft.warningEnabled)
+                    if draft.warningEnabled {
+                        TextField("Argomento da segnalare", text: $draft.contentWarning, axis: .vertical)
                             .lineLimit(1...4)
-                        Text("\(contentWarning.utf16.count)/160").font(.caption).foregroundStyle(.secondary)
-                        if contentWarning.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        Text("\(draft.warning.utf16.count)/160").font(.caption).foregroundStyle(.secondary)
+                        if draft.warning.isEmpty {
                             Text("Scrivi un breve avviso oppure disattivalo.")
                                 .font(.footnote).foregroundStyle(.secondary)
-                        } else if contentWarning.utf16.count > 160 {
+                        } else if draft.warning.utf16.count > 160 {
                             Text("Accorcia l’avviso a 160 caratteri per pubblicare.")
                                 .font(.footnote).foregroundStyle(.red)
                         }
                     }
                 } footer: {
-                    if warningEnabled {
+                    if draft.warningEnabled {
                         Text("Nel feed testo e foto resteranno nascosti finché chi legge sceglierà Mostra contenuto.")
                     }
                 }
@@ -48,20 +43,20 @@ struct ComposePostView: View {
                     PhotosPicker(selection: $selection, matching: .images) {
                         Label("Scegli una foto", systemImage: "photo")
                     }
-                    if preparing { ProgressView("Preparazione della foto…") }
-                    if let jpeg, let image = UIImage(data: jpeg) {
+                    if draft.preparing { ProgressView("Preparazione della foto…") }
+                    if selection != nil && draft.jpeg == nil {
+                        Button("Rimuovi foto", role: .destructive) { selection = nil }
+                    }
+                    if let jpeg = draft.jpeg, let image = UIImage(data: jpeg) {
                         Image(uiImage: image).resizable().scaledToFit().accessibilityLabel("Foto selezionata")
-                        TextField("Descrizione per chi usa VoiceOver", text: $alt, axis: .vertical)
-                        Text("\(alt.utf16.count)/300").font(.caption).foregroundStyle(.secondary)
-                        if alt.utf16.count > 300 {
+                        TextField("Descrizione per chi usa VoiceOver", text: $draft.alt, axis: .vertical)
+                        Text("\(draft.alt.utf16.count)/300").font(.caption).foregroundStyle(.secondary)
+                        if draft.alt.utf16.count > 300 {
                             Text("Accorcia la descrizione della foto a 300 caratteri per pubblicare.")
                                 .font(.footnote).foregroundStyle(.red)
                         }
                         Button("Rimuovi foto", role: .destructive) {
-                            self.jpeg = nil
-                            alt = ""
                             selection = nil
-                            uploadedPath = nil
                         }
                     }
                 }
@@ -80,70 +75,65 @@ struct ComposePostView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Annulla") {
-                        if !hasDraft { dismiss() }
+                        if !draft.hasChanges { dismiss() }
                         else { confirmDiscard = true }
                     }.disabled(sending)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Pubblica") { Task { await publish() } }
-                        .disabled(sending || preparing || uncertain || !validDraft)
+                        .disabled(sending || draft.preparing || uncertain || !draft.canPublish)
                 }
             }
-            .interactiveDismissDisabled(sending || hasDraft)
+            .interactiveDismissDisabled(sending || draft.hasChanges)
             .confirmationDialog("Scartare questo post?", isPresented: $confirmDiscard, titleVisibility: .visible) {
                 Button("Scarta post", role: .destructive) { dismiss() }
             }
-            .task(id: selection) { await preparePhoto() }
+            .onChange(of: selection) { _, selected in
+                photoTask?.cancel()
+                let revision = draft.selectPhoto(present: selected != nil)
+                error = nil
+                guard let selected else { return }
+                photoTask = Task { await preparePhoto(selected, revision: revision) }
+            }
+            .onDisappear { photoTask?.cancel() }
         }
     }
 
-    private var hasDraft: Bool {
-        !bodyText.isEmpty || jpeg != nil || !contentWarning.isEmpty
-    }
-
-    private var validDraft: Bool {
-        bodyText.utf16.count <= 2200 && alt.utf16.count <= 300
-            && (!bodyText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || jpeg != nil)
-            && (!warningEnabled || (!contentWarning.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                                    && contentWarning.utf16.count <= 160))
-    }
-
-    private func preparePhoto() async {
-        guard let selection else { return }
-        preparing = true
-        jpeg = nil
-        uploadedPath = nil
-        error = nil
-        defer { preparing = false }
+    private func preparePhoto(_ selected: PhotosPickerItem, revision: Int) async {
         do {
-            guard let data = try await selection.loadTransferable(type: Data.self), data.count <= 32 * 1024 * 1024,
+            guard let data = try await selected.loadTransferable(type: Data.self), data.count <= 32 * 1024 * 1024,
                   let image = PhotoPreparation.thumbnail(data: data),
                   let result = image.jpegData(compressionQuality: 0.8), result.count <= 3 * 1024 * 1024 else {
-                error = "Non riesco a preparare questa foto entro 3 MB. Scegline un’altra."
+                if draft.finishPhoto(nil, revision: revision) {
+                    error = "Non riesco a preparare questa foto entro 3 MB. Scegline un’altra."
+                }
                 return
             }
             try Task.checkCancellation()
-            jpeg = result
-        } catch is CancellationError {
-            return
-        } catch { self.error = "Impossibile aprire la foto. Riprova a selezionarla." }
+            draft.finishPhoto(result, revision: revision)
+        } catch {
+            guard !Task.isCancelled else { return }
+            if draft.finishPhoto(nil, revision: revision) {
+                self.error = "Impossibile aprire la foto. Riprova a selezionarla."
+            }
+        }
     }
 
     private func publish() async {
-        guard !sending, validDraft else { return }
+        guard !sending, draft.canPublish else { return }
         sending = true
         error = nil
         defer { sending = false }
         do {
-            uploadedPath = try await coordinator.uploadPhoto(jpeg: jpeg, uploaded: uploadedPath)
+            draft.uploadedPath = try await coordinator.uploadPhoto(jpeg: draft.jpeg, uploaded: draft.uploadedPath)
         } catch {
-            self.error = "Foto non caricata. Verifica la connessione USB e riprova."
+            self.error = "Foto non caricata. Verifica la connessione e riprova."
             return
         }
         do {
             try await coordinator.sendPost(
-                body: bodyText, alt: alt, path: uploadedPath,
-                contentWarning: warningEnabled ? contentWarning.trimmingCharacters(in: .whitespacesAndNewlines) : ""
+                body: draft.body, alt: draft.alt, path: draft.uploadedPath,
+                contentWarning: draft.warning
             )
             dismiss()
             await coordinator.probe()

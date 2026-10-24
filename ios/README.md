@@ -3,6 +3,33 @@
 Aggiornato al 24 ottobre 2026: M1 installata via USB, backend raggiungibile via Wi-Fi; collaudo runtime esteso aperto.
 Il client nativo usa le API SN; backend Next.js e Supabase restano condivisi con il sito.
 
+## Consolidamento M1 del 24 ottobre — incrementi successivi
+
+L'utente ha provato a pubblicare con avviso: invio riuscito; inizialmente foto e
+riapertura segnalavano offline. Il riavvio dell'agente aveva spento il backend.
+Dopo il riavvio del server l'utente conferma «ora funziona»; letture media 200 in
+497–831 ms osservate. Non attribuire quell'errore a Storage o al protocollo native.
+
+Il backend ora è il servizio utente transitorio `sn-ios-dev.service`, indipendente
+dalla sessione dell'agente; si ferma al logout/reboot del computer, non è un deploy.
+Comandi dalla root (l'indirizzo va ricontrollato):
+
+```bash
+systemd-run --user --unit=sn-ios-dev --collect --property=Restart=on-failure --working-directory="$PWD" "$(command -v node)" node_modules/next/dist/bin/next dev --hostname 192.168.1.9 --port 3000
+systemctl --user status sn-ios-dev.service
+journalctl --user -u sn-ios-dev.service -n 30 --no-pager
+systemctl --user stop sn-ios-dev.service
+```
+
+**Incremento 1 — composer:** bozza solo RAM, revisione della selezione foto per
+ignorare esiti tardivi e impedire invii durante la preparazione della nuova foto.
+Sostituire/rimuovere azzera percorso caricato e descrizione; rimozione disponibile
+anche durante caricamento/errore. Avvisi normalizzati prima del limite UTF-16,
+messaggi di connessione validi sia su Wi-Fi sia su USB. 22 XCTest Linux e build
+Darwin superati; nuova build non ancora installata a questo punto del registro.
+Detector meccanico sulle due viste modificate: nessun rilievo. Screenshot USB
+non disponibile (`screenshotr: Invalid service`); nessuna verifica visiva inventata.
+
 ## Ripresa del 24 ottobre 2026 — avvisi sui contenuti
 
 Riprese le modifiche non committate del composer: ora è possibile aggiungere un
