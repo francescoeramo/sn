@@ -5,6 +5,17 @@ Il client nativo usa le API SN; backend Next.js e Supabase restano condivisi con
 
 ## Automazione del 26 ottobre 2026
 
+Preparazione automatica ambiente: `python scripts/prepare-ios-dev.py` riusa l'IP
+privato configurato se ancora assegnato, altrimenti sceglie l'unico IP privato
+sull'interfaccia di default. Aggiorna soltanto base URL ed eccezione ATS, avvia o
+riallinea il servizio di questo checkout e verifica bootstrap 401 senza token.
+`--check` è diagnostico; `--install` aggiunge build/firma/installazione USB e
+richiede Verifying 100%. `--host` risolve reti ambigue con un IP privato assegnato.
+Nessuna modifica a firewall, router, rete o cloud. Il servizio resta transitorio:
+dopo riavvio del computer eseguire nuovamente il comando. Cinque regressioni
+offline coprono cambio DHCP, reti ambigue, IP non assegnati e preservazione ATS;
+eseguite anche in CI e nel collaudo unico M1.
+
 Ripristino connessione nella stessa giornata: il servizio transitorio non era
 più presente e il DHCP aveva assegnato al computer `192.168.1.251`, mentre l'app
 puntava ancora a `192.168.1.9`. Allineati base URL ed eccezione ATS al nuovo IP;

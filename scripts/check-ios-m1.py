@@ -50,6 +50,7 @@ def main():
             raise RuntimeError(name)
 
     try:
+        run('development-network', [sys.executable, '-B', 'scripts/test-ios-dev.py'])
         run('session', ['bash', 'scripts/check-ios-session.sh'])
         with tempfile.TemporaryDirectory(prefix='sn-m1-contract-') as temporary:
             executable = str(Path(temporary) / 'models')

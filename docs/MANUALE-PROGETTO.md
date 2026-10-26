@@ -1,5 +1,10 @@
 # SN — manuale operativo del progetto
 
+Preparazione iOS automatizzata: `python scripts/prepare-ios-dev.py`, con
+`--check` diagnostico e `--install` per aggiornare via USB l'app dopo un cambio IP.
+Riallinea endpoint/ATS e servizio locale del checkout, verifica risposta 401;
+cinque regressioni offline incluse nella CI. Procedura in `ios/README.md`.
+
 Rete di sviluppo, 26 ottobre: DHCP ora `192.168.1.251`, aggiornati base URL iOS e
 ATS; backend transitorio `sn-ios-dev` ripristinato sul nuovo indirizzo dopo averlo
 trovato assente. Il precedente `192.168.1.9` nei resoconti sotto è storico.
