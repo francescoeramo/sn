@@ -1,25 +1,25 @@
-# Graph Report - sn  (2026-10-24)
+# Graph Report - sn  (2026-10-26)
 
 ## Corpus Check
-- 206 files · ~159,835 words
+- 208 files · ~161,147 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 11 file(s) not represented in the graph (top: (none) 5, .resolved 2, .example 1)
 
 ## Summary
-- 1984 nodes · 4197 edges · 148 communities (82 shown, 66 thin omitted)
-- Extraction: 92% EXTRACTED · 8% INFERRED · 0% AMBIGUOUS · INFERRED: 328 edges (avg confidence: 0.86)
+- 1980 nodes · 4215 edges · 151 communities (92 shown, 59 thin omitted)
+- Extraction: 92% EXTRACTED · 8% INFERRED · 0% AMBIGUOUS · INFERRED: 330 edges (avg confidence: 0.86)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `2bfe19c8`
+- Built from commit: `1f0fcbf6`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
-- ap/[...path]/route.ts
+- core/federation.ts
 - api/[...path]/route.ts
 - rules.ts
-- community-notes.tsx
+- primitives.tsx
 - 20260909094232_initial_social.sql
 - types.ts
 - crypto/chat.ts
@@ -28,17 +28,17 @@
 - SN — Piano app nativa iOS (SwiftUI)
 - Sendable
 - 20260926130000_collaborative_posts.sql
-- prepareMedia
+- circle-panel.tsx
 - language-provider.tsx
 - 20261015170711_timed_account_bans.sql
 - social-app.tsx
 - package.json
 - CodingKeys
-- .seal
+- String
 - 20260923160225_circles.sql
 - 20260926140000_expressiveness.sql
 - compilerOptions
-- SwiftUI
+- ap/[...path]/route.ts
 - opencode.sn.json
 - 20260925180000_event_details_and_album.sql
 - devDependencies
@@ -51,9 +51,10 @@
 - public.claim_media_cleanup
 - public.refresh_product_metrics
 - 20260909201015_encrypted_chat.sql
-- SessionChecks/README.md
+- supabase.ts
 - 20260909200015_ephemeral_chat.sql
 - private.circle_image_available
+- auth.ts
 - Parte A — Supabase
 - dependencies
 - scripts
@@ -83,12 +84,12 @@
 - public.federation_actor_keys
 - postcss.config.mjs
 - SN — manuale operativo del progetto
-- Prompt di progetto — "SN" (nome temporaneo)
+- Funzionalità del Sistema
 - Risultati delle verifiche
-- APIError
+- .seal
 - SN — Product
 - AuthCoordinator
-- theme-settings.tsx
+- ApiError
 - README.md
 - Architettura e lavoro ancora necessario
 - Decisioni del 9 settembre 2026
@@ -98,6 +99,7 @@
 - Piano di continuità — profili, carousel, Home e condivisione
 - Piano di continuità — UX mobile, navigazione e registrazione
 - 20261015171422_enforce_mfa_database_access.sql
+- Data
 - Chat cifrata, protocollo v1
 - SN
 - Email di autenticazione e Resend
@@ -109,25 +111,30 @@
 - Foundation
 - SKILL.md
 - Sviluppo iOS di SN
+- check-ios-m1.py
 - 20261019134743_close_metadata_assurance_gaps.sql
 - 20261019134742_separate_account_deletion_intent.sql
 - SECURITY-AUDIT-2026-10-19.md
 - APIClientProtocol
-- ComposePostView
-- SN — lavoro confermato
+- Parte B — Vercel
+- CodingKeys
 - iOS M0.5 — prova di compatibilità crittografica
+- .loadProfile
 - backup.mjs
-- check-ios-m1-device.py
 - check-ios-session.sh
-- EventsPanel
-- security-settings.tsx
-- FeedView.swift
+- vitest
+- run
+- events-panel.tsx
+- next
+- .body
 - TokenPair
+- Checklist di collegamento — Supabase e Vercel
 - Control
-- Funzionalità del Sistema
+- ChatCryptoError
+- State
 - digest-panel.tsx
+- TokenStoreError
 - Collaudo M1 su iPhone — 24 ottobre 2026
-- SN
 - ErrorMessages
 
 ## God Nodes (most connected - your core abstractions)
@@ -147,33 +154,33 @@
   docs/OPENCODE.md → app/api/[...path]/route.ts
 - `4.8 Modifiche server` --references--> `sameOrigin()`  [INFERRED]
   docs/PIANO-APP-NATIVA.md → app/api/[...path]/route.ts
-- `Automazione ripetibile` --references--> `APIClient`  [INFERRED]
-  docs/IOS-M1-VERIFICA.md → ios/SN/Networking/APIClient.swift
 - `Interfaccia e dati` --references--> `SocialApp()`  [INFERRED]
   docs/MANUALE-PROGETTO.md → components/social-app.tsx
-- `Server e autenticazione` --references--> `adminDatabase()`  [INFERRED]
-  docs/MANUALE-PROGETTO.md → lib/server/supabase.ts
+- `4.6 Logout e revoca (F2, F4)` --references--> `AuthCoordinator`  [INFERRED]
+  docs/PIANO-APP-NATIVA.md → ios/SN/Auth/AuthCoordinator.swift
+- `4.10 Modelli M0 (R5)` --references--> `LoginRequest`  [INFERRED]
+  docs/PIANO-APP-NATIVA.md → ios/SN/Models/Session.swift
 
 ## Import Cycles
 - None detected.
 
-## Communities (148 total, 66 thin omitted)
+## Communities (151 total, 59 thin omitted)
 
-### Community 0 - "ap/[...path]/route.ts"
-Cohesion: 0.07
-Nodes (65): activityUrlValue, audienceValue, Context, dynamic, embeddedActivity, GET(), inboundActivity, POST() (+57 more)
+### Community 0 - "core/federation.ts"
+Cohesion: 0.10
+Nodes (38): POST(), activityPubPlainText(), activityUrl(), actorDeleteDocument(), actorUrl(), Audience, deleteDocument(), emptyActorCollection() (+30 more)
 
 ### Community 1 - "api/[...path]/route.ts"
-Cohesion: 0.05
-Nodes (91): metadata, PasswordPage(), body(), Context, dynamic, enforceAuthRate(), errorResponse(), GET() (+83 more)
+Cohesion: 0.14
+Nodes (37): body(), Context, dynamic, enforceAuthRate(), errorResponse(), GET(), json(), maxDuration (+29 more)
 
 ### Community 2 - "rules.ts"
 Cohesion: 0.06
-Nodes (82): clearChatStore(), ago(), applyDemo(), buildDemoDigest(), clearDemo(), demoDigestPeriod(), expireDemoBans(), initializeChat() (+74 more)
+Nodes (83): clearChatStore(), ago(), applyDemo(), buildDemoDigest(), clearDemo(), demoDigestPeriod(), expireDemoBans(), initializeChat() (+75 more)
 
-### Community 3 - "community-notes.tsx"
-Cohesion: 0.39
-Nodes (7): NotesReview(), PostNotes(), ReviewNote(), sourceHost(), Sources(), NotesReview, CommunityNote
+### Community 3 - "primitives.tsx"
+Cohesion: 0.18
+Nodes (16): NotesReview(), PostNotes(), ReviewNote(), sourceHost(), Sources(), PostCard(), emptyIcons, LoadingShell() (+8 more)
 
 ### Community 4 - "20260909094232_initial_social.sql"
 Cohesion: 0.06
@@ -181,55 +188,55 @@ Nodes (60): blocks_target, comments_author, comments_post, federation_due, follo
 
 ### Community 5 - "types.ts"
 Cohesion: 0.05
-Nodes (41): ACTION_FAILURE, actionErrorMessage(), AlbumItem, ChatGroup, ChatGroupInvite, ChatGroupReceipt, ChatGroupsState, ChatSettings (+33 more)
+Nodes (41): StoryPlayer, StoryFrame(), StoryPlayer(), AlbumItem, ChatGroup, ChatGroupInvite, ChatGroupReceipt, ChatSettings (+33 more)
 
 ### Community 6 - "crypto/chat.ts"
-Cohesion: 0.14
-Nodes (25): aad(), aes(), AnyChatContext, base64(), ChatContext, ClearMessage, GroupChatContext, LocalDevice (+17 more)
+Cohesion: 0.08
+Nodes (51): GroupChatConversation(), groupRequest(), OpenGroupMessage, openMessages(), chatRequest(), DecryptedMessage, prepareSession(), readConversation() (+43 more)
 
 ### Community 8 - "Interfaccia nativa iOS — incremento M1"
-Cohesion: 0.14
-Nodes (11): Colors, Components, Do's and Don'ts, Elevation & Depth, Evidenza e limiti della registrazione, Interfaccia nativa iOS — incremento M1, Overview, Shapes (+3 more)
+Cohesion: 0.25
+Nodes (8): Components, Do's and Don'ts, Elevation & Depth, Evidenza e limiti della registrazione, Interfaccia nativa iOS — incremento M1, Overview, Shapes, Typography
 
 ### Community 9 - "SN — Piano app nativa iOS (SwiftUI)"
 Cohesion: 0.08
-Nodes (24): 10. Recupero connessione M1 — 23 ottobre 2026, 11. Composer con avvisi — 24 ottobre 2026, 12. Consolidamento M1 — 24 ottobre 2026, 13. Archivio del proprio profilo — 24 ottobre 2026, 1. Direzione e vincoli, 2. Sequenza delle tappe, 3. Regole vincolanti, 4.10 Modelli M0 (R5) (+16 more)
+Nodes (25): 10. Recupero connessione M1 — 23 ottobre 2026, 11. Composer con avvisi — 24 ottobre 2026, 12. Consolidamento M1 — 24 ottobre 2026, 13. Archivio del proprio profilo — 24 ottobre 2026, 1. Direzione e vincoli, 2. Sequenza delle tappe, 3. Regole vincolanti, 4.10 Modelli M0 (R5) (+17 more)
 
 ### Community 10 - "Sendable"
-Cohesion: 0.22
+Cohesion: 0.20
 Nodes (13): CirclePostLink, FeedFollow, FeedMedia, FeedPage, FeedPost, .attachments, .date, FeedProfile (+5 more)
 
 ### Community 11 - "20260926130000_collaborative_posts.sql"
 Cohesion: 0.18
 Nodes (12): album_items_post_created, collaborators_user, private.album_item_available(), private.can_read_asset(), private.circle_image_available(), private.event_photo_available(), public.album_items, public.claim_media_cleanup() (+4 more)
 
-### Community 12 - "prepareMedia"
-Cohesion: 0.17
-Nodes (15): CircleMark(), CirclePanel(), createCircle(), updateCircle(), uploadCircleImage(), CollaborationPanel(), addItem(), EventRow() (+7 more)
+### Community 12 - "circle-panel.tsx"
+Cohesion: 0.11
+Nodes (29): CircleMark(), CirclePanel(), createCircle(), updateCircle(), uploadCircleImage(), Props, CollaborationPanel(), addItem() (+21 more)
 
 ### Community 13 - "language-provider.tsx"
-Cohesion: 0.12
-Nodes (22): metadata, RootLayout(), LanguageContext, LanguageProvider(), originalAttributes, originalText, renderedAttributes, renderedText (+14 more)
+Cohesion: 0.15
+Nodes (19): metadata, RootLayout(), LanguageContext, LanguageProvider(), originalAttributes, originalText, renderedAttributes, renderedText (+11 more)
 
 ### Community 14 - "20261015170711_timed_account_bans.sql"
 Cohesion: 0.14
 Nodes (6): private.can_message(), private.can_see_author(), private.member(), public.moderation_accounts(), public.profile_connections(), public.receive_federated_activity()
 
 ### Community 15 - "social-app.tsx"
-Cohesion: 0.08
-Nodes (54): Demo(), Home(), AuthScreen(), Props, Props, Composer(), Props, demoGroups() (+46 more)
+Cohesion: 0.12
+Nodes (23): Demo(), Home(), useLanguage(), LanguageSettings(), RemotePostCard(), auditLabels, auditTargetLabels, ChatConversation (+15 more)
 
 ### Community 16 - "package.json"
 Cohesion: 0.10
-Nodes (19): author, description, keywords, license, name, private, type, version (+11 more)
+Nodes (20): author, description, keywords, license, name, private, type, version (+12 more)
 
 ### Community 17 - "CodingKeys"
-Cohesion: 0.05
-Nodes (38): State, loading, mfaRequired, signedIn, signedOut, CodingKeys, alt, body (+30 more)
+Cohesion: 0.06
+Nodes (32): CodingKeys, alt, body, content_warning, kind, media_path, CodingKeys, accessToken (+24 more)
 
-### Community 18 - ".seal"
-Cohesion: 0.08
-Nodes (35): Crypto, CryptoKit, ChatClearMessage, ChatContext, ChatCrypto, ChatCryptoError, expired, invalidAttachment (+27 more)
+### Community 18 - "String"
+Cohesion: 0.26
+Nodes (10): Crypto, CryptoKit, ChatClearMessage, ChatDevice, ChatLocalDevice, ChatMedia, ChatPacket, ChatPublicKey (+2 more)
 
 ### Community 19 - "20260923160225_circles.sql"
 Cohesion: 0.15
@@ -242,6 +249,10 @@ Nodes (13): comments_parent, private.can_react(), private.can_share(), private.c
 ### Community 21 - "compilerOptions"
 Cohesion: 0.11
 Nodes (18): compilerOptions, allowJs, esModuleInterop, incremental, isolatedModules, jsx, lib, module (+10 more)
+
+### Community 22 - "ap/[...path]/route.ts"
+Cohesion: 0.13
+Nodes (34): activityUrlValue, audienceValue, Context, dynamic, embeddedActivity, GET(), inboundActivity, remoteNote (+26 more)
 
 ### Community 23 - "opencode.sn.json"
 Cohesion: 0.05
@@ -268,8 +279,12 @@ Cohesion: 0.21
 Nodes (9): event_responses_user, event_updates_event_created, events_circle_start, events_start, private.can_see_event(), public.create_event(), public.event_responses, public.event_updates (+1 more)
 
 ### Community 29 - "chat-conversation.tsx"
-Cohesion: 0.13
-Nodes (32): ChatConversation(), settingsChange(), GroupChatConversation(), groupRequest(), OpenGroupMessage, openMessages(), chatAction(), syncConversation() (+24 more)
+Cohesion: 0.29
+Nodes (9): ChatConversation(), settingsChange(), ACTION_FAILURE, actionErrorMessage(), chatAction(), syncConversation(), EPHEMERAL_OPTIONS, Action (+1 more)
+
+### Community 30 - "MockAPI"
+Cohesion: 0.08
+Nodes (11): APIError, .code, .isConnectivityFailure, .isDefinitiveSessionFailure, .isUnauthorized, .mayHaveCommitted, server, transport (+3 more)
 
 ### Community 31 - "20260913180500_encrypted_group_messages.sql"
 Cohesion: 0.23
@@ -283,6 +298,10 @@ Nodes (3): public.explore_preferences, public.product_metrics_daily, public.refr
 Cohesion: 0.21
 Nodes (5): chat_devices_user, private.device_guard(), private.message_guard(), public.chat_devices, sn_device_guard
 
+### Community 35 - "supabase.ts"
+Cohesion: 0.19
+Nodes (18): metadata, PasswordPage(), GET(), UpdatePassword(), F. Funzionalità prodotto approvate, dopo l’affidabilità, 4.12 Ordine di esecuzione, accountForToken(), activeAccount() (+10 more)
+
 ### Community 36 - "20260909200015_ephemeral_chat.sql"
 Cohesion: 0.31
 Nodes (6): messages_expiry, private.can_read_asset(), private.message_guard(), public.claim_media_cleanup(), sn_message_guard, sn_post_exclusive_media
@@ -291,9 +310,13 @@ Nodes (6): messages_expiry, private.can_read_asset(), private.message_guard(), p
 Cohesion: 0.33
 Nodes (3): private.circle_image_available(), public.claim_media_cleanup(), public.create_circle()
 
+### Community 38 - "auth.ts"
+Cohesion: 0.19
+Nodes (12): authConfig(), gotrue(), nativeAuthRoutes, NativeSession, PasswordSignInResult, record(), refreshNativeSession(), revokeNativeSession() (+4 more)
+
 ### Community 39 - "Parte A — Supabase"
-Cohesion: 0.06
-Nodes (30): A10. Advisor, A11. Collaudo cloud, A12. Manutenzione e backup, A1. Progetto dedicato, A2. Chiavi API, A3. Reference e connessione, A4. Applicare le migrazioni, A5. URL di autenticazione (+22 more)
+Cohesion: 0.15
+Nodes (13): A10. Advisor, A11. Collaudo cloud, A12. Manutenzione e backup, A1. Progetto dedicato, A2. Chiavi API, A3. Reference e connessione, A4. Applicare le migrazioni, A5. URL di autenticazione (+5 more)
 
 ### Community 40 - "dependencies"
 Cohesion: 0.20
@@ -347,17 +370,13 @@ Nodes (3): printWidth, singleQuote, trailingComma
 Cohesion: 0.05
 Nodes (39): 10. Regole pratiche per chi interviene, 11. Riferimenti di progetto, 12. Audit di sicurezza del 19 ottobre 2026, 13. Client iOS M1 — 23 ottobre 2026, 1. In breve, 2. Avvio rapido e orientamento, 3. Mappa del repository, 4. Architettura e flussi (+31 more)
 
-### Community 92 - "Prompt di progetto — "SN" (nome temporaneo)"
-Cohesion: 0.17
-Nodes (11): Contesto e obiettivo, Decisione confermata: eliminazione in chat, Decisioni correnti che prevalgono sulle sezioni storiche, Filosofia di Design e UX: Coinvolgente ma Rispettosa del Tempo, Istruzioni Operative per lo Sviluppo, Politica sui Contenuti, Moderazione e Libertà di Espressione, Predisposizione per Pubblicità Etica (Sostenibilità Futura), Principi guida non negoziabili: (+3 more)
+### Community 92 - "Funzionalità del Sistema"
+Cohesion: 0.08
+Nodes (23): 10. Messaggistica diretta: conservazione, Chat temporanea e stati, 1. Feed e Profili, 2. Storie con Autoplay e Player Avanzato, 3. Reels / Video Brevi, 4. Cerchie e spazi condivisi, 5. Eventi semplici, 6. Digest scelto dall’utente, 7. Post collaborativi e album condivisi (+15 more)
 
 ### Community 93 - "Risultati delle verifiche"
 Cohesion: 0.07
 Nodes (29): 10 settembre 2026 — salvati e avvisi, 11 settembre 2026 — backup e ripristino, 11 settembre 2026 — ciclo di vita della chat, 11 settembre 2026 — recupero account, 11 settembre 2026 — registro di moderazione, 11 settembre 2026 — ricerca full-text, 15 ottobre 2026 — allineamento documentazione e OpenCode, 15 ottobre 2026 — avvisi SECURITY DEFINER e bypass MFA (+21 more)
-
-### Community 94 - "APIError"
-Cohesion: 0.15
-Nodes (10): APIError, .code, .isConnectivityFailure, .isDefinitiveSessionFailure, .isUnauthorized, .mayHaveCommitted, server, transport (+2 more)
 
 ### Community 95 - "SN — Product"
 Cohesion: 0.12
@@ -365,31 +384,31 @@ Nodes (15): Brand Commitments, Capabilities and Constraints, Decisioni aperte su
 
 ### Community 96 - "AuthCoordinator"
 Cohesion: 0.08
-Nodes (16): Layout, AuthCoordinator, .cachedMe, .homePosts, .regularPosts, FeedView, .body, PostRow (+8 more)
+Nodes (9): 4.9 Modifiche iOS, AuthCoordinator, .cachedMe, .homePosts, .regularPosts, KeychainTokenStore, .baseQuery, TokenStore (+1 more)
 
-### Community 97 - "theme-settings.tsx"
-Cohesion: 0.50
-Nodes (4): ThemeSettings, applyTheme(), Theme, ThemeSettings()
+### Community 97 - "ApiError"
+Cohesion: 0.28
+Nodes (10): isPublicFederationAddress(), isPublicIpv4(), fetchPinnedActor(), fetchRemoteActorKey(), postPinnedFederationActivity(), RemoteActorKey, requireAllowedInstance(), requirePublicFederationUrl() (+2 more)
 
 ### Community 99 - "Architettura e lavoro ancora necessario"
-Cohesion: 0.29
-Nodes (6): App nativa: adapter bearer (M0, lato server), Architettura e lavoro ancora necessario, Client iOS e prova crittografica (15 ottobre 2026), Confini, Funzioni future e limiti attuali, Sicurezza e confini dei test
+Cohesion: 0.18
+Nodes (10): App nativa: adapter bearer (M0, lato server), Architettura e lavoro ancora necessario, Client iOS e prova crittografica (15 ottobre 2026), Confini, Federazione: trasporto locale in anteprima, Funzioni future e limiti attuali, Sicurezza e confini dei test, Follow (+2 more)
 
 ### Community 100 - "Decisioni del 9 settembre 2026"
 Cohesion: 0.20
 Nodes (9): 15 ottobre 2026 — stato nativo e moderazione, Aggiornamento del 10 settembre 2026, Aggiornamento del 24 settembre 2026 — sezioni 5–9, Aggiornamento dell’11 settembre 2026 — requisiti chat, Chat effimera e allegati, Decisioni del 9 settembre 2026, Gestione degli account, Note della comunità (+1 more)
 
 ### Community 101 - "Funzioni sociali successive al collaudo cloud"
-Cohesion: 0.29
-Nodes (7): 4. Cerchie e spazi condivisi, 5. Eventi semplici, 6. Digest scelto dall'utente — implementato in locale, 7. Post collaborativi e album condivisi — implementati in locale, 8. Conversazioni più espressive — implementate in locale, 9. Scoperta intenzionale e salute del prodotto — implementata in locale, Funzioni sociali successive al collaudo cloud
+Cohesion: 0.15
+Nodes (12): 4. Cerchie e spazi condivisi, 5. Eventi semplici, 6. Digest scelto dall'utente — implementato in locale, 7. Post collaborativi e album condivisi — implementati in locale, 8. Conversazioni più espressive — implementate in locale, 9. Scoperta intenzionale e salute del prodotto — implementata in locale, Funzioni sociali successive al collaudo cloud, Implementato localmente: conservazione e stati della chat (+4 more)
 
 ### Community 102 - "Backup e ripristino"
 Cohesion: 0.40
 Nodes (4): Backup e ripristino, Esecuzione, Preparazione, Prova di ripristino
 
 ### Community 103 - "PostDraft"
-Cohesion: 0.23
-Nodes (5): PostDraft, .canPublish, .hasChanges, .warning, PostDraftTests
+Cohesion: 0.10
+Nodes (10): PostDraft, .canPublish, .hasChanges, .warning, ComposePostView, .body, PostDraftTests, PhotosUI (+2 more)
 
 ### Community 104 - "Piano di continuità — profili, carousel, Home e condivisione"
 Cohesion: 0.33
@@ -398,6 +417,10 @@ Nodes (5): Esito, Obiettivi, Piano di continuità — profili, carousel, Home e 
 ### Community 105 - "Piano di continuità — UX mobile, navigazione e registrazione"
 Cohesion: 0.33
 Nodes (5): Obiettivi, Piano di continuità — UX mobile, navigazione e registrazione, Stato, Verifica conclusiva, Vincoli
+
+### Community 107 - "Data"
+Cohesion: 0.25
+Nodes (9): Data, .base64URL, ChatInteropProbe, Failure, check, Fixture, Reply, Report (+1 more)
 
 ### Community 108 - "Chat cifrata, protocollo v1"
 Cohesion: 0.33
@@ -412,8 +435,8 @@ Cohesion: 0.50
 Nodes (3): Configurazione del progetto SN su Supabase, Email di autenticazione e Resend, Mittente
 
 ### Community 113 - "SN per iOS: SwiftUI e xtool"
-Cohesion: 0.14
-Nodes (14): Adapter M1 e prossimo passo, Ambiente e struttura, Build e dispositivo, Collaudo automatizzato M1 — 24 ottobre 2026, passaggio finale, Consolidamento M1 del 24 ottobre — incrementi successivi, Consolidamento sessione e feed — 23 ottobre 2026, Controlli del contratto M1 (Linux), Prove ripetibili (+6 more)
+Cohesion: 0.13
+Nodes (15): Adapter M1 e prossimo passo, Ambiente e struttura, Automazione del 26 ottobre 2026, Build e dispositivo, Collaudo automatizzato M1 — 24 ottobre 2026, passaggio finale, Consolidamento M1 del 24 ottobre — incrementi successivi, Consolidamento sessione e feed — 23 ottobre 2026, Controlli del contratto M1 (Linux) (+7 more)
 
 ### Community 115 - "AGENTS.md"
 Cohesion: 0.40
@@ -428,16 +451,24 @@ Cohesion: 0.50
 Nodes (4): Client iOS, Da eseguire sul progetto Supabase dedicato, Eseguibili in locale, Verifiche
 
 ### Community 118 - "Foundation"
-Cohesion: 0.11
+Cohesion: 0.10
 Nodes (7): Combine, Foundation, FoundationNetworking, InteropFixtures, ChatCryptoTests, AppConfig, SNChatCrypto
 
 ### Community 120 - "Sviluppo iOS di SN"
 Cohesion: 0.50
 Nodes (3): Metodo, Stato e incremento successivo, Sviluppo iOS di SN
 
-### Community 130 - "SN — lavoro confermato"
-Cohesion: 0.20
-Nodes (9): Federazione: trasporto locale in anteprima, Implementato localmente: conservazione e stati della chat, Prima dell’apertura federata, Prossimi passi, in ordine, SN — lavoro confermato, Verifica e pubblicazione, Follow, Requested Capabilities and Sequencing (+1 more)
+### Community 121 - "check-ios-m1.py"
+Cohesion: 0.19
+Nodes (4): B9. Branch di produzione, main(), run(), save()
+
+### Community 129 - "Parte B — Vercel"
+Cohesion: 0.17
+Nodes (12): B10. Protezione accesso (solo preview), B11. Manutenzione su GitHub, B12. Controlli post-deploy, B1. Import del repository, B2. Build, B3. Environment Variables, B4. Regione, B5. Node.js (+4 more)
+
+### Community 130 - "CodingKeys"
+Cohesion: 0.22
+Nodes (9): CodingKeys, body, expires_at, id, media, recipient_id, retention, revision (+1 more)
 
 ### Community 131 - "iOS M0.5 — prova di compatibilità crittografica"
 Cohesion: 0.29
@@ -447,65 +478,81 @@ Nodes (6): iOS M0.5 — prova di compatibilità crittografica, Prova su iPhone, 
 Cohesion: 0.13
 Nodes (15): @electric-sql/pglite, files, fromProject, outputDir, stamp, downloadStorageObjects(), listStorageObjects(), safeStoragePath() (+7 more)
 
-### Community 134 - "check-ios-m1-device.py"
-Cohesion: 0.12
+### Community 136 - "vitest"
+Cohesion: 0.43
+Nodes (3): BodyTooLarge, readLimited(), vitest
+
+### Community 137 - "run"
+Cohesion: 0.62
 Nodes (7): run(), capture(), check(), more(), page(), snapshot(), tap()
 
-### Community 138 - "EventsPanel"
-Cohesion: 0.50
-Nodes (5): EventsPanel(), resetForm(), startEdit(), submitEvent(), toLocalInput()
+### Community 138 - "events-panel.tsx"
+Cohesion: 0.28
+Nodes (8): EventsPanel(), resetForm(), startEdit(), submitEvent(), Props, toLocalInput(), EventsPanel, Event
 
-### Community 139 - "security-settings.tsx"
-Cohesion: 0.24
-Nodes (9): AccountSession, Enrollment, Factor, mfaRequest(), MfaState, SecuritySettings(), sessionDate(), sessionsRequest() (+1 more)
+### Community 139 - "next"
+Cohesion: 0.08
+Nodes (19): AuthScreen(), AccountSession, Enrollment, Factor, mfaRequest(), MfaState, SecuritySettings(), sessionDate() (+11 more)
 
-### Community 140 - "FeedView.swift"
-Cohesion: 0.18
-Nodes (7): ImageIO, M1DeviceChecks, PhotoPreparation, .body, PrivatePostImage, .body, UIKit
+### Community 140 - ".body"
+Cohesion: 0.08
+Nodes (23): Colors, Layout, ImageIO, SNApp, .body, M1DeviceChecks, FeedView, .body (+15 more)
 
 ### Community 141 - "TokenPair"
-Cohesion: 0.07
-Nodes (13): 4.9 Modifiche iOS, KeychainTokenStore, .baseQuery, TokenStoreError, keychain, TokenStore, FixtureStore, M1HTTPFixture (+5 more)
+Cohesion: 0.12
+Nodes (5): FixtureStore, M1HTTPFixture, TokenPair, .expiryDate, M1HTTPTests
+
+### Community 142 - "Checklist di collegamento — Supabase e Vercel"
+Cohesion: 0.40
+Nodes (4): Checklist di collegamento — Supabase e Vercel, Mappa rapida: variabile → dove si trova → dove va, Parte C — Ordine consigliato, Parte D — Da non fare / attenzioni
 
 ### Community 143 - "Control"
 Cohesion: 0.18
 Nodes (3): Control, .requests, .validRequests
 
-### Community 145 - "Funzionalità del Sistema"
-Cohesion: 0.17
-Nodes (12): 10. Messaggistica diretta: conservazione, Chat temporanea e stati, 1. Feed e Profili, 2. Storie con Autoplay e Player Avanzato, 3. Reels / Video Brevi, 4. Cerchie e spazi condivisi, 5. Eventi semplici, 6. Digest scelto dall’utente, 7. Post collaborativi e album condivisi (+4 more)
+### Community 144 - "ChatCryptoError"
+Cohesion: 0.40
+Nodes (5): ChatCryptoError, expired, invalidAttachment, invalidPacket, missingKey
+
+### Community 145 - "State"
+Cohesion: 0.40
+Nodes (5): State, loading, mfaRequired, signedIn, signedOut
 
 ### Community 146 - "digest-panel.tsx"
 Cohesion: 0.22
 Nodes (7): channelLabels, DigestPanel(), frequencyLabels, Props, reasonFor(), DigestPanel, DigestItem
 
-### Community 148 - "Collaudo M1 su iPhone — 24 ottobre 2026"
+### Community 147 - "TokenStoreError"
 Cohesion: 0.40
-Nodes (5): Automazione ripetibile, Collaudo M1 su iPhone — 24 ottobre 2026, Difetto riprodotto e corretto, Limiti ancora aperti, Perimetro ed evidenze
+Nodes (3): TokenStoreError, keychain, Security
+
+### Community 148 - "Collaudo M1 su iPhone — 24 ottobre 2026"
+Cohesion: 0.33
+Nodes (6): Automazione ripetibile, Collaudo M1 su iPhone — 24 ottobre 2026, Difetto riprodotto e corretto, Limiti ancora aperti, Perimetro ed evidenze, Ripresa automatizzata del 26 ottobre
 
 ### Community 150 - "ErrorMessages"
 Cohesion: 0.25
 Nodes (5): ErrorMessages, .language, Language, en, it
 
 ## Knowledge Gaps
-- **79 isolated node(s):** `Combine`, `loading`, `signedOut`, `mfaRequired`, `signedIn` (+74 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 793 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **66 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **79 isolated node(s):** `CryptoKit`, `Crypto`, `invalidPacket`, `missingKey`, `expired` (+74 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 785 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **59 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `AuthCoordinator` connect `AuthCoordinator` to `APIClientProtocol`, `api/[...path]/route.ts`, `ComposePostView`, `.restore`, `Interfaccia nativa iOS — incremento M1`, `SN — Piano app nativa iOS (SwiftUI)`, `Sendable`, `FeedView.swift`, `TokenPair`, `CodingKeys`, `Foundation`, `MockAPI`?**
-  _High betweenness centrality (0.201) - this node is a cross-community bridge._
+- **Why does `4.12 Ordine di esecuzione` connect `supabase.ts` to `AuthCoordinator`, `api/[...path]/route.ts`, `CodingKeys`, `SN — Piano app nativa iOS (SwiftUI)`?**
+  _High betweenness centrality (0.177) - this node is a cross-community bridge._
 - **Are the 32 inferred relationships involving `AuthCoordinator` (e.g. with `4.12 Ordine di esecuzione` and `4.6 Logout e revoca (F2, F4)`) actually correct?**
   _`AuthCoordinator` has 32 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `Combine`, `loading`, `signedOut` to the rest of the system?**
+- **What connects `CryptoKit`, `Crypto`, `invalidPacket` to the rest of the system?**
   _79 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `ap/[...path]/route.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.07404664938911515 - nodes in this community are weakly interconnected._
-- **Why does `4.12 Ordine di esecuzione` connect `api/[...path]/route.ts` to `AuthCoordinator`, `CodingKeys`, `TokenPair`, `SN — Piano app nativa iOS (SwiftUI)`?**
-  _High betweenness centrality (0.191) - this node is a cross-community bridge._
+- **Should `core/federation.ts` be split into smaller, more focused modules?**
+  _Cohesion score 0.10253699788583509 - nodes in this community are weakly interconnected._
+- **Why does `AuthCoordinator` connect `AuthCoordinator` to `APIClientProtocol`, `supabase.ts`, `.loadProfile`, `.restore`, `PostDraft`, `SN — Piano app nativa iOS (SwiftUI)`, `Sendable`, `Data`, `.body`, `TokenPair`, `State`, `Foundation`, `MockAPI`?**
+  _High betweenness centrality (0.176) - this node is a cross-community bridge._
 - **Are the 25 inferred relationships involving `MockAPI` (e.g. with `.testAmbiguousPublicationIsNotAutomaticallyRetried()` and `.testCachedImageDoesNotPretendConnectionRecovered()`) actually correct?**
   _`MockAPI` has 25 INFERRED edges - model-reasoned connections that need verification._
 - **Should `api/[...path]/route.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.05037984806077569 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.14169570267131243 - nodes in this community are weakly interconnected._

@@ -924,9 +924,9 @@
     "semantic_hash": ""
   },
   "docs/MANUALE-PROGETTO.md": {
-    "mtime": 1792835488.8241751,
-    "seen": 1792835491.0511816,
-    "ast_hash": "3f99966acda119966e118f7d09721f9e",
+    "mtime": 1793006823.2700331,
+    "seen": 1793006843.609238,
+    "ast_hash": "4a01c53d496d238d14f566e6fc83038d",
     "semantic_hash": ""
   },
   "docs/PIANO-APP-NATIVA.md": {
@@ -966,9 +966,9 @@
     "semantic_hash": ""
   },
   "ios/README.md": {
-    "mtime": 1792835488.8270054,
-    "seen": 1792835491.05119,
-    "ast_hash": "e6385c28ef823f2971ac0498d8613339",
+    "mtime": 1793006823.2690332,
+    "seen": 1793006843.609254,
+    "ast_hash": "b3ad5d6a0de9c4c88a2636e549f0bc60",
     "semantic_hash": ""
   },
   "ios/project.yml": {
@@ -1290,15 +1290,27 @@
     "semantic_hash": ""
   },
   "docs/IOS-M1-VERIFICA.md": {
-    "mtime": 1792835488.8274086,
-    "seen": 1792835491.0511808,
-    "ast_hash": "f8942ab25198e5d41f042c43cd439c56",
+    "mtime": 1793006679.687845,
+    "seen": 1793006685.3958097,
+    "ast_hash": "bdd19a5955245ca63688679aac0f21a5",
     "semantic_hash": ""
   },
   "docs/evidence/ios-m1-accessibility-2026-10-24.json": {
     "mtime": 1792835519.4657497,
     "seen": 1792835532.3012152,
     "ast_hash": "f3a50cbfa2c47e659750823fcc84db55",
+    "semantic_hash": ""
+  },
+  "docs/evidence/ios-m1-accessibility-2026-10-26.json": {
+    "mtime": 1793006653.1976593,
+    "seen": 1793006685.3955286,
+    "ast_hash": "66069d63d41513d7a9e3925412409d75",
+    "semantic_hash": ""
+  },
+  "scripts/check-ios-m1.py": {
+    "mtime": 1793006653.0876749,
+    "seen": 1793006685.3956344,
+    "ast_hash": "48d16dbe53c15ab3ea13d937a668540b",
     "semantic_hash": ""
   }
 }

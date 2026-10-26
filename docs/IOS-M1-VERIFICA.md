@@ -1,5 +1,23 @@
 # Collaudo M1 su iPhone — 24 ottobre 2026
 
+## Ripresa automatizzata del 26 ottobre
+
+Comando unico: `python scripts/check-ios-m1.py`. Eseguiti con successo 32 XCTest
+Linux, 15 controlli modelli, 77 test server/regole, typecheck, lint completo e
+build Darwin. Log separati e rapporto JSON locale, arresto al primo errore e
+timeout per fase; nessuna installazione o mutazione cloud automatica.
+Con il Python del venv pymobiledevice3, `--device-bundle '<bundle-firmato-SN>'`
+aggiunge il runner UI sulla build DEBUG già installata.
+
+Ripetuto anche l'audit sul device con `--audit-only`: profilo e fixture corretti,
+ma tutti e tre gli audit (scuro, chiaro, testo massimo) riportano rilievi.
+[Evidenza](evidence/ios-m1-accessibility-2026-10-26.json). Lo screenshot chiaro
+mostra testo leggibile dove alcuni rilievi descrivono colori quasi uguali;
+l'incoerenza resta da indagare e non giustifica dichiarare l'audit superato.
+Il banner di collaudo è incluso nei rilievi Dynamic Text. Ripristino automatico
+di tema, dimensioni e avvio senza fixture completato. Nessuna nuova prova del
+picker o ascolto VoiceOver: gate M1 ancora aperto.
+
 ## Perimetro ed evidenze
 
 La verifica usa il client SwiftUI reale, Swift 6.4.1, SDK Darwin e xtool su Linux.

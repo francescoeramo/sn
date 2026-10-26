@@ -1,5 +1,17 @@
 # SN — manuale operativo del progetto
 
+Rete di sviluppo, 26 ottobre: DHCP ora `192.168.1.251`, aggiornati base URL iOS e
+ATS; backend transitorio `sn-ios-dev` ripristinato sul nuovo indirizzo dopo averlo
+trovato assente. Il precedente `192.168.1.9` nei resoconti sotto è storico.
+
+Aggiornamento operativo 26 ottobre 2026: collaudo M1 raccolto nel comando
+`python scripts/check-ios-m1.py` (test Swift/server, contratti, typecheck, lint e
+build Darwin; log locali e report JSON). Tutti i controlli locali superati.
+Audit accessibilità ripetuto sull'iPhone: rilievi ancora presenti, evidenza in
+`docs/evidence/ios-m1-accessibility-2026-10-26.json`. Impostazioni e avvio normale
+ripristinati automaticamente. M1 resta aperta per accessibilità/picker;
+nessuna modifica cloud o avanzamento M2. Dettagli correnti in `ios/README.md`.
+
 > Guida per chi prende in carico sviluppo e responsabilità operative. Aggiornato al 15 ottobre 2026: stato iOS M0/M0.5, Supabase e passaggio a M1. Il manuale riunisce le informazioni principali in un solo file: aggiornare questo documento quando cambia architettura, sicurezza, roadmap o procedura operativa.
 
 ## 1. In breve

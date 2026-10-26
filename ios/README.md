@@ -3,6 +3,37 @@
 Aggiornato al 24 ottobre 2026: M1 installata via USB, backend raggiungibile via Wi-Fi; collaudo runtime esteso aperto.
 Il client nativo usa le API SN; backend Next.js e Supabase restano condivisi con il sito.
 
+## Automazione del 26 ottobre 2026
+
+Ripristino connessione nella stessa giornata: il servizio transitorio non era
+più presente e il DHCP aveva assegnato al computer `192.168.1.251`, mentre l'app
+puntava ancora a `192.168.1.9`. Allineati base URL ed eccezione ATS al nuovo IP;
+riavviato `sn-ios-dev` vincolato a `192.168.1.251:3000`. Bootstrap locale senza
+token: 401 in circa 2 secondi, servizio attivo. Questo controllo prova la risposta
+del backend dal computer, non il percorso autenticato dal telefono.
+I comandi e indirizzi `.9` sotto sono storici: verificare sempre l'IP corrente.
+Build Darwin superata; installazione USB completata con Verifying 100%, exit 0,
+dopo conferma dell'utente che il telefono era sbloccato. App avviata via CoreDevice
+senza flag di test. Log successivi: refresh 200, bootstrap 200 (2,2 s), media 200
+(837 ms); percorso autenticato dal telefono nuovamente raggiungibile.
+
+`python scripts/check-ios-m1.py` dalla root esegue in sequenza XCTest Linux,
+contratti Swift, regressioni server M1, typecheck, lint e build Darwin. Ogni fase
+ha un limite di 15 minuti; al primo errore termina con codice non zero. Output
+breve, log e rapporto JSON in `.impeccable/review/m1-check-*/`, esclusi da Git.
+Non installa l'app né scrive nel cloud. Per includere la UI dell'app DEBUG già
+installata, usare il Python del venv pymobiledevice3 con
+`--device-bundle '<bundle-firmato-SN>'`; richiede iPhone sbloccato e libero.
+
+Esecuzione locale superata: 32 XCTest, 15 controlli modelli, 77 test server,
+typecheck, lint completo e build Darwin. Audit ripetuto sull'iPhone senza
+reinstallazione: ancora rilievi di contrasto e Dynamic Text, compreso il banner
+DEBUG. Alcuni rettangoli/colori segnalati non coincidono con il testo visibile;
+non sono stati ignorati né classificati automaticamente come falsi positivi.
+[Rapporto sintetico](../docs/evidence/ios-m1-accessibility-2026-10-26.json).
+Tema, dimensione testo e avvio normale ripristinati automaticamente. Picker
+nativo e ascolto VoiceOver restano aperti; nessun avanzamento a M2.
+
 ## Consolidamento M1 del 24 ottobre — incrementi successivi
 
 L'utente ha provato a pubblicare con avviso: invio riuscito; inizialmente foto e
