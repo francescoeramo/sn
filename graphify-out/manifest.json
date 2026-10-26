@@ -240,9 +240,9 @@
     "semantic_hash": ""
   },
   "ios/SN/Auth/TokenStore.swift": {
-    "mtime": 1792765549.4627407,
-    "seen": 1792765743.8821561,
-    "ast_hash": "94b59586781d6fdcc5859cf1f13f73c8",
+    "mtime": 1793008781.3522265,
+    "seen": 1793009006.5552075,
+    "ast_hash": "d4c81029f502deabf5c2b23a9248f749",
     "semantic_hash": ""
   },
   "ios/SN/Localization/ErrorMessages.swift": {
@@ -924,9 +924,9 @@
     "semantic_hash": ""
   },
   "docs/MANUALE-PROGETTO.md": {
-    "mtime": 1793008719.1538882,
-    "seen": 1793008753.2988365,
-    "ast_hash": "fdee248dc8db7932c846061978b0c48c",
+    "mtime": 1793009001.0915573,
+    "seen": 1793009006.5554206,
+    "ast_hash": "4e07e228cda72613444b0e9ed3b607a1",
     "semantic_hash": ""
   },
   "docs/PIANO-APP-NATIVA.md": {
@@ -966,9 +966,9 @@
     "semantic_hash": ""
   },
   "ios/README.md": {
-    "mtime": 1793008719.1518884,
-    "seen": 1793008753.2988513,
-    "ast_hash": "efa1a1373dc36869fa2fe19bfcdd6fa8",
+    "mtime": 1793009001.0895574,
+    "seen": 1793009006.5554345,
+    "ast_hash": "414f06c70034fce7981171b7827c6200",
     "semantic_hash": ""
   },
   "ios/project.yml": {
@@ -1266,9 +1266,9 @@
     "semantic_hash": ""
   },
   "ios/SN/Diagnostics/M1DeviceChecks.swift": {
-    "mtime": 1792833688.5980976,
-    "seen": 1792835491.0510614,
-    "ast_hash": "43658eec9fd0fa0fd59fa28cc2a74be1",
+    "mtime": 1793008838.9905567,
+    "seen": 1793009006.5552125,
+    "ast_hash": "53708589f7e30ec5bc8d2e2106f3b915",
     "semantic_hash": ""
   },
   "ios/SN/Diagnostics/M1HTTPFixture.swift": {
@@ -1308,9 +1308,9 @@
     "semantic_hash": ""
   },
   "scripts/check-ios-m1.py": {
-    "mtime": 1793007129.044216,
-    "seen": 1793007135.206939,
-    "ast_hash": "750a99f99c133f4c755ae3392e1878bb",
+    "mtime": 1793008896.4299002,
+    "seen": 1793009006.555287,
+    "ast_hash": "119f4bf8700c49e657566517d3f9869f",
     "semantic_hash": ""
   },
   "scripts/prepare-ios-dev.py": {
@@ -1323,6 +1323,18 @@
     "mtime": 1793007102.8081324,
     "seen": 1793007135.2069502,
     "ast_hash": "daaee0e2f02e5a700d199154692aed72",
+    "semantic_hash": ""
+  },
+  "docs/evidence/ios-m1-keychain-2026-10-26.json": {
+    "mtime": 1793009000.9635565,
+    "seen": 1793009006.5551813,
+    "ast_hash": "4127352f508a3b0c867ae05a920e27d1",
+    "semantic_hash": ""
+  },
+  "scripts/check-ios-probe.py": {
+    "mtime": 1793008966.7873378,
+    "seen": 1793009006.5552886,
+    "ast_hash": "ddb6954e1d032d1ff599cc4b32741c60",
     "semantic_hash": ""
   }
 }

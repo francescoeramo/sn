@@ -1,5 +1,12 @@
 # SN — manuale operativo del progetto
 
+Keychain iOS aggiornato in place, senza cancellazione preventiva dei token;
+20 controlli interni superati sull'iPhone con record di prova separato.
+Diagnostica automatica `scripts/check-ios-probe.py` (Python pymobiledevice3),
+senza AX/HID/galleria e con rapporto legato alla singola esecuzione. Evidenza
+`docs/evidence/ios-m1-keychain-2026-10-26.json`. Build installata e avvio normale
+ripristinato; dettaglio e limiti in `ios/README.md`.
+
 iOS: verifica MFA in attesa ripristinabile dopo riapertura, con metadato opzionale
 nel record Keychain dei token. Lettura dei vecchi record preservata; nessun
 feed prima della verifica, refresh proattivo prima del codice, nessun reinvio

@@ -66,6 +66,14 @@ enum M1DeviceChecks {
         do {
             try store.save(pair)
             record("isolated_keychain_roundtrip", store.load() == pair)
+            var pendingPair = pair
+            pendingPair.pendingMfaFactorId = "synthetic-factor"
+            try store.save(pendingPair)
+            record("isolated_keychain_update_preserves_mfa", store.load() == pendingPair)
+            let rotated = TokenPair(accessToken: "synthetic-rotated-access", refreshToken: "synthetic-rotated-refresh",
+                expiresAt: pair.expiresAt + 3600, tokenType: "bearer")
+            try store.save(rotated)
+            record("isolated_keychain_rotation_clears_pending_mfa", store.load() == rotated)
             store.clear()
             record("isolated_keychain_clear", store.load() == nil)
         } catch { record("isolated_keychain_roundtrip", false) }
@@ -73,6 +81,7 @@ enum M1DeviceChecks {
         record("logout_clears_feed_profile", coordinator.feed.isEmpty && coordinator.profilePosts.isEmpty && coordinator.state == .signedOut)
 
         let report: [String: Any] = ["platform": "ios-device", "transport": "URLSession with synthetic URLProtocol",
+            "run_id": ProcessInfo.processInfo.environment["SN_M1_CHECK_RUN_ID"] ?? "",
             "real_user_data": false, "status": checks.allSatisfy { $0["passed"] as? Bool == true } ? "passed" : "failed",
             "timestamp": ISO8601DateFormatter().string(from: Date()), "checks": checks]
         do {

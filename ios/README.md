@@ -5,6 +5,22 @@ Il client nativo usa le API SN; backend Next.js e Supabase restano condivisi con
 
 ## Automazione del 26 ottobre 2026
 
+Keychain: i token esistenti vengono aggiornati con `SecItemUpdate`; `SecItemAdd`
+è usato solo per un record assente. Eliminata la cancellazione preventiva che
+poteva perdere il vecchio record se il nuovo salvataggio falliva. Accessibilità
+`WhenUnlockedThisDeviceOnly` invariata. Build Darwin e installazione USB con
+Verifying 100% superate. Venti controlli interni superati su iPhone, incluse
+modifica del record con metadato MFA e rotazione successiva senza quel metadato.
+Evidenza: `../docs/evidence/ios-m1-keychain-2026-10-26.json`.
+
+Diagnostica interna automatica: con il Python del venv pymobiledevice3 eseguire
+`scripts/check-ios-probe.py`, oppure `scripts/check-ios-m1.py --probe` per
+includere i controlli locali. Individua la build SN installata, avvia soltanto
+fixture interne e recupera esclusivamente il rapporto sintetico noto dal suo
+container DEBUG. Un ID univoco impedisce di accettare risultati vecchi. Nessuna
+scansione AX, HID, screenshot o accesso alla galleria. Avvio normale ripristinato.
+La prova Keychain non equivale al collaudo completo di login/MFA su account reale.
+
 Ripristino MFA: il riferimento al fattore in attesa è ora salvato insieme ai token
 nel Keychain (`pending_mfa_factor_id`, opzionale). Alla riapertura si torna al
 codice MFA senza leggere il feed; il token scaduto viene rinnovato prima di un
@@ -15,6 +31,9 @@ le vecchie build ignorano il nuovo campo ma non sanno ripristinare la verifica.
 Cinque regressioni sintetiche coprono riapertura, scadenza, rete, codice rifiutato
 e sessione invalida; tre controlli modelli verificano compatibilità e roundtrip.
 Nessun cambio alle API o al cloud; runtime su iPhone ancora da verificare.
+Risultati locali finali di questo incremento: 43 XCTest, 18 controlli modelli,
+77 test server/regole, 5 regressioni rete, typecheck/lint e build Darwin superati.
+Il percorso MFA completo sul device resta distinto dal test Keychain appena svolto.
 
 Confine delle prove sul dispositivo: non usare la scansione AX `iter_elements`
 nel selettore foto o in altre superfici personali di sistema. L'avanzamento del

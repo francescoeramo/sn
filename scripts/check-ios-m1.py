@@ -11,13 +11,15 @@ from pathlib import Path
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--device-bundle', help='Also exercise the installed DEBUG app with this signed bundle ID')
+    device = parser.add_mutually_exclusive_group()
+    device.add_argument('--device-bundle', help='Also exercise the installed DEBUG app with this signed bundle ID')
+    device.add_argument('--probe', action='store_true', help='Run internal iPhone diagnostics without UI automation')
     args = parser.parse_args()
     root = Path(__file__).resolve().parent.parent
     output = root / '.impeccable/review' / ('m1-check-' + datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ'))
     output.mkdir(parents=True)
     report = {'status': 'running', 'checks': [], 'scope': 'Local synthetic tests; no cloud writes',
-              'device': 'requested' if args.device_bundle else 'not_run'}
+              'device': 'requested' if args.device_bundle or args.probe else 'not_run'}
     report_path = output / 'report.json'
 
     def save():
@@ -66,6 +68,9 @@ def main():
         if args.device_bundle:
             run('device', [sys.executable, 'scripts/check-ios-m1-device.py', '--bundle',
                            args.device_bundle, '--output', str(output / 'device')])
+            report['device'] = 'passed'
+        elif args.probe:
+            run('device-probe', [sys.executable, 'scripts/check-ios-probe.py', '--output', str(output / 'device-probe.json')])
             report['device'] = 'passed'
         report['status'] = 'passed'
     except (RuntimeError, KeyboardInterrupt):
