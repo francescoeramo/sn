@@ -20,7 +20,8 @@ struct MfaView: View {
             Button("Verifica") {
                 Task { await coordinator.verifyMfa(code: code) }
             }
-            .disabled(code.count != 6)
+            .disabled(code.count != 6 || coordinator.isAuthenticating)
+            if coordinator.isAuthenticating { ProgressView("Verifica…") }
         }
     }
 }

@@ -16,6 +16,99 @@ final class AuthCoordinatorTests: XCTestCase {
         Bootstrap(userId: "user-id", me: Me(id: "user-id", username: "francesco", displayName: "Francesco"))
     }
 
+    private func loginResponse(_ pair: TokenPair, mfa: Bool = false) -> LoginResponse {
+        LoginResponse(mfaRequired: mfa, factorId: mfa ? "fixture-factor" : nil,
+            accessToken: pair.accessToken, refreshToken: pair.refreshToken,
+            expiresAt: pair.expiresAt, tokenType: pair.tokenType)
+    }
+
+    func testRepeatedLoginAndMfaSubmissionsSendOneRequestAtATime() async {
+        let api = MockAPI()
+        await api.setLoginResult(.success(loginResponse(tokens(), mfa: true)))
+        await api.suspendAuthentication()
+        let coordinator = AuthCoordinator(api: api, store: MemoryTokenStore())
+        let login = Task { await coordinator.login(email: "fixture@example.invalid", password: "fixture") }
+        await api.waitForAuthentication()
+        XCTAssertTrue(coordinator.isAuthenticating)
+        let duplicate = Task { await coordinator.login(email: "fixture@example.invalid", password: "fixture") }
+        for _ in 0..<20 { await Task.yield() }
+        await api.releaseAuthentication()
+        await login.value
+        await duplicate.value
+        let logins = await api.loginCount
+        XCTAssertEqual(logins, 1)
+        XCTAssertFalse(coordinator.isAuthenticating)
+
+        await api.setMfaResult(.failure(.server(status: 400, message: "Invalid", code: "mfa_invalid")))
+        await api.suspendAuthentication()
+        let verification = Task { await coordinator.verifyMfa(code: "123456") }
+        await api.waitForAuthentication()
+        XCTAssertTrue(coordinator.isAuthenticating)
+        let duplicateVerification = Task { await coordinator.verifyMfa(code: "123456") }
+        for _ in 0..<20 { await Task.yield() }
+        await api.releaseAuthentication()
+        await verification.value
+        await duplicateVerification.value
+        let verifications = await api.mfaCount
+        XCTAssertEqual(verifications, 1)
+        XCTAssertFalse(coordinator.isAuthenticating)
+        XCTAssertEqual(coordinator.state, .mfaRequired(factorId: "fixture-factor"))
+    }
+
+    func testLateLoginSuccessAfterLogoutIsRevokedWithoutRestoringSession() async {
+        let api = MockAPI()
+        let pair = tokens()
+        await api.setLoginResult(.success(loginResponse(pair)))
+        await api.setBootstrapResult(.success(bootstrap()))
+        await api.suspendAuthentication()
+        let store = MemoryTokenStore()
+        let coordinator = AuthCoordinator(api: api, store: store)
+        let login = Task { await coordinator.login(email: "fixture@example.invalid", password: "fixture") }
+        await api.waitForAuthentication()
+        await coordinator.logout()
+        await api.releaseAuthentication()
+        await login.value
+        XCTAssertEqual(coordinator.state, .signedOut)
+        XCTAssertNil(store.tokens)
+        let revoked = await api.logoutTokens
+        XCTAssertEqual(revoked, [pair.accessToken])
+        XCTAssertNil(coordinator.lastErrorMessage)
+    }
+
+    func testLateLoginFailureAfterLogoutDoesNotSetAnError() async {
+        let api = MockAPI()
+        await api.suspendAuthentication()
+        let coordinator = AuthCoordinator(api: api, store: MemoryTokenStore())
+        let login = Task { await coordinator.login(email: "fixture@example.invalid", password: "fixture") }
+        await api.waitForAuthentication()
+        await coordinator.logout()
+        await api.releaseAuthentication()
+        await login.value
+        XCTAssertNil(coordinator.lastErrorMessage)
+        XCTAssertEqual(coordinator.state, .signedOut)
+    }
+
+    func testLateMfaSuccessAfterLogoutIsRevokedWithoutRestoringSession() async {
+        let api = MockAPI()
+        await api.setLoginResult(.success(loginResponse(tokens(), mfa: true)))
+        await api.setBootstrapResult(.success(bootstrap()))
+        let verified = tokens()
+        await api.setMfaResult(.success(verified))
+        let store = MemoryTokenStore()
+        let coordinator = AuthCoordinator(api: api, store: store)
+        await coordinator.login(email: "fixture@example.invalid", password: "fixture")
+        await api.suspendAuthentication()
+        let verification = Task { await coordinator.verifyMfa(code: "123456") }
+        await api.waitForAuthentication()
+        await coordinator.logout()
+        await api.releaseAuthentication()
+        await verification.value
+        XCTAssertEqual(coordinator.state, .signedOut)
+        XCTAssertNil(store.tokens)
+        let revoked = await api.logoutTokens
+        XCTAssertTrue(revoked.contains(verified.accessToken))
+    }
+
     func testConcurrentRestoreUsesSingleFlightRefresh() async {
         let api = MockAPI()
         await api.setRefreshDelay(nanoseconds: 120_000_000)

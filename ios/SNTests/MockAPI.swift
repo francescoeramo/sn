@@ -9,6 +9,33 @@ actor MockAPI: APIClientProtocol {
     var mediaResult: Result<Data, APIError> = .failure(.transport)
     var publishResult: Result<Void, APIError> = .success(())
     var uploadResult: Result<UploadedMedia, APIError> = .failure(.transport)
+    private var holdAuthentication = false
+    private var authenticationGates: [CheckedContinuation<Void, Never>] = []
+    private var authenticationStarted: CheckedContinuation<Void, Never>?
+    private var authenticationInFlight = false
+    func suspendAuthentication() { holdAuthentication = true }
+    func waitForAuthentication() async {
+        if authenticationInFlight { return }
+        await withCheckedContinuation { authenticationStarted = $0 }
+    }
+    func releaseAuthentication() {
+        holdAuthentication = false
+        authenticationGates.forEach { $0.resume() }
+        authenticationGates = []
+    }
+    private func authenticationBarrier() async {
+        authenticationInFlight = true
+        if holdAuthentication {
+            await withCheckedContinuation { continuation in
+                authenticationGates.append(continuation)
+                authenticationStarted?.resume()
+                authenticationStarted = nil
+            }
+        }
+        authenticationInFlight = false
+    }
+    func setMfaResult(_ result: Result<TokenPair, APIError>) { mfaResult = result }
+    private(set) var mfaCount = 0
     func setUploadResult(_ result: Result<UploadedMedia, APIError>) { uploadResult = result }
     private(set) var uploadCount = 0
     private var holdPublish = false
@@ -77,6 +104,7 @@ actor MockAPI: APIClientProtocol {
 
     func login(email: String, password: String) async throws -> LoginResponse {
         loginCount += 1
+        await authenticationBarrier()
         return try loginResult.get()
     }
 
@@ -96,7 +124,9 @@ actor MockAPI: APIClientProtocol {
     }
 
     func verifyMfa(accessToken: String, factorId: String, code: String) async throws -> TokenPair {
-        try mfaResult.get()
+        mfaCount += 1
+        await authenticationBarrier()
+        return try mfaResult.get()
     }
 
     func logout(accessToken: String) async throws {

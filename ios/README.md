@@ -5,6 +5,16 @@ Il client nativo usa le API SN; backend Next.js e Supabase restano condivisi con
 
 ## Automazione del 26 ottobre 2026
 
+Autenticazione concorrente: login e MFA condividono un blocco degli invii,
+con indicatore di attesa nativo. Un esito arrivato dopo logout non salva token,
+non riapre la sessione e non modifica gli errori; in caso di successo tenta la
+revoca della sessione appena ottenuta. La revoca resta best effort in assenza di
+rete, come il logout standard; non equivale a revoca istantanea dei JWT.
+Tre regressioni hanno riprodotto i rientri/errori tardivi prima del fix; un altro
+test copre invii ripetuti login/MFA e sblocco dopo errore, senza richieste cloud.
+38 XCTest Linux, 15 contratti, 77 test server e 5 test rete superati;
+typecheck, lint, build Darwin e detector delle due viste senza rilievi.
+
 Risposte non leggibili: gli errori di decodifica HTTP ora hanno codice locale
 `invalid_response` e un messaggio distinto dalla connessione assente. Sessione,
 feed e cursore restano conservati, nessun refresh o retry automatico; un esito

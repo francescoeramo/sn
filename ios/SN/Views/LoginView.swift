@@ -22,7 +22,8 @@ struct LoginView: View {
             Button("Accedi") {
                 Task { await coordinator.login(email: email, password: password) }
             }
-            .disabled(email.isEmpty || password.isEmpty)
+            .disabled(email.isEmpty || password.isEmpty || coordinator.isAuthenticating)
+            if coordinator.isAuthenticating { ProgressView("Accesso…") }
         }
     }
 }

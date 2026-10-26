@@ -1,5 +1,9 @@
 # SN — manuale operativo del progetto
 
+Consolidamento autenticazione iOS: login/MFA non inviano richieste concorrenti;
+risposte dopo logout scartate, con tentativo di revoca dei token tardivi. Stato
+di attesa nei pulsanti nativi. Nessuna modifica al contratto server o al cloud.
+
 Client iOS: risposte HTTP non decodificabili distinte dagli errori di rete tramite
 `invalid_response`; non attivano l'avviso offline né cancellano la sessione.
 Nessun retry aggiunto, esiti di scrittura non leggibili restano ambigui.

@@ -16,6 +16,7 @@ final class AuthCoordinator: ObservableObject {
     @Published private(set) var offline = false
     @Published var lastErrorMessage: String?
     @Published private(set) var isProbing = false
+    @Published private(set) var isAuthenticating = false
     @Published private(set) var lastVerifiedAt: Date?
 
     @Published private(set) var feed: [FeedPost] = []
@@ -100,10 +101,19 @@ final class AuthCoordinator: ObservableObject {
     // MARK: - Login / MFA
 
     func login(email: String, password: String) async {
+        guard !isAuthenticating else { return }
+        isAuthenticating = true
+        defer { isAuthenticating = false }
+        let requestEpoch = epoch
         lastErrorMessage = nil
         do {
             let response = try await api.login(email: email, password: password)
             guard let pair = response.tokenPair() else { throw APIError.invalidResponse }
+            guard requestEpoch == epoch else {
+                // A completed login may have created a server session after local logout.
+                try? await api.logout(accessToken: pair.accessToken)
+                return
+            }
             if response.mfaRequired == true, let factorId = response.factorId {
                 tokens = pair
                 pendingMfaFactorId = factorId
@@ -114,13 +124,19 @@ final class AuthCoordinator: ObservableObject {
             commit(pair)
             await probe()
         } catch let error as APIError {
+            guard requestEpoch == epoch else { return }
             lastErrorMessage = ErrorMessages.message(for: error)
         } catch {
+            guard requestEpoch == epoch else { return }
             lastErrorMessage = ErrorMessages.message(for: .transport)
         }
     }
 
     func verifyMfa(code: String) async {
+        guard !isAuthenticating else { return }
+        isAuthenticating = true
+        defer { isAuthenticating = false }
+        let requestEpoch = epoch
         lastErrorMessage = nil
         guard let factorId = pendingMfaFactorId, let accessToken = tokens?.accessToken else {
             state = .signedOut
@@ -128,12 +144,18 @@ final class AuthCoordinator: ObservableObject {
         }
         do {
             let pair = try await api.verifyMfa(accessToken: accessToken, factorId: factorId, code: code)
+            guard requestEpoch == epoch else {
+                try? await api.logout(accessToken: pair.accessToken)
+                return
+            }
             commit(pair)
             pendingMfaFactorId = nil
             await probe()
         } catch let error as APIError {
+            guard requestEpoch == epoch else { return }
             lastErrorMessage = ErrorMessages.message(for: error)
         } catch {
+            guard requestEpoch == epoch else { return }
             lastErrorMessage = ErrorMessages.message(for: .transport)
         }
     }
