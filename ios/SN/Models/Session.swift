@@ -6,12 +6,15 @@ struct TokenPair: Codable, Equatable, Sendable {
     let refreshToken: String
     let expiresAt: Int
     let tokenType: String
+    // Local Keychain metadata; absent from older records and ordinary server responses.
+    var pendingMfaFactorId: String? = nil
 
     enum CodingKeys: String, CodingKey {
         case accessToken = "access_token"
         case refreshToken = "refresh_token"
         case expiresAt = "expires_at"
         case tokenType = "token_type"
+        case pendingMfaFactorId = "pending_mfa_factor_id"
     }
 
     var expiryDate: Date { Date(timeIntervalSince1970: TimeInterval(expiresAt)) }
@@ -46,11 +49,13 @@ struct LoginResponse: Decodable, Sendable {
 
     func tokenPair() -> TokenPair? {
         guard let accessToken, let refreshToken, let expiresAt else { return nil }
+        if mfaRequired == true, factorId?.isEmpty != false { return nil }
         return TokenPair(
             accessToken: accessToken,
             refreshToken: refreshToken,
             expiresAt: expiresAt,
-            tokenType: tokenType ?? "bearer"
+            tokenType: tokenType ?? "bearer",
+            pendingMfaFactorId: mfaRequired == true ? factorId : nil
         )
     }
 }

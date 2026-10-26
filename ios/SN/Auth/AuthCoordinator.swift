@@ -73,6 +73,12 @@ final class AuthCoordinator: ObservableObject {
         }
         let restoreEpoch = epoch
         tokens = stored
+        if let factorId = stored.pendingMfaFactorId {
+            pendingMfaFactorId = factorId
+            offline = false
+            state = .mfaRequired(factorId: factorId)
+            return
+        }
         if stored.isExpired() {
             do {
                 _ = try await performRefresh(expectedEpoch: restoreEpoch)
@@ -138,11 +144,13 @@ final class AuthCoordinator: ObservableObject {
         defer { isAuthenticating = false }
         let requestEpoch = epoch
         lastErrorMessage = nil
-        guard let factorId = pendingMfaFactorId, let accessToken = tokens?.accessToken else {
+        guard let factorId = pendingMfaFactorId, tokens != nil else {
             state = .signedOut
             return
         }
         do {
+            let accessToken = try await validAccessToken()
+            guard requestEpoch == epoch else { return }
             let pair = try await api.verifyMfa(accessToken: accessToken, factorId: factorId, code: code)
             guard requestEpoch == epoch else {
                 try? await api.logout(accessToken: pair.accessToken)
@@ -153,6 +161,7 @@ final class AuthCoordinator: ObservableObject {
             await probe()
         } catch let error as APIError {
             guard requestEpoch == epoch else { return }
+            if error.isDefinitiveSessionFailure { resetToSignedOut() }
             lastErrorMessage = ErrorMessages.message(for: error)
         } catch {
             guard requestEpoch == epoch else { return }
@@ -488,9 +497,10 @@ final class AuthCoordinator: ObservableObject {
         }
         refreshTask = task
         do {
-            let pair = try await task.value
+            var pair = try await task.value
             refreshTask = nil
             guard expectedEpoch == epoch else { throw CancellationError() }
+            pair.pendingMfaFactorId = tokens?.pendingMfaFactorId
             tokens = pair
             try? store.save(pair)
             return pair
@@ -502,8 +512,10 @@ final class AuthCoordinator: ObservableObject {
 
     private func commit(_ pair: TokenPair) {
         epoch += 1
-        tokens = pair
-        try? store.save(pair)
+        var verified = pair
+        verified.pendingMfaFactorId = nil
+        tokens = verified
+        try? store.save(verified)
     }
 
     private func resetToSignedOut() {

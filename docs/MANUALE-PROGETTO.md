@@ -1,5 +1,10 @@
 # SN — manuale operativo del progetto
 
+iOS: verifica MFA in attesa ripristinabile dopo riapertura, con metadato opzionale
+nel record Keychain dei token. Lettura dei vecchi record preservata; nessun
+feed prima della verifica, refresh proattivo prima del codice, nessun reinvio
+automatico. Compatibilità e stato corrente in `ios/README.md`.
+
 Prove iPhone: niente scansioni automatiche AX nella galleria o altre superfici
 personali di sistema; il focus può scorrerle. Tentativo picker interrotto e
 automazione rimossa su indicazione dell'utente. Solo fixture interne per le

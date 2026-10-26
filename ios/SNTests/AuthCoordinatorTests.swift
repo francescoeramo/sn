@@ -22,6 +22,92 @@ final class AuthCoordinatorTests: XCTestCase {
             expiresAt: pair.expiresAt, tokenType: pair.tokenType)
     }
 
+    func testPendingMfaSurvivesStorageRoundTripAndRelaunch() async throws {
+        let api = MockAPI()
+        await api.setLoginResult(.success(loginResponse(tokens(), mfa: true)))
+        await api.setBootstrapResult(.success(bootstrap()))
+        let store = MemoryTokenStore()
+        let first = AuthCoordinator(api: api, store: store)
+        await first.login(email: "fixture@example.invalid", password: "fixture")
+        let data = try JSONEncoder().encode(XCTUnwrap(store.tokens))
+        store.tokens = try JSONDecoder().decode(TokenPair.self, from: data)
+        let reopened = AuthCoordinator(api: api, store: store)
+        await reopened.restore()
+        XCTAssertEqual(reopened.state, .mfaRequired(factorId: "fixture-factor"))
+        let beforeVerification = await api.bootstrapCount
+        XCTAssertEqual(beforeVerification, 0, "Pending MFA must not open the feed")
+        await api.setMfaResult(.success(tokens()))
+        await reopened.verifyMfa(code: "123456")
+        XCTAssertEqual(reopened.state, .signedIn(me: bootstrap().me))
+        let verifiedRelaunch = AuthCoordinator(api: api, store: store)
+        await verifiedRelaunch.restore()
+        XCTAssertEqual(verifiedRelaunch.state, .signedIn(me: bootstrap().me))
+    }
+
+    func testExpiredPendingMfaRefreshesBeforeOneVerification() async {
+        let api = MockAPI()
+        await api.setLoginResult(.success(loginResponse(tokens(expiresIn: -120), mfa: true)))
+        let refreshed = tokens()
+        await api.setRefreshResult(.success(refreshed))
+        await api.setMfaResult(.success(tokens()))
+        await api.setBootstrapResult(.success(bootstrap()))
+        let store = MemoryTokenStore()
+        let first = AuthCoordinator(api: api, store: store)
+        await first.login(email: "fixture@example.invalid", password: "fixture")
+        let reopened = AuthCoordinator(api: api, store: store)
+        await reopened.restore()
+        await reopened.verifyMfa(code: "123456")
+        let usedTokens = await api.mfaTokens
+        XCTAssertEqual(usedTokens, [refreshed.accessToken])
+        let refreshes = await api.refreshCount
+        XCTAssertEqual(refreshes, 1)
+        XCTAssertEqual(reopened.state, .signedIn(me: bootstrap().me))
+    }
+
+    func testPendingMfaRefreshFailureKeepsChallengeWithoutSendingCode() async {
+        let api = MockAPI()
+        await api.setLoginResult(.success(loginResponse(tokens(expiresIn: -120), mfa: true)))
+        let store = MemoryTokenStore()
+        let coordinator = AuthCoordinator(api: api, store: store)
+        await coordinator.login(email: "fixture@example.invalid", password: "fixture")
+        await coordinator.verifyMfa(code: "123456")
+        XCTAssertEqual(coordinator.state, .mfaRequired(factorId: "fixture-factor"))
+        XCTAssertNotNil(store.tokens)
+        let verifications = await api.mfaCount
+        XCTAssertEqual(verifications, 0)
+        XCTAssertNotNil(coordinator.lastErrorMessage)
+    }
+
+    func testPendingMfaMarkerSurvivesRefreshAndRejectedCode() async {
+        let api = MockAPI()
+        await api.setLoginResult(.success(loginResponse(tokens(expiresIn: -120), mfa: true)))
+        await api.setRefreshResult(.success(tokens()))
+        await api.setMfaResult(.failure(.server(status: 400, message: "Invalid", code: "mfa_invalid")))
+        let store = MemoryTokenStore()
+        let coordinator = AuthCoordinator(api: api, store: store)
+        await coordinator.login(email: "fixture@example.invalid", password: "fixture")
+        await coordinator.verifyMfa(code: "123456")
+        let reopened = AuthCoordinator(api: api, store: store)
+        await reopened.restore()
+        XCTAssertEqual(reopened.state, .mfaRequired(factorId: "fixture-factor"))
+        let bootstraps = await api.bootstrapCount
+        XCTAssertEqual(bootstraps, 0)
+    }
+
+    func testInvalidPendingMfaRefreshReturnsToLoginWithoutSendingCode() async {
+        let api = MockAPI()
+        await api.setLoginResult(.success(loginResponse(tokens(expiresIn: -120), mfa: true)))
+        await api.setRefreshResult(.failure(.unauthorized(code: "refresh_invalid")))
+        let store = MemoryTokenStore()
+        let coordinator = AuthCoordinator(api: api, store: store)
+        await coordinator.login(email: "fixture@example.invalid", password: "fixture")
+        await coordinator.verifyMfa(code: "123456")
+        XCTAssertEqual(coordinator.state, .signedOut)
+        XCTAssertNil(store.tokens)
+        let verifications = await api.mfaCount
+        XCTAssertEqual(verifications, 0)
+    }
+
     func testRepeatedLoginAndMfaSubmissionsSendOneRequestAtATime() async {
         let api = MockAPI()
         await api.setLoginResult(.success(loginResponse(tokens(), mfa: true)))

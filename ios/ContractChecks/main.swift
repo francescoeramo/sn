@@ -27,4 +27,12 @@ let terminal = try JSONDecoder().decode(ProfilePostsPage.self, from: Data(#"{"po
 precondition(terminal.nextCursor == nil)
 precondition(snapshot.nextPostId == "p")
 precondition(oldSnapshot.nextPostId == nil)
-print("15 controlli contratto Swift superati: bootstrap, date, allegati, cerchie, warning, null JSON, tipo post, compatibilità M0, profilo e cursore")
+let legacyTokens = try JSONDecoder().decode(TokenPair.self, from: Data(#"{"access_token":"synthetic-access","refresh_token":"synthetic-refresh","expires_at":1900000000,"token_type":"bearer"}"#.utf8))
+precondition(legacyTokens.pendingMfaFactorId == nil)
+var pendingTokens = legacyTokens
+pendingTokens.pendingMfaFactorId = "synthetic-factor"
+let restoredPending = try JSONDecoder().decode(TokenPair.self, from: JSONEncoder().encode(pendingTokens))
+precondition(restoredPending == pendingTokens)
+let malformedMfa = LoginResponse(mfaRequired: true, factorId: nil, accessToken: "synthetic", refreshToken: "synthetic", expiresAt: 1900000000, tokenType: "bearer")
+precondition(malformedMfa.tokenPair() == nil)
+print("18 controlli contratto Swift superati: bootstrap, media, cursori, compatibilità token e ripristino MFA")

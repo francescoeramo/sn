@@ -36,6 +36,8 @@ actor MockAPI: APIClientProtocol {
     }
     func setMfaResult(_ result: Result<TokenPair, APIError>) { mfaResult = result }
     private(set) var mfaCount = 0
+    private(set) var mfaTokens: [String] = []
+    private(set) var bootstrapCount = 0
     func setUploadResult(_ result: Result<UploadedMedia, APIError>) { uploadResult = result }
     private(set) var uploadCount = 0
     private var holdPublish = false
@@ -125,6 +127,7 @@ actor MockAPI: APIClientProtocol {
 
     func verifyMfa(accessToken: String, factorId: String, code: String) async throws -> TokenPair {
         mfaCount += 1
+        mfaTokens.append(accessToken)
         await authenticationBarrier()
         return try mfaResult.get()
     }
@@ -171,7 +174,8 @@ actor MockAPI: APIClientProtocol {
     }
 
     func bootstrap(accessToken: String) async throws -> Bootstrap {
-        try bootstrapResult.get()
+        bootstrapCount += 1
+        return try bootstrapResult.get()
     }
 }
 

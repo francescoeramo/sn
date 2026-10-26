@@ -5,6 +5,17 @@ Il client nativo usa le API SN; backend Next.js e Supabase restano condivisi con
 
 ## Automazione del 26 ottobre 2026
 
+Ripristino MFA: il riferimento al fattore in attesa è ora salvato insieme ai token
+nel Keychain (`pending_mfa_factor_id`, opzionale). Alla riapertura si torna al
+codice MFA senza leggere il feed; il token scaduto viene rinnovato prima di un
+solo invio del codice. Errore rete conserva la verifica, rifiuto definitivo del
+refresh torna al login. Il marcatore sparisce dopo MFA riuscita/logout.
+Formato additivo: i token precedenti si leggono senza migrazione distruttiva;
+le vecchie build ignorano il nuovo campo ma non sanno ripristinare la verifica.
+Cinque regressioni sintetiche coprono riapertura, scadenza, rete, codice rifiutato
+e sessione invalida; tre controlli modelli verificano compatibilità e roundtrip.
+Nessun cambio alle API o al cloud; runtime su iPhone ancora da verificare.
+
 Confine delle prove sul dispositivo: non usare la scansione AX `iter_elements`
 nel selettore foto o in altre superfici personali di sistema. L'avanzamento del
 focus può scorrere la galleria. Tentativo di prova picker interrotto su richiesta
