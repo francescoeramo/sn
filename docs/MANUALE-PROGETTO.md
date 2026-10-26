@@ -1,5 +1,10 @@
 # SN — manuale operativo del progetto
 
+Prove iPhone: niente scansioni automatiche AX nella galleria o altre superfici
+personali di sistema; il focus può scorrerle. Tentativo picker interrotto e
+automazione rimossa su indicazione dell'utente. Solo fixture interne per le
+prove automatiche; nessuna nuova attestazione di collaudo picker.
+
 Consolidamento autenticazione iOS: login/MFA non inviano richieste concorrenti;
 risposte dopo logout scartate, con tentativo di revoca dei token tardivi. Stato
 di attesa nei pulsanti nativi. Nessuna modifica al contratto server o al cloud.

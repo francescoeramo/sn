@@ -5,6 +5,17 @@ Il client nativo usa le API SN; backend Next.js e Supabase restano condivisi con
 
 ## Automazione del 26 ottobre 2026
 
+Confine delle prove sul dispositivo: non usare la scansione AX `iter_elements`
+nel selettore foto o in altre superfici personali di sistema. L'avanzamento del
+focus può scorrere la galleria. Tentativo di prova picker interrotto su richiesta
+dell'utente; automazione rimossa, nessuna foto selezionata/caricata o salvata.
+App ripristinata all'avvio normale. Le prove automatiche restano sulle fixture
+interne; il picker reale resta un controllo manuale distinto.
+
+Incrementi del 26 ottobre installati via USB: Verifying 100%, exit 0, con il
+comando `prepare-ios-dev.py --install`. Provato anche arresto del backend e
+successiva preparazione automatica: servizio riavviato e bootstrap 401 verificato.
+
 Autenticazione concorrente: login e MFA condividono un blocco degli invii,
 con indicatore di attesa nativo. Un esito arrivato dopo logout non salva token,
 non riapre la sessione e non modifica gli errori; in caso di successo tenta la

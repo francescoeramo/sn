@@ -1,7 +1,7 @@
 # Graph Report - sn  (2026-10-26)
 
 ## Corpus Check
-- 210 files · ~163,083 words
+- 210 files · ~163,240 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 11 file(s) not represented in the graph (top: (none) 5, .resolved 2, .example 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `64ab8542`
+- Built from commit: `c800b39a`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -116,20 +116,20 @@
 - 20261019134742_separate_account_deletion_intent.sql
 - SECURITY-AUDIT-2026-10-19.md
 - APIClientProtocol
-- Language
+- APIError
 - APIClient
+- TokenPair
 - .loadProfile
+- Language
 - prepare-ios-dev.py
 - check-ios-session.sh
 - vitest
-- TokenPair
 - security-settings.tsx
 - View
 - Control
 - LoginResponse
 - NewPost
 - Collaudo M1 su iPhone — 24 ottobre 2026
-- APIError
 
 ## God Nodes (most connected - your core abstractions)
 1. `AuthCoordinator` - 92 edges
@@ -452,13 +452,21 @@ Nodes (18): Combine, iOS M0.5 — prova di compatibilità crittografica, Prova s
 Cohesion: 0.50
 Nodes (3): Metodo, Stato e incremento successivo, Sviluppo iOS di SN
 
-### Community 129 - "Language"
-Cohesion: 0.50
-Nodes (3): Language, en, it
+### Community 129 - "APIError"
+Cohesion: 0.13
+Nodes (12): ErrorMessages, .language, APIError, .code, invalidResponse, .isConnectivityFailure, .isDefinitiveSessionFailure, .isUnauthorized (+4 more)
 
 ### Community 130 - "APIClient"
 Cohesion: 0.22
 Nodes (3): APIClient, .decoder, .encoder
+
+### Community 131 - "TokenPair"
+Cohesion: 0.15
+Nodes (5): FixtureStore, M1HTTPFixture, TokenPair, .expiryDate, M1HTTPTests
+
+### Community 133 - "Language"
+Cohesion: 0.50
+Nodes (3): Language, en, it
 
 ### Community 134 - "prepare-ios-dev.py"
 Cohesion: 0.05
@@ -467,10 +475,6 @@ Nodes (17): run(), capture(), check(), more(), page(), snapshot(), tap(), main()
 ### Community 136 - "vitest"
 Cohesion: 0.33
 Nodes (3): vitest, fixture, upload()
-
-### Community 138 - "TokenPair"
-Cohesion: 0.15
-Nodes (5): FixtureStore, M1HTTPFixture, TokenPair, .expiryDate, M1HTTPTests
 
 ### Community 139 - "security-settings.tsx"
 Cohesion: 0.27
@@ -496,10 +500,6 @@ Nodes (7): CodingKeys, alt, body, content_warning, kind, media_path, NewPost
 Cohesion: 0.33
 Nodes (6): Automazione ripetibile, Collaudo M1 su iPhone — 24 ottobre 2026, Difetto riprodotto e corretto, Limiti ancora aperti, Perimetro ed evidenze, Ripresa automatizzata del 26 ottobre
 
-### Community 150 - "APIError"
-Cohesion: 0.13
-Nodes (12): ErrorMessages, .language, APIError, .code, invalidResponse, .isConnectivityFailure, .isDefinitiveSessionFailure, .isUnauthorized (+4 more)
-
 ## Knowledge Gaps
 - **81 isolated node(s):** `CryptoKit`, `Crypto`, `invalidPacket`, `missingKey`, `expired` (+76 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 798 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
@@ -509,15 +509,15 @@ Nodes (12): ErrorMessages, .language, APIError, .code, invalidResponse, .isConne
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `4.12 Ordine di esecuzione` connect `ApiError` to `AuthCoordinator`, `SN — Piano app nativa iOS (SwiftUI)`, `APIClient`?**
-  _High betweenness centrality (0.167) - this node is a cross-community bridge._
+  _High betweenness centrality (0.169) - this node is a cross-community bridge._
 - **Are the 37 inferred relationships involving `AuthCoordinator` (e.g. with `4.12 Ordine di esecuzione` and `4.6 Logout e revoca (F2, F4)`) actually correct?**
   _`AuthCoordinator` has 37 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `CryptoKit`, `Crypto`, `invalidPacket` to the rest of the system?**
   _81 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `ap/[...path]/route.ts` be split into smaller, more focused modules?**
   _Cohesion score 0.06030701754385965 - nodes in this community are weakly interconnected._
-- **Why does `AuthCoordinator` connect `AuthCoordinator` to `APIClientProtocol`, `.loadProfile`, `ApiError`, `MemoryTokenStore`, `SN — Piano app nativa iOS (SwiftUI)`, `Sendable`, `TokenPair`, `FeedView.swift`, `View`, `LoginResponse`, `Data`, `MockAPI`, `Foundation`, `APIError`, `ComposePostView`, `Interfaccia nativa iOS — incremento M1`?**
-  _High betweenness centrality (0.163) - this node is a cross-community bridge._
+- **Why does `AuthCoordinator` connect `AuthCoordinator` to `APIClientProtocol`, `APIError`, `TokenPair`, `.loadProfile`, `ApiError`, `MemoryTokenStore`, `SN — Piano app nativa iOS (SwiftUI)`, `Sendable`, `FeedView.swift`, `View`, `LoginResponse`, `Data`, `Foundation`, `MockAPI`, `ComposePostView`, `Interfaccia nativa iOS — incremento M1`?**
+  _High betweenness centrality (0.165) - this node is a cross-community bridge._
 - **Are the 29 inferred relationships involving `MockAPI` (e.g. with `.testAmbiguousPublicationIsNotAutomaticallyRetried()` and `.testCachedImageDoesNotPretendConnectionRecovered()`) actually correct?**
   _`MockAPI` has 29 INFERRED edges - model-reasoned connections that need verification._
 - **Should `api/[...path]/route.ts` be split into smaller, more focused modules?**
