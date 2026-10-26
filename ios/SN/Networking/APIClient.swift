@@ -92,7 +92,7 @@ struct APIClient: APIClientProtocol {
         do {
             return try decoder.decode(type, from: data)
         } catch {
-            throw APIError.transport
+            throw APIError.invalidResponse
         }
     }
 
@@ -124,7 +124,7 @@ struct APIClient: APIClientProtocol {
             // Rete assente o timeout: ambiguo, non implica un rifiuto del server (R4).
             throw APIError.transport
         }
-        guard let http = response as? HTTPURLResponse else { throw APIError.transport }
+        guard let http = response as? HTTPURLResponse else { throw APIError.invalidResponse }
         guard (200..<300).contains(http.statusCode) else {
             let body = try? decoder.decode(APIErrorBody.self, from: data)
             if http.statusCode == 401 {

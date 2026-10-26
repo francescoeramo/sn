@@ -103,7 +103,7 @@ final class AuthCoordinator: ObservableObject {
         lastErrorMessage = nil
         do {
             let response = try await api.login(email: email, password: password)
-            guard let pair = response.tokenPair() else { throw APIError.transport }
+            guard let pair = response.tokenPair() else { throw APIError.invalidResponse }
             if response.mfaRequired == true, let factorId = response.factorId {
                 tokens = pair
                 pendingMfaFactorId = factorId

@@ -17,6 +17,9 @@ enum ErrorMessages {
         switch error {
         case .transport:
             return language == .en ? "No connection. Try again." : "Nessuna connessione. Riprova."
+        case .invalidResponse:
+            return language == .en ? "The server returned an unreadable response. Try again shortly."
+                : "Il server ha restituito una risposta non leggibile. Riprova tra poco."
         case .unauthorized:
             return language == .en ? "Session expired. Sign in again." : "Sessione scaduta. Accedi di nuovo."
         case .server(_, let message, _):

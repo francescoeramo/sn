@@ -4,6 +4,43 @@ import XCTest
 
 @MainActor
 final class M1HTTPTests: XCTestCase {
+    func testMalformedBootstrapPreservesSessionAndFeedWithoutClaimingNoConnection() async {
+        M1HTTPFixture.control.reset()
+        let store = MemoryTokenStore()
+        store.tokens = TokenPair(accessToken: "m1-fixture", refreshToken: "fixture-refresh",
+            expiresAt: Int(Date().timeIntervalSince1970) + 3600, tokenType: "bearer")
+        let coordinator = AuthCoordinator(api: M1HTTPFixture.client(), store: store)
+        await coordinator.restore()
+        let cursor = coordinator.nextCursor
+        M1HTTPFixture.control.setMalformedResponse(true)
+        await coordinator.probe()
+        XCTAssertFalse(coordinator.offline)
+        XCTAssertNotNil(store.tokens)
+        XCTAssertEqual(coordinator.homePosts.count, 40)
+        XCTAssertEqual(coordinator.nextCursor, cursor)
+        XCTAssertNotNil(coordinator.lastErrorMessage)
+        XCTAssertNotEqual(coordinator.lastErrorMessage, ErrorMessages.message(for: .transport))
+        XCTAssertEqual(M1HTTPFixture.control.requests.count, 2)
+        M1HTTPFixture.control.setMalformedResponse(false)
+        await coordinator.probe()
+        XCTAssertNil(coordinator.lastErrorMessage)
+        XCTAssertFalse(coordinator.offline)
+    }
+
+    func testMalformedUploadResponseIsAmbiguousAndNeverRetried() async {
+        M1HTTPFixture.control.reset()
+        M1HTTPFixture.control.setMalformedResponse(true)
+        do {
+            _ = try await M1HTTPFixture.client().upload(accessToken: "m1-fixture", jpeg: Data([1, 2, 3]))
+            XCTFail("Malformed response must fail decoding")
+        } catch let error as APIError {
+            XCTAssertEqual(error.code, "invalid_response")
+            XCTAssertFalse(error.isConnectivityFailure)
+            XCTAssertTrue(error.mayHaveCommitted)
+        } catch { XCTFail("Unexpected error: \(error)") }
+        XCTAssertEqual(M1HTTPFixture.control.requests.count, 1)
+    }
+
     func testEightyFiveFeedPostsWithIdenticalTimestampsCrossThreePages() async {
         M1HTTPFixture.control.reset()
         let store = MemoryTokenStore()

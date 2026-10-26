@@ -846,9 +846,9 @@
     "semantic_hash": ""
   },
   ".github/workflows/ci.yml": {
-    "mtime": 1790878782.884227,
-    "seen": 1791824229.369521,
-    "ast_hash": "0946917eb8cc1821033e015f59e34fea",
+    "mtime": 1793007129.045216,
+    "seen": 1793007135.2070484,
+    "ast_hash": "84dc314daa8b1884949c9605aaf32ed9",
     "semantic_hash": ""
   },
   ".github/workflows/maintenance.yml": {
@@ -924,9 +924,9 @@
     "semantic_hash": ""
   },
   "docs/MANUALE-PROGETTO.md": {
-    "mtime": 1793006823.2700331,
-    "seen": 1793006843.609238,
-    "ast_hash": "4a01c53d496d238d14f566e6fc83038d",
+    "mtime": 1793007129.046216,
+    "seen": 1793007135.2070708,
+    "ast_hash": "c71eb8694499393df66a0e6745f00e0c",
     "semantic_hash": ""
   },
   "docs/PIANO-APP-NATIVA.md": {
@@ -966,9 +966,9 @@
     "semantic_hash": ""
   },
   "ios/README.md": {
-    "mtime": 1793006920.7979732,
-    "seen": 1793007018.8831806,
-    "ast_hash": "e045d295d1fb3a25bd9a73abea6cb6ee",
+    "mtime": 1793007129.045216,
+    "seen": 1793007135.2070856,
+    "ast_hash": "5fd07dabf2f588354f3c5e2ee158aa1e",
     "semantic_hash": ""
   },
   "ios/project.yml": {
@@ -1308,9 +1308,21 @@
     "semantic_hash": ""
   },
   "scripts/check-ios-m1.py": {
-    "mtime": 1793006653.0876749,
-    "seen": 1793006685.3956344,
-    "ast_hash": "48d16dbe53c15ab3ea13d937a668540b",
+    "mtime": 1793007129.044216,
+    "seen": 1793007135.206939,
+    "ast_hash": "750a99f99c133f4c755ae3392e1878bb",
+    "semantic_hash": ""
+  },
+  "scripts/prepare-ios-dev.py": {
+    "mtime": 1793007129.044216,
+    "seen": 1793007135.206946,
+    "ast_hash": "0a344bd5868a7d529d534b4a4621ed28",
+    "semantic_hash": ""
+  },
+  "scripts/test-ios-dev.py": {
+    "mtime": 1793007102.8081324,
+    "seen": 1793007135.2069502,
+    "ast_hash": "daaee0e2f02e5a700d199154692aed72",
     "semantic_hash": ""
   }
 }

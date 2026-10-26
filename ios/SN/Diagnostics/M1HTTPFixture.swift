@@ -30,11 +30,14 @@ final class M1HTTPFixture: URLProtocol, @unchecked Sendable {
     final class Control: @unchecked Sendable {
         private let lock = NSLock()
         private var disconnected = false
+        private var malformed = false
         private var paths: [String] = []
         private var contractValid = true
 
-        func reset() { lock.withLock { disconnected = false; paths = []; contractValid = true } }
+        func reset() { lock.withLock { disconnected = false; malformed = false; paths = []; contractValid = true } }
         func setOffline(_ value: Bool) { lock.withLock { disconnected = value } }
+        func setMalformedResponse(_ value: Bool) { lock.withLock { malformed = value } }
+        var malformedResponse: Bool { lock.withLock { malformed } }
         var requests: [String] { lock.withLock { paths } }
         var validRequests: Bool { lock.withLock { contractValid } }
         func receive(_ request: URLRequest) throws {
@@ -104,7 +107,8 @@ final class M1HTTPFixture: URLProtocol, @unchecked Sendable {
             } else {
                 throw URLError(.unsupportedURL)
             }
-            let data = try JSONSerialization.data(withJSONObject: payload)
+            let data = Self.control.malformedResponse ? Data("{\"invalid\":".utf8)
+                : try JSONSerialization.data(withJSONObject: payload)
             let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: "HTTP/1.1",
                 headerFields: ["Content-Type": "application/json", "Cache-Control": "private, no-store"])!
             client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)

@@ -1,5 +1,9 @@
 # SN — manuale operativo del progetto
 
+Client iOS: risposte HTTP non decodificabili distinte dagli errori di rete tramite
+`invalid_response`; non attivano l'avviso offline né cancellano la sessione.
+Nessun retry aggiunto, esiti di scrittura non leggibili restano ambigui.
+
 Preparazione iOS automatizzata: `python scripts/prepare-ios-dev.py`, con
 `--check` diagnostico e `--install` per aggiornare via USB l'app dopo un cambio IP.
 Riallinea endpoint/ATS e servizio locale del checkout, verifica risposta 401;

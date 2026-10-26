@@ -3,12 +3,14 @@ import Foundation
 /// Errore delle API native. `code` è il codice stabile emesso dal server (`native/auth/*`).
 enum APIError: Error, Equatable, Sendable {
     case transport
+    case invalidResponse
     case unauthorized(code: String?)
     case server(status: Int, message: String, code: String?)
 
     var code: String? {
         switch self {
         case .transport: return "connection_unavailable"
+        case .invalidResponse: return "invalid_response"
         case .unauthorized(let code): return code
         case .server(_, _, let code): return code
         }
@@ -18,7 +20,7 @@ enum APIError: Error, Equatable, Sendable {
         switch self {
         case .unauthorized: return true
         case .server(let status, _, _): return status == 401
-        case .transport: return false
+        case .transport, .invalidResponse: return false
         }
     }
 
@@ -35,7 +37,7 @@ enum APIError: Error, Equatable, Sendable {
     /// A lost response or timeout may follow a successful commit. Do not offer a blind resend.
     var mayHaveCommitted: Bool {
         switch self {
-        case .transport: return true
+        case .transport, .invalidResponse: return true
         case .unauthorized: return false
         case .server(let status, _, _): return status == 408 || status >= 500
         }

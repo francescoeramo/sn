@@ -5,6 +5,15 @@ Il client nativo usa le API SN; backend Next.js e Supabase restano condivisi con
 
 ## Automazione del 26 ottobre 2026
 
+Risposte non leggibili: gli errori di decodifica HTTP ora hanno codice locale
+`invalid_response` e un messaggio distinto dalla connessione assente. Sessione,
+feed e cursore restano conservati, nessun refresh o retry automatico; un esito
+di scrittura non decodificabile resta ambiguo. Due regressioni sul client HTTP
+reale hanno riprodotto il problema prima della correzione.
+Collaudo dopo la correzione: 34 XCTest Linux, 15 controlli modelli, 77 test server,
+5 regressioni rete, typecheck, lint e build Darwin superati. Installazione device
+di questo incremento ancora distinta dalla compilazione.
+
 Preparazione automatica ambiente: `python scripts/prepare-ios-dev.py` riusa l'IP
 privato configurato se ancora assegnato, altrimenti sceglie l'unico IP privato
 sull'interfaccia di default. Aggiorna soltanto base URL ed eccezione ATS, avvia o
