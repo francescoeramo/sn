@@ -11,7 +11,7 @@ di accessibilità certificato o un rilascio pubblico.
 | M0 — sessione | Funzionante su iPhone | Login, MFA, rinnovo, logout/riapertura e recupero offline confermati; le singole conferme non certificano tutta la matrice tecnica |
 | M0.5 — crypto 1:1 | Completata | Rapporto CryptoKit/Web Crypto del 15 ottobre: 35 controlli, tre dispositivi e allegato; nessuna chat UI o trasferimento storico impliciti |
 | M1 — feed, profilo e foto | Chiusa per la tappa di sviluppo | Feed e archivio proprio paginati, pubblicazione con una foto, avvisi e recupero sessione; evidenze di accettazione sotto |
-| M2 — storie native | M2.1 in corso: lettura server implementata, player da sviluppare | [Piano M2](PIANO-IOS-M2.md), lettura indipendente e finita; nessuna pubblicazione o player attestati |
+| M2 — storie native | M2.1: lettura e player foto implementati; collaudo accessibilità del player aperto | [Piano M2](PIANO-IOS-M2.md), lettura indipendente e player foto; pubblicazione, video e ricevute native da sviluppare |
 | Parità completa e rilascio | Da completare | Interazioni, altri profili/modifica profilo, chat, gruppi, cerchie, eventi, registrazione/recovery e distribuzione hanno lavoro separato |
 
 ## Ultime evidenze, senza riesecuzione in questa sessione
@@ -91,4 +91,17 @@ negli altri documenti. Stime verbali di durata non sono scadenze o evidenze.
 seguiti accettati, scadenza attiva, pagine 40+1 e cursore data/UUID. Il flag viewed
 legge soltanto ricevute del chiamante. Nessuna scrittura o ampliamento bootstrap.
 Stato/server e test non significano player implementato o verificato su iPhone.
-Prossimo incremento: modelli/stato Swift e player foto secondo PIANO-IOS-M2.md.
+Modelli, stato e player foto ora implementati in SwiftUI. Timer cinque secondi
+solo dopo foto pronta e avviso accettato; pausa/pressione/background/VoiceOver
+fermano l’avanzamento. Scadenza rimuove contenuto e impedisce nuovi download.
+Sequenza congelata all’apertura, comandi nativi e stato storie separato dal feed.
+Logout elimina le storie e scarta risposte precedenti. Nessuna ricevuta scritta.
+
+68 XCTest Linux e build/installazione Darwin verificati; 56 controlli sintetici iPhone
+Mostra/Nascondi, nessun prefetch oltre gli avvisi e avanzamento, chiaro/scuro.
+Testo massimo applicato con readback e ripristinato. Rapporto finale M2 in
+`docs/evidence/ios-m2-player-2026-10-27.json` (prove realmente eseguite).
+
+M2.1 non dichiarata integralmente chiusa: resta ascolto VoiceOver specifico del
+nuovo player, distinto dalla conferma M1. Nessuna storia pubblicata nel cloud.
+M2.2 (composer foto), M2.3 (video) e M2.4 (ricevute/viewer) restano successivi.

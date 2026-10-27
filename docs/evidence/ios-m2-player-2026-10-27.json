@@ -1,0 +1,250 @@
+{
+  "scope": "Synthetic M2 player only; guarded OCR/HID; no gallery or cloud writes",
+  "checks": [
+    {
+      "name": "dark_feed_fixture",
+      "passed": true
+    },
+    {
+      "name": "dark_current_run",
+      "passed": true
+    },
+    {
+      "name": "dark_no_prefetch",
+      "passed": true
+    },
+    {
+      "name": "dark_before-prova_fixture",
+      "passed": true
+    },
+    {
+      "name": "dark_unique_prova",
+      "passed": true
+    },
+    {
+      "name": "dark_protected_fixture",
+      "passed": true
+    },
+    {
+      "name": "dark_warning_before_content",
+      "passed": true
+    },
+    {
+      "name": "dark_current_run",
+      "passed": true
+    },
+    {
+      "name": "dark_no_media_before_consent",
+      "passed": true
+    },
+    {
+      "name": "dark_before-mostra_fixture",
+      "passed": true
+    },
+    {
+      "name": "dark_unique_mostra",
+      "passed": true
+    },
+    {
+      "name": "dark_revealed_fixture",
+      "passed": true
+    },
+    {
+      "name": "dark_revealed_body",
+      "passed": true
+    },
+    {
+      "name": "dark_current_run",
+      "passed": true
+    },
+    {
+      "name": "dark_single_media_read",
+      "passed": true
+    },
+    {
+      "name": "dark_before-nascondi_fixture",
+      "passed": true
+    },
+    {
+      "name": "dark_unique_nascondi",
+      "passed": true
+    },
+    {
+      "name": "dark_hidden_fixture",
+      "passed": true
+    },
+    {
+      "name": "dark_hidden_again",
+      "passed": true
+    },
+    {
+      "name": "dark_before-mostra_fixture",
+      "passed": true
+    },
+    {
+      "name": "dark_unique_mostra",
+      "passed": true
+    },
+    {
+      "name": "dark_after-timer_fixture",
+      "passed": true
+    },
+    {
+      "name": "dark_advance_or_voiceover_pause",
+      "passed": true
+    },
+    {
+      "name": "dark_current_run",
+      "passed": true
+    },
+    {
+      "name": "dark_no_next_warning_prefetch",
+      "passed": true
+    },
+    {
+      "name": "dark_maximum_text_applied",
+      "passed": true
+    },
+    {
+      "name": "dark_maximum-text_fixture",
+      "passed": true
+    },
+    {
+      "name": "dark_text_restored",
+      "passed": true
+    },
+    {
+      "name": "light_feed_fixture",
+      "passed": true
+    },
+    {
+      "name": "light_current_run",
+      "passed": true
+    },
+    {
+      "name": "light_no_prefetch",
+      "passed": true
+    },
+    {
+      "name": "light_before-prova_fixture",
+      "passed": true
+    },
+    {
+      "name": "light_unique_prova",
+      "passed": true
+    },
+    {
+      "name": "light_protected_fixture",
+      "passed": true
+    },
+    {
+      "name": "light_warning_before_content",
+      "passed": true
+    },
+    {
+      "name": "light_current_run",
+      "passed": true
+    },
+    {
+      "name": "light_no_media_before_consent",
+      "passed": true
+    },
+    {
+      "name": "light_before-mostra_fixture",
+      "passed": true
+    },
+    {
+      "name": "light_unique_mostra",
+      "passed": true
+    },
+    {
+      "name": "light_revealed_fixture",
+      "passed": true
+    },
+    {
+      "name": "light_revealed_body",
+      "passed": true
+    },
+    {
+      "name": "light_current_run",
+      "passed": true
+    },
+    {
+      "name": "light_single_media_read",
+      "passed": true
+    },
+    {
+      "name": "light_before-nascondi_fixture",
+      "passed": true
+    },
+    {
+      "name": "light_unique_nascondi",
+      "passed": true
+    },
+    {
+      "name": "light_hidden_fixture",
+      "passed": true
+    },
+    {
+      "name": "light_hidden_again",
+      "passed": true
+    },
+    {
+      "name": "light_before-mostra_fixture",
+      "passed": true
+    },
+    {
+      "name": "light_unique_mostra",
+      "passed": true
+    },
+    {
+      "name": "light_after-timer_fixture",
+      "passed": true
+    },
+    {
+      "name": "light_advance_or_voiceover_pause",
+      "passed": true
+    },
+    {
+      "name": "light_current_run",
+      "passed": true
+    },
+    {
+      "name": "light_no_next_warning_prefetch",
+      "passed": true
+    },
+    {
+      "name": "light_maximum_text_applied",
+      "passed": true
+    },
+    {
+      "name": "light_maximum-text_fixture",
+      "passed": true
+    },
+    {
+      "name": "light_text_restored",
+      "passed": true
+    }
+  ],
+  "settings_restored": true,
+  "normal_launch_restored": true,
+  "status": "passed",
+  "platform": "ios-device",
+  "verification": {
+    "swift_linux_tests": 68,
+    "darwin_build": "passed, 6.55 seconds",
+    "usb_installation": "Verifying 100%, exit 0",
+    "ui_check_count": 56,
+    "cloud_writes": false,
+    "real_backend_observation": "GET /api/native/stories 200 after normal launch; single-account read only, not a cloud RLS matrix",
+    "voiceover_audio": "not performed on the new player; M1 user confirmation is separate",
+    "manual_visual_review": "Light/dark, maximum text, protected/revealed states inspected; footer spacing corrected before this final run"
+  },
+  "source_sha256": {
+    "ios/SN/Models/Story.swift": "d2e3ed5da9d1bb8c1ce562bd7585ceff1addd7e0189b55b4bc0365b90a77a91e",
+    "ios/SN/Views/StoriesView.swift": "5b06a98a9ddd01ca0f8970319ad97985d034059994398a388ec11ec3812dbb7b",
+    "ios/SN/Auth/AuthCoordinator.swift": "620c0a81df2f39a7205a54b5d27577a8f46ddff134c386bbaa6329c1bd28f07c",
+    "ios/SN/Networking/APIClient.swift": "d252006f6c8c00ec3864ee9f9a2446d8249879e66434628184a66cdbfc366899",
+    "ios/SN/Diagnostics/M1HTTPFixture.swift": "391ba4f4963dca1d3dca2f4ea49f9a94073a376e112012114bb9b2fac3d6e0e7"
+  }
+}

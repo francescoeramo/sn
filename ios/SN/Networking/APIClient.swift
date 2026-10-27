@@ -78,6 +78,17 @@ struct APIClient: APIClientProtocol {
         return try decode(ProfilePostsPage.self, from: data)
     }
 
+    func stories(accessToken: String, before: PostCursor?) async throws -> NativeStoriesPage {
+        var components = URLComponents()
+        components.path = "/api/native/stories"
+        if let before {
+            components.queryItems = [URLQueryItem(name: "before", value: before.created_at),
+                                     URLQueryItem(name: "post_id", value: before.post_id)]
+        }
+        let path = components.string!.replacingOccurrences(of: "+", with: "%2B")
+        return try decode(NativeStoriesPage.self, from: await request(path: path, method: "GET", token: accessToken, body: nil))
+    }
+
     func upload(accessToken: String, jpeg: Data) async throws -> UploadedMedia {
         let boundary = "SN-\(UUID().uuidString)"
         var body = Data("--\(boundary)\r\nContent-Disposition: form-data; name=\"file\"; filename=\"photo.jpg\"\r\nContent-Type: image/jpeg\r\n\r\n".utf8)

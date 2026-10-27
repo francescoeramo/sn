@@ -1,6 +1,6 @@
 # M2 — Storie native iOS
 
-Piano del **27 ottobre 2026**. Stato: **M2.1 in corso; lettura server implementata, player SwiftUI non ancora implementato**.
+Piano del **27 ottobre 2026**. Stato: **M2.1 in corso; lettura e player foto implementati; collaudo VoiceOver del nuovo player ancora aperto**.
 M1 accettata per lo sviluppo il 27 ottobre sera; prove nel rapporto finale.
 Questo piano non attesta il completamento del player o il rilascio.
 Riferimenti: [stato](STATO-IOS.md), [contratto nativo](PIANO-APP-NATIVA.md),
@@ -149,6 +149,22 @@ verificati; fixture video sintetiche su device, nessun accesso automatico alla g
 
 Uscita: matrice sotto completata con evidenze per ciascun livello. Non dichiarare
 la parità web o il rilascio pubblico in seguito alla sola chiusura M2.
+
+### Stato implementazione player — 27 ottobre sera
+
+Elenco e player foto SwiftUI implementati e installati. APIClient e stato storie
+indipendenti; cursori, deduplica, filtro scadenze e pulizia a logout. Player con
+sequenza congelata, consenso prima del download, timer cinque secondi dopo foto
+pronta, pausa/pressione, stop background e nessun avanzamento con VoiceOver attivo.
+Allegati video hanno un messaggio esplicito e avanzamento manuale; non sono riprodotti.
+
+68 XCTest Linux: clock controllato, consenso, scadenza, dati nullable, pagine,
+errori, logout tardivo e HTTP bearer con cursore. Prova iPhone sintetica in
+chiaro/scuro: nessun download prima di Mostra, Mostra/Nascondi, una sola lettura
+media, avanzamento e nessun prefetch oltre il secondo avviso; testo massimo
+verificato tramite slider reale e catture. Preferenze e avvio normale ripristinati.
+Resta ascolto VoiceOver specifico del player; non assimilare la conferma M1 a M2.
+Nessuna pubblicazione, video o scrittura di ricevute implementata in questo incremento.
 
 ## 6. Matrice di accettazione
 

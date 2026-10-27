@@ -186,6 +186,29 @@ actor MockAPI: APIClientProtocol {
         }
         return try response.get()
     }
+    var storiesResult: Result<NativeStoriesPage, APIError> = .success(NativeStoriesPage(stories: [], nextCursor: nil))
+    private(set) var storyCursors: [PostCursor?] = []
+    func setStoriesResult(_ result: Result<NativeStoriesPage, APIError>) { storiesResult = result }
+    private var storyGate: CheckedContinuation<Void, Never>?
+    private var storyStarted: CheckedContinuation<Void, Never>?
+    private var holdStories = false
+    func suspendStories() { holdStories = true }
+    func waitForStories() async {
+        if storyGate != nil { return }
+        await withCheckedContinuation { storyStarted = $0 }
+    }
+    func releaseStories() { holdStories = false; storyGate?.resume(); storyGate = nil }
+    func stories(accessToken: String, before: PostCursor?) async throws -> NativeStoriesPage {
+        storyCursors.append(before)
+        let response = storiesResult
+        if holdStories {
+            await withCheckedContinuation { continuation in
+                storyGate = continuation; storyStarted?.resume(); storyStarted = nil
+            }
+        }
+        return try response.get()
+    }
+
     func upload(accessToken: String, jpeg: Data) async throws -> UploadedMedia {
         uploadCount += 1
         return try uploadResult.get()

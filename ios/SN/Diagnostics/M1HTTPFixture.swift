@@ -14,6 +14,7 @@ final class M1HTTPFixture: URLProtocol, @unchecked Sendable {
     static func coordinator(screen: String? = nil) -> AuthCoordinator {
         control.reset()
         control.setWarningFixture(screen == "warning")
+        control.setStoriesFixture(screen == "stories")
         let store = FixtureStore(screen: screen)
         let defaults = UserDefaults(suiteName: "it.sn.m1-fixture")!
         defaults.removePersistentDomain(forName: "it.sn.m1-fixture")
@@ -47,11 +48,14 @@ final class M1HTTPFixture: URLProtocol, @unchecked Sendable {
         private var disconnected = false
         private var malformed = false
         private var showWarning = false
+        private var showStories = false
         private var paths: [String] = []
         private var contractValid = true
 
-        func reset() { lock.withLock { disconnected = false; malformed = false; showWarning = false; paths = []; contractValid = true } }
+        func reset() { lock.withLock { disconnected = false; malformed = false; showWarning = false; showStories = false; paths = []; contractValid = true } }
         func setWarningFixture(_ value: Bool) { lock.withLock { showWarning = value } }
+        func setStoriesFixture(_ value: Bool) { lock.withLock { showStories = value } }
+        var storiesFixture: Bool { lock.withLock { showStories } }
         var warningFixture: Bool { lock.withLock { showWarning } }
         func setOffline(_ value: Bool) { lock.withLock { disconnected = value } }
         func setMalformedResponse(_ value: Bool) { lock.withLock { malformed = value } }
@@ -61,6 +65,14 @@ final class M1HTTPFixture: URLProtocol, @unchecked Sendable {
         func receive(_ request: URLRequest) throws {
             try lock.withLock {
                 paths.append(request.url!.path + (request.url!.query.map { "?" + $0 } ?? ""))
+                if showStories, ProcessInfo.processInfo.environment["SN_M1_UI_FIXTURE"] == "1",
+                   let runId = ProcessInfo.processInfo.environment["SN_M2_UI_RUN_ID"],
+                   let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+                    let report: [String: Any] = ["run_id": runId, "requests": paths]
+                    if let data = try? JSONSerialization.data(withJSONObject: report) {
+                        try? data.write(to: directory.appendingPathComponent("m2-ui-network.json"), options: .atomic)
+                    }
+                }
                 let expectedBearer = ["/api/native/auth/login", "/api/native/auth/refresh"].contains(request.url?.path ?? "") ? nil : "Bearer m1-fixture"
                 contractValid = contractValid && request.value(forHTTPHeaderField: "Authorization") == expectedBearer
                     && !request.httpShouldHandleCookies && request.cachePolicy == .reloadIgnoringLocalCacheData
@@ -126,6 +138,18 @@ final class M1HTTPFixture: URLProtocol, @unchecked Sendable {
             } else if url.path == "/api/profile/posts" {
                 payload = ["posts": page, "nextCursor": rows.count > 40
                     ? ["created_at": Self.timestamp, "post_id": page.last!["id"]!] : NSNull()]
+            } else if url.path == "/api/native/stories" {
+                let expires = ISO8601DateFormatter().string(from: Date().addingTimeInterval(3600))
+                let items: [[String: Any]] = Self.control.storiesFixture ? (1...2).map { index in
+                    ["id": "story-fixture-\(index)", "author_id": Self.userId,
+                     "body": "Testo storia sintetica \(index)", "media_path": "fixture/story-\(index).png",
+                     "media_type": "image/png", "alt": "Foto sintetica \(index)",
+                     "content_warning": index == 1 ? "Avviso storia sintetica" : "Avviso seconda storia",
+                     "created_at": Self.timestamp, "expires_at": expires,
+                     "author": ["id": Self.userId, "username": "collaudo", "display_name": index == 1 ? "Storia prova" : "Seconda storia"],
+                     "media": [], "viewed": false]
+                } : []
+                payload = ["stories": items, "nextCursor": NSNull()]
             } else if url.path == "/api/native/upload" {
                 payload = ["path": "fixture-photo", "mime": "image/jpeg"]
             } else if url.path == "/api/native/post" || url.path == "/api/native/auth/logout" {

@@ -2,10 +2,27 @@
 
 <!-- sn-ios-context:start -->
 > **Stato iOS al 27 ottobre 2026:** M1 accettata per lo sviluppo: picker/VoiceOver confermati,
-> contrasto corretto e testo massimo verificato su iPhone; M2.1: lettura server implementata, player da sviluppare.
+> contrasto corretto e testo massimo verificato su iPhone; M2.1: lettura e player foto implementati, collaudo VoiceOver del player aperto.
 > [Stato ed evidenze](../docs/STATO-IOS.md) · [Piano M2](../docs/PIANO-IOS-M2.md) · [Ripresa sessione](../docs/PROSSIMA-SESSIONE.md).
 > Le sezioni datate conservano il loro valore storico; questa revisione documentale non aggiunge nuove prove.
 <!-- sn-ios-context:end -->
+
+## Player foto M2.1 — 27 ottobre sera
+
+Elenco e player SwiftUI installati: stato separato, avvisi prima del download,
+timer dopo foto pronta, pausa/pressione, stop background e avanzamento automatico
+disattivato con VoiceOver. Sequenza congelata e scadenza gestita; nessuna scrittura
+di visualizzazioni o pubblicazione. 68 XCTest Linux superati e build Darwin;
+56 controlli sintetici iPhone in chiaro/scuro, Mostra/Nascondi, timer e privacy del
+prefetch. Testo massimo verificato, preferenze e avvio normale ripristinati.
+Resta ascolto VoiceOver sul nuovo player: M2.1 non dichiarata integralmente chiusa.
+
+Comando device (Python del venv pymobiledevice3):
+`scripts/check-ios-m2-player.py --output .impeccable/review/m2-player`.
+Rileva automaticamente la build, usa esclusivamente fixture interne e ripristina
+l’app normale. Non apre la galleria né scrive storie cloud. Evidenza sintetica:
+`docs/evidence/ios-m2-player-2026-10-27.json`; screenshot locali esclusi da Git.
+Le sezioni sotto descrivono i precedenti incrementi.
 
 ## Primo incremento M2.1 — lettura server
 

@@ -23,8 +23,9 @@ avvisi, gestione Keychain e concorrenza. M0.5 è chiusa: non rigenerare i vettor
 ## Primo lavoro ancora necessario
 
 M1 è chiusa per lo sviluppo; vedere STATO-IOS.md e rapporto finale di accessibilità.
-M2.1: lettura server e contratto implementati (GET /api/native/stories).
-Proseguire con modelli/stato Swift e player foto.
+M2.1: lettura server, modelli/stato Swift ed elenco/player foto implementati e
+installati. Vedere rapporto device M2 e STATO-IOS.md. Completare ascolto VoiceOver
+del nuovo player (non sostituito dalla conferma M1), poi M2.2 composer foto.
 Le route del piano sono proposte finché non implementate. Non abilitare
 indiscriminatamente /api/action al bearer e non ampliare il bootstrap M1.
 

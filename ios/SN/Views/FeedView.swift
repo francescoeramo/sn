@@ -6,6 +6,7 @@ struct FeedView: View {
     @EnvironmentObject private var coordinator: AuthCoordinator
     let me: Me?
     @State private var composing = false
+    @State private var storySelection: StorySelection?
 
     var body: some View {
         TabView {
@@ -20,6 +21,7 @@ struct FeedView: View {
                             Button("Riprova") { Task { await coordinator.probe() } }
                         }
                     }
+                    StoriesSection { storySelection = $0 }
                     if coordinator.homePosts.isEmpty {
                         ContentUnavailableView {
                             Label(coordinator.offline ? "Connessione assente" : "Il tuo feed è ancora vuoto", systemImage: coordinator.offline ? "cable.connector.slash" : "text.bubble")
@@ -47,7 +49,10 @@ struct FeedView: View {
                     }
                 }
                 .listStyle(.plain)
-                .refreshable { await coordinator.probe() }
+                .refreshable {
+                    await coordinator.probe()
+                    await coordinator.loadStories(refresh: true)
+                }
                 .navigationTitle("SN")
                 .toolbar {
                     ToolbarItem(placement: .primaryAction) {
@@ -111,6 +116,9 @@ struct FeedView: View {
                 .navigationTitle("Profilo")
             }
             .tabItem { Label("Profilo", systemImage: "person.crop.circle") }
+        }
+        .sheet(item: $storySelection) { selected in
+            StoryPlayer(stories: selected.stories, selectedId: selected.selectedId)
         }
     }
 }

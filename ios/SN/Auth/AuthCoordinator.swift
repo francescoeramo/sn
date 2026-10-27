@@ -35,6 +35,12 @@ final class AuthCoordinator: ObservableObject {
     @Published private(set) var profileError: String?
     @Published private(set) var profileGeneration = 0
     private var profileRefreshPending = false
+    @Published private(set) var stories: [NativeStory] = []
+    @Published private(set) var storiesCursor: PostCursor?
+    @Published private(set) var storiesHaveLoaded = false
+    @Published private(set) var isLoadingStories = false
+    @Published private(set) var storiesError: String?
+    private var storiesRefreshPending = false
     private let imageCache: NSCache<NSString, NSData> = {
         let cache = NSCache<NSString, NSData>()
         cache.totalCostLimit = 16 * 1024 * 1024
@@ -357,6 +363,48 @@ final class AuthCoordinator: ObservableObject {
         }
     }
 
+    func loadStories(refresh: Bool = false) async {
+        guard tokens != nil else { return }
+        if isLoadingStories {
+            if refresh { storiesRefreshPending = true }
+            return
+        }
+        guard refresh || !storiesHaveLoaded || storiesCursor != nil else { return }
+        let replacing = refresh || !storiesHaveLoaded
+        let cursor = replacing ? nil : storiesCursor
+        let requestEpoch = epoch
+        isLoadingStories = true
+        defer {
+            if requestEpoch == epoch {
+                isLoadingStories = false
+                if storiesRefreshPending {
+                    storiesRefreshPending = false
+                    Task { await self.loadStories(refresh: true) }
+                }
+            }
+        }
+        do {
+            let page = try await read { [api] token in
+                try await api.stories(accessToken: token, before: cursor)
+            }
+            guard requestEpoch == epoch else { return }
+            var known = replacing ? Set<String>() : Set(stories.map(\.id))
+            let now = Date()
+            let additions = page.stories.filter { $0.isActive(at: now) && known.insert($0.id).inserted }
+            stories = replacing ? additions : stories.filter { $0.isActive(at: now) } + additions
+            storiesCursor = page.nextCursor
+            storiesHaveLoaded = true
+            storiesError = nil
+            connectionRecovered()
+        } catch is CancellationError {
+            return
+        } catch {
+            guard requestEpoch == epoch else { return }
+            storiesError = ErrorMessages.message(for: (error as? APIError) ?? .transport)
+            handleFeedError(error)
+        }
+    }
+
     /// Private media are reused only in memory for this session, never on disk.
     func image(path: String) async throws -> Data {
         guard tokens != nil else { throw APIError.unauthorized(code: "session_invalid") }
@@ -516,6 +564,12 @@ final class AuthCoordinator: ObservableObject {
         profileError = nil
         isLoadingProfile = false
         profileRefreshPending = false
+        stories = []
+        storiesCursor = nil
+        storiesHaveLoaded = false
+        isLoadingStories = false
+        storiesError = nil
+        storiesRefreshPending = false
         cachedMe = nil
         lastVerifiedAt = nil
     }
