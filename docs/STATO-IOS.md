@@ -1,7 +1,8 @@
 # Stato iOS — punto di riferimento per le sessioni
 
-Aggiornamento: **27 ottobre 2026, sera**. Picker e VoiceOver confermati
-dall’utente sulla build Wi-Fi installata; audit automatico ancora da risolvere.
+Aggiornamento: **27 ottobre 2026, sera**. M1 chiusa per la tappa di sviluppo: picker e VoiceOver confermati,
+contrasto corretto e Dynamic Type massimo verificato su iPhone. Non è un audit
+di accessibilità certificato o un rilascio pubblico.
 
 ## Stato acquisito
 
@@ -9,8 +10,8 @@ dall’utente sulla build Wi-Fi installata; audit automatico ancora da risolvere
 | --- | --- | --- |
 | M0 — sessione | Funzionante su iPhone | Login, MFA, rinnovo, logout/riapertura e recupero offline confermati; le singole conferme non certificano tutta la matrice tecnica |
 | M0.5 — crypto 1:1 | Completata | Rapporto CryptoKit/Web Crypto del 15 ottobre: 35 controlli, tre dispositivi e allegato; nessuna chat UI o trasferimento storico impliciti |
-| M1 — feed, profilo e foto | Implementata e installata; chiusura aperta | Feed e archivio proprio paginati, pubblicazione con una foto, avvisi e recupero sessione; ultimi controlli manuali sotto |
-| M2 — storie native | Pianificata, non implementata | [Piano M2](PIANO-IOS-M2.md), subordinato alla chiusura dei gate M1 |
+| M1 — feed, profilo e foto | Chiusa per la tappa di sviluppo | Feed e archivio proprio paginati, pubblicazione con una foto, avvisi e recupero sessione; evidenze di accettazione sotto |
+| M2 — storie native | Pianificata, non implementata | [Piano M2](PIANO-IOS-M2.md), prerequisito M1 ora soddisfatto |
 | Parità completa e rilascio | Da completare | Interazioni, altri profili/modifica profilo, chat, gruppi, cerchie, eventi, registrazione/recovery e distribuzione hanno lavoro separato |
 
 ## Ultime evidenze, senza riesecuzione in questa sessione
@@ -29,19 +30,17 @@ I conteggi appartengono ai rapporti e non sostituiscono una nuova esecuzione.
 
 ## Chiusura M1: lavoro immediato
 
-Audit serale ripetuto con fixture sintetiche: rilievi di contrasto persistono.
-Il sistema ignora la richiesta di testo massimo (readback 0,2727 invece di 1):
-le vecchie catture “massimo” non dimostrano il ridimensionamento. Il runner ora
-verifica il valore applicato prima di attestare la prova. Tema, dimensione e
-avvio normale ripristinati. [Evidenza](evidence/ios-m1-accessibility-2026-10-27-evening.json).
+- [x] PhotosPicker: selezione, annullamento, sostituzione e rimozione, confermate dall’utente.
+- [x] VoiceOver in Feed e Profilo confermato dall’utente.
+- [x] Contrasto del titolo Profilo corretto con colore semantico label. Campioni visibili: minimo 18,82:1 in chiaro e 17,01:1 in scuro.
+- [x] Dynamic Type massimo reale (slider 1,0), cattura ispezionata: testo ingrandito e a capo nella lista scorrevole. Preferenze e avvio normale ripristinati.
+- [x] Rilievi Apple residui motivati come artefatti strumentali/fixture nel [rapporto finale](evidence/ios-m1-accessibility-resolution-2026-10-27.json), senza convertire i vecchi audit in “passed”.
+- [x] M1 accettata per lo sviluppo successivo; nessuna certificazione completa o distribuzione pubblica implicita.
 
-
-- [x] Prova manuale del PhotosPicker: selezione, annullamento, sostituzione e rimozione foto, confermate dall’utente il 27 ottobre sera.
-- [x] VoiceOver funzionante in Feed e Profilo, confermato dall’utente nella stessa sessione.
-- [ ] Verifica accessibilità della build finale: VoiceOver ascoltato, Dynamic Type,
-      focus e azioni, contrasto e resa chiaro/scuro; risolvere o motivare i rilievi.
-- [ ] Registrare esiti e limiti in `docs/IOS-M1-VERIFICA.md`, con build e data.
-- [ ] Dichiarare M1 chiusa soltanto quando le prove richieste hanno evidenza.
+Il setter ora conserva tipo slider e tacche reali del device, tiene aperta la
+connessione proprietaria dell’override e verifica applicazione/ripristino.
+Tre regressioni Python incluse in CI e nel comando M1, cinque contratti runner
+superati. Build Darwin e installazione USB Verifying 100% della correzione colore.
 
 La paginazione sintetica 40 → 80 → 85 sul telefono e i controlli degli avvisi
 sono già documentati. Non riaprire indiscriminatamente tutte le verifiche storiche.

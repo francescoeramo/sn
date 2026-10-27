@@ -22,6 +22,7 @@ from pymobiledevice3.remote.core_device.hid_service import (
     touch_session, TOUCHSCREEN_STATE_CONTACT, TOUCHSCREEN_STATE_RELEASE,
 )
 from pymobiledevice3.services.accessibilityaudit import AccessibilityAudit
+from ios_device_settings import set_dynamic_type
 
 AUDITS = ['testTypeSufficientElementDescription', 'testTypeContrast',
           'testTypeHitRegion', 'testTypeTextClipped', 'testTypeTrait', 'testTypeDynamicText']
@@ -30,7 +31,9 @@ AUDITS = ['testTypeSufficientElementDescription', 'testTypeContrast',
 async def run(args):
     args.output.mkdir(parents=True, exist_ok=True)
     report = {'platform': 'ios-device', 'input': 'CoreDevice HID',
-              'data': '85 synthetic posts through URLSession/URLProtocol', 'checks': []}
+              'data': '85 synthetic posts through URLSession/URLProtocol',
+              'scope': 'layout captures only; Apple audits not run' if args.layout_only else 'Apple audits and layout captures',
+              'checks': []}
 
     def check(name, passed, fatal=True, **details):
         report['checks'].append({'name': name, 'passed': bool(passed), **details})
@@ -44,116 +47,132 @@ async def run(args):
             original_style = await config.get_user_interface_style()
             async with AccessibilityAudit(rsd) as ax:
                 original_size = next(x.value for x in await ax.settings() if x.key == 'DYNAMIC_TYPE')
-            try:
-                async with AppServiceService(rsd) as apps:
-                    await apps.launch_application(args.bundle, environment={'SN_M1_UI_FIXTURE': '1'})
-                await asyncio.sleep(1)
+                try:
+                    async with AppServiceService(rsd) as apps:
+                        await apps.launch_application(args.bundle, environment={'SN_M1_UI_FIXTURE': '1'})
+                    await asyncio.sleep(1)
 
-                async def snapshot():
-                    async with AccessibilityAudit(rsd) as ax:
+                    async def snapshot():
                         captions = [x.caption or '' async for x in ax.iter_elements()]
-                    # Never capture an unrelated app or a real account into the test report.
-                    check('fixture_banner_present', 'Collaudo M1 · dati locali' in captions)
-                    return captions
-
-                async def capture(name):
-                    async with ScreenCaptureService(rsd) as screen:
-                        image = (await screen.capture_screenshot())['image']
-                    verification = subprocess.run(['tesseract', 'stdin', 'stdout'], input=image,
-                                                  check=True, capture_output=True, timeout=10)
-                    check(name + '_capture_fixture', all(marker in verification.stdout.lower() for marker in (b'collaudo m1', b'dati locali')))
-                    path = args.output / (name + '.png')
-                    path.write_bytes(image)
-                    return path, struct.unpack('>II', image[16:24])
-
-                async with touch_session(rsd) as hid:
-                    async def tap(x, y):
-                        await hid.send_touchscreen(TOUCHSCREEN_STATE_CONTACT, x, y)
-                        await asyncio.sleep(.05)
-                        await hid.send_touchscreen(TOUCHSCREEN_STATE_RELEASE, x, y)
-                        await asyncio.sleep(.5)
-
-                    async def more(name):
-                        path, (width, height) = await capture(name)
-                        result = subprocess.run(['tesseract', str(path), 'stdout', 'tsv'],
-                                                check=True, capture_output=True, text=True)
-                        words = list(csv.DictReader(io.StringIO(result.stdout), delimiter='\t'))
-                        targets = [w for w in words if w['text'].strip().casefold() == 'carica']
-                        check(name + '_visible_button', len(targets) == 1)
-                        word = targets[0]
-                        x = (int(word['left']) + int(word['width']) / 2) * 65535 / width
-                        y = (int(word['top']) + int(word['height']) / 2) * 65535 / height
-                        await tap(round(x), round(y))
-
-                    async def guard_fixture():
-                        # OCR verifies the visible local banner without moving AX focus/scroll.
-                        await capture('audit_guard')
-
-                    async def page(name, expected):
-                        captions = await asyncio.wait_for(snapshot(), 90)
-                        posts = {x for x in captions if re.fullmatch(r'Post collaudo \d{3}', x)}
-                        check(name, len(posts) == expected, posts=len(posts))
+                        # Never capture an unrelated app or a real account into the test report.
+                        check('fixture_banner_present', 'Collaudo M1 · dati locali' in captions)
                         return captions
 
-                    if not args.audit_only:
-                        await page('feed_first_page', 40)
-                        await more('feed_load_second')
-                        await page('feed_second_page', 80)
-                        await more('feed_load_third')
-                        captions = await page('feed_third_page', 85)
-                        check('feed_terminal_ui', any(x.startswith('Sei in pari') for x in captions)
-                              and not any(x.startswith('Carica i post precedenti') for x in captions))
-                    # The tab target is read from the standard portrait iPhone tab bar.
-                    await guard_fixture()
-                    await tap(49151, 61000)
-                    if not args.audit_only:
-                        captions = await page('profile_first_page', 40)
-                        check('profile_tab_selected', any(x.startswith('Profilo,') and 'Selected' in x for x in captions))
-                    await guard_fixture()
-                    if not args.audit_only:
-                        await more('profile_load_second')
-                        await page('profile_second_page', 80)
-                        await more('profile_load_third')
-                        captions = await page('profile_third_page', 85)
-                        check('profile_terminal_ui', any(x.startswith('Hai caricato tutti i tuoi post') for x in captions)
-                              and not any(x.startswith('Carica i post precedenti') for x in captions))
+                    async def capture(name):
+                        # Theme transitions may briefly yield an incomplete frame. Verify
+                        # only in memory; never save a frame without the local marker.
+                        for _ in range(6):
+                            async with ScreenCaptureService(rsd) as screen:
+                                image = (await screen.capture_screenshot())['image']
+                            verification = subprocess.run(['tesseract', 'stdin', 'stdout'], input=image,
+                                                          check=True, capture_output=True, timeout=10)
+                            normalized = b' '.join(verification.stdout.lower().split()).replace(b'collaudo ml', b'collaudo m1')
+                            confirmed = all(marker in normalized for marker in (b'collaudo m1', b'dati locali'))
+                            if confirmed:
+                                break
+                            await asyncio.sleep(.5)
+                        check(name + '_capture_fixture', confirmed)
+                        path = args.output / (name + '.png')
+                        path.write_bytes(image)
+                        return path, struct.unpack('>II', image[16:24])
 
-                    for style in ('dark', 'light'):
+                    async with touch_session(rsd) as hid:
+                        async def tap(x, y):
+                            await hid.send_touchscreen(TOUCHSCREEN_STATE_CONTACT, x, y)
+                            await asyncio.sleep(.05)
+                            await hid.send_touchscreen(TOUCHSCREEN_STATE_RELEASE, x, y)
+                            await asyncio.sleep(.5)
+
+                        async def more(name):
+                            path, (width, height) = await capture(name)
+                            result = subprocess.run(['tesseract', str(path), 'stdout', 'tsv'],
+                                                    check=True, capture_output=True, text=True)
+                            words = list(csv.DictReader(io.StringIO(result.stdout), delimiter='\t'))
+                            targets = [w for w in words if w['text'].strip().casefold() == 'carica']
+                            check(name + '_visible_button', len(targets) == 1)
+                            word = targets[0]
+                            x = (int(word['left']) + int(word['width']) / 2) * 65535 / width
+                            y = (int(word['top']) + int(word['height']) / 2) * 65535 / height
+                            await tap(round(x), round(y))
+
+                        async def guard_fixture():
+                            # OCR verifies the visible local banner without moving AX focus/scroll.
+                            await capture('audit_guard')
+
+                        async def page(name, expected):
+                            captions = await asyncio.wait_for(snapshot(), 90)
+                            posts = {x for x in captions if re.fullmatch(r'Post collaudo \d{3}', x)}
+                            check(name, len(posts) == expected, posts=len(posts))
+                            return captions
+
+                        if not args.audit_only:
+                            await page('feed_first_page', 40)
+                            await more('feed_load_second')
+                            await page('feed_second_page', 80)
+                            await more('feed_load_third')
+                            captions = await page('feed_third_page', 85)
+                            check('feed_terminal_ui', any(x.startswith('Sei in pari') for x in captions)
+                                  and not any(x.startswith('Carica i post precedenti') for x in captions))
+                        # The tab target is read from the standard portrait iPhone tab bar.
                         await guard_fixture()
-                        await config.set_user_interface_style(style)
+                        await tap(49151, 61000)
+                        if not args.audit_only:
+                            captions = await page('profile_first_page', 40)
+                            check('profile_tab_selected', any(x.startswith('Profilo,') and 'Selected' in x for x in captions))
+                        await guard_fixture()
+                        if not args.audit_only:
+                            await more('profile_load_second')
+                            await page('profile_second_page', 80)
+                            await more('profile_load_third')
+                            captions = await page('profile_third_page', 85)
+                            check('profile_terminal_ui', any(x.startswith('Hai caricato tutti i tuoi post') for x in captions)
+                                  and not any(x.startswith('Carica i post precedenti') for x in captions))
+
+                        for style in ('dark', 'light'):
+                            await guard_fixture()
+                            await config.set_user_interface_style(style)
+                            await asyncio.sleep(.5)
+                            await capture('profile_' + style + '_before_audit')
+                            if not args.layout_only:
+                                issues = await asyncio.wait_for(ax.run_audit(AUDITS), 45)
+                                check('profile_audit_' + style, len(issues) == 0, fatal=False, issues=[x.json() for x in issues])
+                            await capture('profile_' + style)
+                        await guard_fixture()
+                        await set_dynamic_type(ax, 1.0)
                         await asyncio.sleep(.5)
-                        async with AccessibilityAudit(rsd) as ax:
-                            issues = await asyncio.wait_for(ax.run_audit(AUDITS), 45)
-                        check('profile_audit_' + style, len(issues) == 0, fatal=False, issues=[x.json() for x in issues])
-                        await capture('profile_' + style)
-                    await guard_fixture()
-                    async with AccessibilityAudit(rsd) as ax:
-                        await ax.set_setting('DYNAMIC_TYPE', 1.0)
-                    await asyncio.sleep(.5)
-                    async with AccessibilityAudit(rsd) as ax:
                         actual_size = next(x.value for x in await ax.settings() if x.key == 'DYNAMIC_TYPE')
-                    # Never label a capture as maximum text when the OS ignored the setting.
-                    check('maximum_dynamic_type_setting_applied', actual_size == 1.0, actual=actual_size)
-                    async with AccessibilityAudit(rsd) as ax:
-                        issues = await asyncio.wait_for(ax.run_audit(AUDITS), 45)
-                    check('profile_audit_maximum_dynamic_type', len(issues) == 0, fatal=False, issues=[x.json() for x in issues])
-                    await capture('profile_maximum_dynamic_type')
-                    finished = True
-            finally:
-                async with AccessibilityAudit(rsd) as ax:
-                    await ax.set_setting('DYNAMIC_TYPE', original_size)
-                await config.set_user_interface_style(original_style)
-                async with AppServiceService(rsd) as apps:
-                    await apps.launch_application(args.bundle)  # Exit the fixture, preserve real Keychain.
-                report['settings_restored'] = True
-                report['status'] = 'passed' if finished and report['checks'] and all(c['passed'] for c in report['checks']) else 'failed'
-                (args.output / 'ui-report.json').write_text(json.dumps(report, indent=2) + '\n')
+                        # Never label a capture as maximum text when the OS ignored the setting.
+                        check('maximum_dynamic_type_setting_applied', actual_size == 1.0, actual=actual_size)
+                        await capture('profile_maximum_dynamic_type_before_audit')
+                        if not args.layout_only:
+                            issues = await asyncio.wait_for(ax.run_audit(AUDITS), 45)
+                            check('profile_audit_maximum_dynamic_type', len(issues) == 0, fatal=False, issues=[x.json() for x in issues])
+                        await capture('profile_maximum_dynamic_type')
+                        finished = True
+                finally:
+                    report['settings_restored'] = False
+                    report['normal_launch_restored'] = False
+                    try:
+                        await set_dynamic_type(ax, original_size)
+                        await config.set_user_interface_style(original_style)
+                        report['settings_restored'] = True
+                    finally:
+                        try:
+                            async with AppServiceService(rsd) as apps:
+                                await apps.launch_application(args.bundle)
+                            report['normal_launch_restored'] = True
+                        finally:
+                            report['status'] = 'passed' if (finished and report['checks']
+                                and all(c['passed'] for c in report['checks'])
+                                and report['settings_restored'] and report['normal_launch_restored']) else 'failed'
+                            (args.output / 'ui-report.json').write_text(json.dumps(report, indent=2) + '\n')
     if report.get('status') != 'passed':
         raise AssertionError('M1 device checks failed; see ui-report.json')
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--layout-only', action='store_true', help='Capture themes and verified text scaling without running Apple audits')
     parser.add_argument('--audit-only', action='store_true', help='Repeat only audits after pagination already passed')
     parser.add_argument('--bundle', required=True, help='Actual signed SN bundle id; do not change xtool.yml')
     parser.add_argument('--output', type=Path, default=Path('.impeccable/review/m1-device'))

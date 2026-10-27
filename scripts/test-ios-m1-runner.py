@@ -52,6 +52,7 @@ class M1RunnerTests(unittest.TestCase):
     def test_default_runs_local_checks_without_install_or_device(self):
         code, calls, report = self.invoke([])
         self.assertEqual(code, 0)
+        self.assertIn('device-settings-contract', [check['name'] for check in report['checks']])
         self.assertEqual(report['installation'], 'not_run')
         self.assertEqual(report['device'], 'not_run')
         self.assertEqual(report['auth_ui'], 'not_run')

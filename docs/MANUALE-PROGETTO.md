@@ -1,11 +1,27 @@
 # SN — manuale operativo del progetto
 
 <!-- sn-ios-context:start -->
-> **Stato iOS al 27 ottobre 2026:** M1 implementata e installata, picker e VoiceOver
-> confermati; audit contrasto/Dynamic Type ancora aperto; M2 storie pianificata, non implementata.
+> **Stato iOS al 27 ottobre 2026:** M1 accettata per lo sviluppo: picker/VoiceOver confermati,
+> contrasto corretto e testo massimo verificato su iPhone; M2 storie pianificata, non implementata.
 > [Stato ed evidenze](STATO-IOS.md) · [Piano M2](PIANO-IOS-M2.md) · [Ripresa sessione](PROSSIMA-SESSIONE.md).
 > Le sezioni datate conservano il loro valore storico; questa revisione documentale non aggiunge nuove prove.
 <!-- sn-ios-context:end -->
+
+## Chiusura M1 — verifica finale del 27 ottobre sera
+
+Risolto il controllo del testo massimo: tipo slider reale e connessione AX mantenuta
+aperta fino al ripristino. Tre regressioni Python, cinque contratti runner riusciti;
+build Darwin e installazione USB Verifying 100%. Titolo «I tuoi post» ora usa label
+semantico: campioni misurati almeno 18,82:1 in chiaro e 17,01:1 in scuro. Testo
+massimo applicato (readback 1,0), cattura iPhone ispezionata; lista si ridimensiona e
+va a capo. Preferenze e avvio normale ripristinati. Picker e VoiceOver confermati
+dall’utente. M1 accettata per lo sviluppo di M2.1.
+
+I rilievi Apple residui restano nei rapporti originali: colori/rettangoli non
+corrispondenti ai glifi visibili e banner DEBUG che non esiste nell’app normale.
+Motivazioni e limiti nel rapporto `ios-m1-accessibility-resolution-2026-10-27.json`
+in docs/evidence. Nessun audit certificato o rilascio pubblico implicito.
+Le note sotto conservano gli esiti precedenti come cronologia.
 
 ## Consolidamento serale del 27 ottobre 2026
 

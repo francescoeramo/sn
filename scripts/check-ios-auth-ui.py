@@ -19,6 +19,7 @@ from pymobiledevice3.remote.core_device.hid_service import (
     touch_session, TOUCHSCREEN_STATE_CONTACT, TOUCHSCREEN_STATE_RELEASE,
 )
 from pymobiledevice3.services.accessibilityaudit import AccessibilityAudit
+from ios_device_settings import set_dynamic_type
 from pymobiledevice3.services.installation_proxy import InstallationProxyService
 
 
@@ -116,7 +117,7 @@ async def run(args):
                 try:
                     await config.set_user_interface_style(style)
                     async with AccessibilityAudit(rsd) as ax:
-                        await ax.set_setting('DYNAMIC_TYPE', size)
+                        await set_dynamic_type(ax, size)
                     report['settings_restored'] = True
                 finally:
                     try:

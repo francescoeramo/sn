@@ -98,7 +98,7 @@ struct FeedView: View {
                                 .foregroundStyle(.primary)
                         }
                     } header: {
-                        Text("I tuoi post").foregroundStyle(.primary)
+                        Text("I tuoi post").foregroundStyle(Color(uiColor: .label))
                     }
                     Section {
                         NavigationLink("Sessione e accesso") { SessionView(me: me) }

@@ -1,0 +1,180 @@
+{
+  "platform": "ios-device",
+  "input": "CoreDevice HID",
+  "data": "85 synthetic posts through URLSession/URLProtocol",
+  "scope": "layout captures only; Apple audits not run",
+  "checks": [
+    {
+      "name": "audit_guard_capture_fixture",
+      "passed": true
+    },
+    {
+      "name": "audit_guard_capture_fixture",
+      "passed": true
+    },
+    {
+      "name": "audit_guard_capture_fixture",
+      "passed": true
+    },
+    {
+      "name": "profile_dark_before_audit_capture_fixture",
+      "passed": true
+    },
+    {
+      "name": "profile_dark_capture_fixture",
+      "passed": true
+    },
+    {
+      "name": "audit_guard_capture_fixture",
+      "passed": true
+    },
+    {
+      "name": "profile_light_before_audit_capture_fixture",
+      "passed": true
+    },
+    {
+      "name": "profile_light_capture_fixture",
+      "passed": true
+    },
+    {
+      "name": "audit_guard_capture_fixture",
+      "passed": true
+    },
+    {
+      "name": "maximum_dynamic_type_setting_applied",
+      "passed": true,
+      "actual": 1.0
+    },
+    {
+      "name": "profile_maximum_dynamic_type_before_audit_capture_fixture",
+      "passed": true
+    },
+    {
+      "name": "profile_maximum_dynamic_type_capture_fixture",
+      "passed": true
+    }
+  ],
+  "settings_restored": true,
+  "normal_launch_restored": true,
+  "status": "passed",
+  "build": "M1 with explicit semantic label color for profile section header; xtool dev build 6.43s; USB Verifying 100%",
+  "contrast": {
+    "light": {
+      "scope": "Three visible synthetic profile text samples; not a full screen accessibility audit",
+      "checks": [
+        {
+          "sample": "header",
+          "foreground_rgb": [
+            0,
+            0,
+            0
+          ],
+          "background_rgb": [
+            242,
+            242,
+            247
+          ],
+          "ratio": 18.82,
+          "minimum": 4.5,
+          "passed": true
+        },
+        {
+          "sample": "body",
+          "foreground_rgb": [
+            0,
+            0,
+            0
+          ],
+          "background_rgb": [
+            255,
+            255,
+            255
+          ],
+          "ratio": 21.0,
+          "minimum": 4.5,
+          "passed": true
+        },
+        {
+          "sample": "date",
+          "foreground_rgb": [
+            0,
+            0,
+            0
+          ],
+          "background_rgb": [
+            255,
+            255,
+            255
+          ],
+          "ratio": 21.0,
+          "minimum": 4.5,
+          "passed": true
+        }
+      ],
+      "status": "passed"
+    },
+    "dark": {
+      "scope": "Three visible synthetic profile text samples; not a full screen accessibility audit",
+      "checks": [
+        {
+          "sample": "header",
+          "foreground_rgb": [
+            255,
+            255,
+            255
+          ],
+          "background_rgb": [
+            0,
+            0,
+            0
+          ],
+          "ratio": 21.0,
+          "minimum": 4.5,
+          "passed": true
+        },
+        {
+          "sample": "body",
+          "foreground_rgb": [
+            255,
+            255,
+            255
+          ],
+          "background_rgb": [
+            28,
+            28,
+            30
+          ],
+          "ratio": 17.01,
+          "minimum": 4.5,
+          "passed": true
+        },
+        {
+          "sample": "date",
+          "foreground_rgb": [
+            255,
+            255,
+            255
+          ],
+          "background_rgb": [
+            28,
+            28,
+            30
+          ],
+          "ratio": 17.01,
+          "minimum": 4.5,
+          "passed": true
+        }
+      ],
+      "status": "passed"
+    }
+  },
+  "manual_confirmations": [
+    "PhotosPicker selection/cancellation/replacement/removal confirmed by user",
+    "VoiceOver in Feed and Profile confirmed by user"
+  ],
+  "review": {
+    "dynamic_type": "Actual slider readback 1.0; screenshot visually reviewed: large text wraps in the native scrollable list. Temporary settings restored and normal launch restored.",
+    "apple_raw_audit": "Not reported as zero findings. Previous raw reports retained. Header low contrast corrected and visible pixels measured. Other reported near-background colors/rectangles do not match visible text ink; visible body/date samples are 17.01:1 dark and 21:1 light. The DynamicText rectangle at x4,y65 is the DEBUG-only fixture overlay (not present in normal app), visibly scales at maximum. These findings are motivated instrument/fixture artifacts for M1 development acceptance, not accessibility certification.",
+    "limits": "Three text samples per theme; no claim of full release accessibility audit or device breadth. Historical maximum-text captures were invalid; this run supersedes them only for scaling proof."
+  }
+}

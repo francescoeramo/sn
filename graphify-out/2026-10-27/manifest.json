@@ -234,9 +234,9 @@
     "semantic_hash": ""
   },
   "ios/SN/Auth/AuthCoordinator.swift": {
-    "mtime": 1793137140.0366035,
-    "seen": 1793137188.1345456,
-    "ast_hash": "2bea51c5237c85dd555924b8aea44cfd",
+    "mtime": 1793137305.765264,
+    "seen": 1793137341.8865957,
+    "ast_hash": "8b17db653a194873f795cfdb051c1dd8",
     "semantic_hash": ""
   },
   "ios/SN/Auth/TokenStore.swift": {
@@ -294,9 +294,9 @@
     "semantic_hash": ""
   },
   "ios/SNTests/AuthCoordinatorTests.swift": {
-    "mtime": 1793137122.9779663,
-    "seen": 1793137188.134571,
-    "ast_hash": "f9aeabc3b10ba579c817b5b7fb580221",
+    "mtime": 1793137273.1647162,
+    "seen": 1793137341.886631,
+    "ast_hash": "ccc7613c59ad34017dd651ac46abce55",
     "semantic_hash": ""
   },
   "ios/SNTests/MockAPI.swift": {
@@ -846,9 +846,9 @@
     "semantic_hash": ""
   },
   ".github/workflows/ci.yml": {
-    "mtime": 1793097250.2493832,
-    "seen": 1793097273.6654794,
-    "ast_hash": "fdb5d183e4254374e6ce42035822e9a7",
+    "mtime": 1793137540.5408325,
+    "seen": 1793137640.3298876,
+    "ast_hash": "d2d48ac646e91182e4d2dab96c48f6ee",
     "semantic_hash": ""
   },
   ".github/workflows/maintenance.yml": {
@@ -924,9 +924,9 @@
     "semantic_hash": ""
   },
   "docs/MANUALE-PROGETTO.md": {
-    "mtime": 1793100770.1389744,
-    "seen": 1793136643.3291,
-    "ast_hash": "3616dd4c1ad74617daba215f3c9a913b",
+    "mtime": 1793137412.6340659,
+    "seen": 1793137414.7944756,
+    "ast_hash": "8d177ae9eec209cc06cc1558e3075c38",
     "semantic_hash": ""
   },
   "docs/PIANO-APP-NATIVA.md": {
@@ -966,9 +966,9 @@
     "semantic_hash": ""
   },
   "ios/README.md": {
-    "mtime": 1793100819.3152254,
-    "seen": 1793136643.3291152,
-    "ast_hash": "2c027ac6375ef039e9611437d08151c1",
+    "mtime": 1793137412.6350193,
+    "seen": 1793137414.7944994,
+    "ast_hash": "2deeb419b65471d0f7bfd4f22f4fdc7e",
     "semantic_hash": ""
   },
   "ios/project.yml": {
@@ -1188,9 +1188,9 @@
     "semantic_hash": ""
   },
   "ios/SN/Views/FeedView.swift": {
-    "mtime": 1793098512.1648922,
-    "seen": 1793098752.6756732,
-    "ast_hash": "a6ffa82ec3dc4d2e212abb8088d511cb",
+    "mtime": 1793137595.831322,
+    "seen": 1793137640.3296995,
+    "ast_hash": "6700a62683ea11df1261b8cbba9e9b62",
     "semantic_hash": ""
   },
   "tests/native-social.test.ts": {
@@ -1284,15 +1284,15 @@
     "semantic_hash": ""
   },
   "scripts/check-ios-m1-device.py": {
-    "mtime": 1792835125.727874,
-    "seen": 1792835491.0511043,
-    "ast_hash": "3bef513f183ca02938cd61f1eef41246",
+    "mtime": 1793137637.805826,
+    "seen": 1793137640.3297613,
+    "ast_hash": "7a233e75a8eff20c95d962170bf68d83",
     "semantic_hash": ""
   },
   "docs/IOS-M1-VERIFICA.md": {
-    "mtime": 1793100770.1293623,
-    "seen": 1793136643.3290987,
-    "ast_hash": "b8917bfe9031dbdca271a47b12c9fff3",
+    "mtime": 1793137412.635568,
+    "seen": 1793137414.7944734,
+    "ast_hash": "f93c12ba30edf3df7727763cbe67d5fa",
     "semantic_hash": ""
   },
   "docs/evidence/ios-m1-accessibility-2026-10-24.json": {
@@ -1308,9 +1308,9 @@
     "semantic_hash": ""
   },
   "scripts/check-ios-m1.py": {
-    "mtime": 1793098750.718094,
-    "seen": 1793098752.6757095,
-    "ast_hash": "c25d80e092bf7879116a3843aa3d3387",
+    "mtime": 1793137540.5406451,
+    "seen": 1793137640.3297625,
+    "ast_hash": "9bf04b398aa566f62e2e9a7371ad31d0",
     "semantic_hash": ""
   },
   "scripts/prepare-ios-dev.py": {
@@ -1350,15 +1350,15 @@
     "semantic_hash": ""
   },
   "scripts/check-ios-auth-ui.py": {
-    "mtime": 1793098279.2110426,
-    "seen": 1793098752.6757076,
-    "ast_hash": "b8299905ff3683a25ff32d368d9b3430",
+    "mtime": 1793137540.5403996,
+    "seen": 1793137640.3297596,
+    "ast_hash": "81a80350b8ddec209ecd7b606ccc3773",
     "semantic_hash": ""
   },
   "scripts/test-ios-m1-runner.py": {
-    "mtime": 1793098569.1371655,
-    "seen": 1793098752.6757164,
-    "ast_hash": "3ab0463b4c8bbe6361107bcc748b04d8",
+    "mtime": 1793137718.8442957,
+    "seen": 1793137741.7381432,
+    "ast_hash": "7d849d1da6cc8b0aeae1678617afe6f9",
     "semantic_hash": ""
   },
   "docs/evidence/ios-m1-session-storage-2026-10-27.json": {
@@ -1404,15 +1404,15 @@
     "semantic_hash": ""
   },
   "docs/PROSSIMA-SESSIONE.md": {
-    "mtime": 1793100668.71501,
-    "seen": 1793136643.329106,
-    "ast_hash": "fcdbde94b9727101fdcbea2b4701a2f1",
+    "mtime": 1793137368.0726466,
+    "seen": 1793137390.5729,
+    "ast_hash": "b555019702ee9da20c9083335f0ba439",
     "semantic_hash": ""
   },
   "docs/STATO-IOS.md": {
-    "mtime": 1793137170.5272908,
-    "seen": 1793137188.1347528,
-    "ast_hash": "46f6a591cb2dfbb6bcdc2efe61af7941",
+    "mtime": 1793137340.6500783,
+    "seen": 1793137341.8868492,
+    "ast_hash": "1cc0e8739867b1b100c393faa654a172",
     "semantic_hash": ""
   },
   "docs/evidence/ios-network-recovery-2026-10-27.md": {
@@ -1425,6 +1425,42 @@
     "mtime": 1793137186.6387944,
     "seen": 1793137202.6841784,
     "ast_hash": "ae70d65d6c3192699a4cd347c8815e8c",
+    "semantic_hash": ""
+  },
+  "docs/evidence/ios-m1-accessibility-2026-10-27-evening.json": {
+    "mtime": 1793137340.649397,
+    "seen": 1793137390.5727236,
+    "ast_hash": "56b443924f93c43a9ec23edc82c53a8c",
+    "semantic_hash": ""
+  },
+  "docs/evidence/ios-m1-final-probe-2026-10-27-evening.json": {
+    "mtime": 1793137385.9633563,
+    "seen": 1793137390.57273,
+    "ast_hash": "f23f13ceaf660ccaf3458b8779e47eab",
+    "semantic_hash": ""
+  },
+  "docs/evidence/ios-m1-read-cancellation-2026-10-27.md": {
+    "mtime": 1793137412.6357718,
+    "seen": 1793137414.7944953,
+    "ast_hash": "7456971e3d14fd22ac5d3432b7f962aa",
+    "semantic_hash": ""
+  },
+  "scripts/ios_device_settings.py": {
+    "mtime": 1793137519.9530544,
+    "seen": 1793137640.3297703,
+    "ast_hash": "c403feb1fcf4a062781bd7f24f288a27",
+    "semantic_hash": ""
+  },
+  "scripts/test-ios-device-settings.py": {
+    "mtime": 1793137519.9540546,
+    "seen": 1793137640.329775,
+    "ast_hash": "9abea3ae4501b2c9929d4429a7bf4119",
+    "semantic_hash": ""
+  },
+  "scripts/check-ios-fixture-contrast.py": {
+    "mtime": 1793137683.1336231,
+    "seen": 1793137741.7381248,
+    "ast_hash": "b78e7b102637fdf3c1ee4b63c036d964",
     "semantic_hash": ""
   }
 }

@@ -19,6 +19,7 @@ jobs:
       - run: npm ci
       - run: python3 -B scripts/test-ios-dev.py
       - run: python3 -B scripts/test-ios-m1-runner.py
+      - run: python3 -B scripts/test-ios-device-settings.py
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test

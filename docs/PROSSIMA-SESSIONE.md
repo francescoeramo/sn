@@ -1,8 +1,10 @@
 # Riprendere SN — istruzioni per sessioni e modelli futuri
 
 Aggiornamento del 27 ottobre 2026. Istruzioni indipendenti dal modello/provider.
-Questa sessione ha aggiornato documentazione, piano M2 e copie Obsidian;
-non ha implementato M2, chiuso M1 o rieseguito i collaudi dell'app.
+M1 accettata per la tappa di sviluppo: picker/VoiceOver confermati dall’utente,
+colore del titolo Profilo corretto, Dynamic Type massimo realmente applicato e
+verificato su iPhone. Rilievi strumentali residui motivati nel rapporto finale.
+Non implica audit certificato, parità completa o rilascio. Vault non sincronizzato.
 
 ## Lettura iniziale
 
@@ -20,17 +22,10 @@ avvisi, gestione Keychain e concorrenza. M0.5 è chiusa: non rigenerare i vettor
 
 ## Primo lavoro ancora necessario
 
-Picker e ascolto VoiceOver confermati dall’utente il 27 ottobre sera.
-Restano contrasto e Dynamic Type: il setter del servizio Apple ignora la richiesta
-di testo massimo, accertato con readback. Risolvere la verifica senza attestare
-come massimo un valore rimasto a 0,2727. Vedi STATO-IOS.md e rapporto serale.
-Non attraversare la galleria o altre superfici personali con scansioni AX/HID.
-Se il dispositivo o una prova manuale non è disponibile, documentare il limite e
-preparare il lavoro indipendente; non dichiarare il gate superato.
-
-Solo dopo la chiusura M1 iniziare M2.1: **lettura storie e player foto**,
-prima contratto/test server poi Swift. Le route del piano M2 sono proposte,
-non endpoint che esistono già. Non abilitare genericamente `/api/action` al bearer.
+M1 è chiusa per lo sviluppo; vedere STATO-IOS.md e rapporto finale di accessibilità.
+Proseguire con M2.1: contratto e test della lettura storie, poi stato e player foto.
+Le route del piano sono proposte finché non implementate. Non abilitare
+indiscriminatamente /api/action al bearer e non ampliare il bootstrap M1.
 
 ## Vincoli da conservare
 
@@ -86,8 +81,7 @@ note personali. Il vault è una copia locale, non una sincronizzazione automatic
 ```text
 Riprendi SN iOS. Leggi AGENTS.md, docs/MANUALE-PROGETTO.md,
 docs/STATO-IOS.md, ios/README.md e docs/PROSSIMA-SESSIONE.md; controlla il diff.
-M0 e M0.5 non vanno rifatti; M1 è implementata ma ha gate manuali residui.
-Verifica prima questi gate. Dopo chiusura M1, procedi con M2.1 secondo
+M0 e M0.5 non vanno rifatti; M1 è accettata per lo sviluppo. Procedi con M2.1 secondo
 docs/PIANO-IOS-M2.md, un incremento alla volta, preservando web/RLS/sessione.
 Distingui pianificato, implementato, testato, installato e verificato su iPhone.
 ```

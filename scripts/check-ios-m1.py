@@ -83,6 +83,7 @@ def main():
 
     try:
         run('runner-contract', [sys.executable, '-B', 'scripts/test-ios-m1-runner.py'])
+        run('device-settings-contract', [sys.executable, '-B', 'scripts/test-ios-device-settings.py'])
         run('development-network', [sys.executable, '-B', 'scripts/test-ios-dev.py'])
         run('session', ['bash', 'scripts/check-ios-session.sh'])
         with tempfile.TemporaryDirectory(prefix='sn-m1-contract-') as temporary:
