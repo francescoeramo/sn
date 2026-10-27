@@ -7,7 +7,17 @@ import FoundationNetworking
 /// il client non conosce cookie né stato di sessione.
 struct APIClient: APIClientProtocol {
     let baseURL: URL
-    var session: URLSession = .shared
+    var session: URLSession = APIClient.nativeSession
+
+    /// Enforce memory-only transport even if a server response omits no-store.
+    private static let nativeSession: URLSession = {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.urlCache = nil
+        configuration.httpCookieStorage = nil
+        configuration.httpShouldSetCookies = false
+        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
+        return URLSession(configuration: configuration)
+    }()
 
     private var encoder: JSONEncoder { JSONEncoder() }
     private var decoder: JSONDecoder { JSONDecoder() }

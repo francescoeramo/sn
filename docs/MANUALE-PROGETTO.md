@@ -2,6 +2,15 @@
 
 ## Consolidamento del 27 ottobre 2026
 
+### Trasporto HTTP effimero
+
+APIClient usa per impostazione predefinita una URLSession effimera, senza URLCache,
+cookie storage o salvataggio cookie. Anche una risposta priva di no-store non
+attiva la cache HTTP dell’app. Bearer, policy della singola richiesta e cache
+media RAM restano invariati. Il test prima del fix rilevava cache/cookie storage
+nella sessione condivisa; 50 XCTest Linux e build Darwin superati dopo il cambio.
+Il trasporto sintetico iniettato resta disponibile per i test.
+
 ### Preparazione foto fuori dall’interfaccia
 
 Ridimensionamento e ricodifica JPEG ora avvengono in un task separato;

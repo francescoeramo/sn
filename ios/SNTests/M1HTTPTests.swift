@@ -1,9 +1,20 @@
 #if DEBUG
 import XCTest
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 @testable import SN
 
 @MainActor
 final class M1HTTPTests: XCTestCase {
+    func testDefaultTransportDisablesHTTPDiskCacheAndCookies() {
+        let configuration = APIClient(baseURL: URL(string: "https://sn-m1.invalid")!).session.configuration
+        XCTAssertNil(configuration.urlCache)
+        XCTAssertNil(configuration.httpCookieStorage)
+        XCTAssertFalse(configuration.httpShouldSetCookies)
+        XCTAssertEqual(configuration.requestCachePolicy, .reloadIgnoringLocalCacheData)
+    }
+
     func testSyntheticLoginMfaAndCancellationUseOnlyFixtureHTTP() async {
         let coordinator = M1HTTPFixture.coordinator(screen: "login")
         await coordinator.restore()

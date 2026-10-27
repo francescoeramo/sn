@@ -258,9 +258,9 @@
     "semantic_hash": ""
   },
   "ios/SN/Networking/APIClient.swift": {
-    "mtime": 1793007217.1326034,
-    "seen": 1793007289.2270722,
-    "ast_hash": "2bc22d472383ee1d7cab183f40a5b0d9",
+    "mtime": 1793097155.9804285,
+    "seen": 1793097222.9640706,
+    "ast_hash": "11b6dcb34f9c37becd917e22d49095eb",
     "semantic_hash": ""
   },
   "ios/SN/Networking/APIError.swift": {
@@ -924,9 +924,9 @@
     "semantic_hash": ""
   },
   "docs/MANUALE-PROGETTO.md": {
-    "mtime": 1793096970.6122057,
-    "seen": 1793096972.6070905,
-    "ast_hash": "5b1bc1c31ff3274304a34677309b0c05",
+    "mtime": 1793097221.0313416,
+    "seen": 1793097222.964295,
+    "ast_hash": "7cd05bf9500b67cf1ebe5d028e43a162",
     "semantic_hash": ""
   },
   "docs/PIANO-APP-NATIVA.md": {
@@ -966,9 +966,9 @@
     "semantic_hash": ""
   },
   "ios/README.md": {
-    "mtime": 1793096970.611677,
-    "seen": 1793096972.6070986,
-    "ast_hash": "ea5c8fbac4ffe67509fa42e6644c79fd",
+    "mtime": 1793097221.0305808,
+    "seen": 1793097222.9643087,
+    "ast_hash": "05f21ce69ec8374799292483182e3f01",
     "semantic_hash": ""
   },
   "ios/project.yml": {
@@ -1182,15 +1182,15 @@
     "semantic_hash": ""
   },
   "ios/SN/Views/ComposePostView.swift": {
-    "mtime": 1792835062.4670155,
-    "seen": 1792835491.0510707,
-    "ast_hash": "0a35e409169bcde81cb001da48441d52",
+    "mtime": 1793097001.4034536,
+    "seen": 1793097222.9640763,
+    "ast_hash": "d6771a9a1c5e3b5e5ab18d2adfeb40aa",
     "semantic_hash": ""
   },
   "ios/SN/Views/FeedView.swift": {
-    "mtime": 1792835154.3870375,
-    "seen": 1792835491.0510716,
-    "ast_hash": "6977746b35c64f7d0db28fa9d8e10836",
+    "mtime": 1793097001.4031808,
+    "seen": 1793097222.9640787,
+    "ast_hash": "a2e035e4fc6eac524bee645c1c4cf7d1",
     "semantic_hash": ""
   },
   "tests/native-social.test.ts": {
@@ -1266,9 +1266,9 @@
     "semantic_hash": ""
   },
   "ios/SN/Diagnostics/M1DeviceChecks.swift": {
-    "mtime": 1793008838.9905567,
-    "seen": 1793009006.5552125,
-    "ast_hash": "53708589f7e30ec5bc8d2e2106f3b915",
+    "mtime": 1793097001.4036903,
+    "seen": 1793097222.9640598,
+    "ast_hash": "826d8253993bd82ec94211888f987883",
     "semantic_hash": ""
   },
   "ios/SN/Diagnostics/M1HTTPFixture.swift": {
@@ -1278,9 +1278,9 @@
     "semantic_hash": ""
   },
   "ios/SNTests/M1HTTPTests.swift": {
-    "mtime": 1793096577.9952047,
-    "seen": 1793096972.6069877,
-    "ast_hash": "cb1aa7236ca3c1a7e2bc15e6324884b6",
+    "mtime": 1793097114.8702862,
+    "seen": 1793097222.9640882,
+    "ast_hash": "69fbf84af6bea883290013a53430ec99",
     "semantic_hash": ""
   },
   "scripts/check-ios-m1-device.py": {
@@ -1308,9 +1308,9 @@
     "semantic_hash": ""
   },
   "scripts/check-ios-m1.py": {
-    "mtime": 1793008896.4299002,
-    "seen": 1793009006.555287,
-    "ast_hash": "119f4bf8700c49e657566517d3f9869f",
+    "mtime": 1793097189.2813516,
+    "seen": 1793097222.9641442,
+    "ast_hash": "80f6a109c4dc6db5417ac2e722fefca5",
     "semantic_hash": ""
   },
   "scripts/prepare-ios-dev.py": {
@@ -1353,6 +1353,12 @@
     "mtime": 1793096856.2081757,
     "seen": 1793096972.6070144,
     "ast_hash": "e1461b63aa5f391d2d126464d73dc7cb",
+    "semantic_hash": ""
+  },
+  "scripts/test-ios-m1-runner.py": {
+    "mtime": 1793097189.2853878,
+    "seen": 1793097222.964157,
+    "ast_hash": "11d22b9c6ffe569b26237ce3db76b703",
     "semantic_hash": ""
   }
 }
