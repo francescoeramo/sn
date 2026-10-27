@@ -103,6 +103,25 @@ beforeEach(() => {
   fixture.rows = [];
   vi.mocked(mutate).mockClear();
 });
+it('native bootstrap requires bearer without cookie fallback and keeps private response headers', async () => {
+  const missing = await GET(
+    new NextRequest('https://sn.test/api/native/bootstrap', {
+      headers: { cookie: 'valid-web-session' },
+    }),
+    { params: Promise.resolve({ path: ['native', 'bootstrap'] }) },
+  );
+  expect(missing.status).toBe(401);
+  expect(fixture.calls).toEqual([]);
+  const response = await get('native/bootstrap', 'Bearer valid');
+  expect(response.status).toBe(200);
+  expect(response.headers.get('cache-control')).toContain('no-store');
+  expect(response.headers.get('set-cookie')).toBeNull();
+  expect(response.headers.get('access-control-allow-origin')).toBeNull();
+  expect((await get('native/bootstrap', 'Bearer bad')).status).toBe(401);
+  fixture.mfa = true;
+  expect((await get('native/bootstrap', 'Bearer valid')).status).toBe(403);
+});
+
 it.each(['native/post', 'native/upload'])(
   '%s requires bearer even with a cookie',
   async (route) => {

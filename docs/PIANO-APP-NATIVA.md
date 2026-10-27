@@ -373,3 +373,24 @@ terminato con SIGABRT/invalid pointer ed è stato riavviato; nessun cambio toolc
 Rete e backend: servizio utente `sn-ios-dev` attivo a `192.168.1.9:3000`.
 A fine prove ripristinati tema scuro, dimensione testo iniziale e avvio normale
 senza flag di test; non reinstallare né ripetere crypto M0.5.
+
+## Bootstrap M1 ridotto — 27 ottobre 2026
+
+### Bootstrap nativo limitato a M1
+
+L’app usa ora `GET /api/native/bootstrap`, bearer obbligatorio anche se esistono
+cookie, MFA e RLS del chiamante. `lib/server/native-feed.ts` legge soltanto
+profili, post/media/legami alle cerchie e follow propri: tre query, colonne
+esplicite, nessun client amministrativo. Non interroga chat, notifiche, eventi,
+moderazione o federazione. Ordine data/UUID, limite 40, scadenze e cursore
+composto conservati. I legami alle cerchie sono incorporati in ogni post.
+Il vecchio bootstrap web/cookie e le vecchie build restano compatibili.
+
+Verifica completa `npm run check`: lint/typecheck, 193 test e build Next.js
+superati. 56 XCTest Linux e build Darwin superati; installazione USB verificata,
+28 controlli interni iPhone superati. Dopo il ripristino dell’avvio normale:
+refresh 200 e nuovo bootstrap 200 in 3,1 s nei log. È una singola osservazione,
+non una misura comparativa dell’aumento di velocità.
+Evidenza: `docs/evidence/ios-m1-native-feed-2026-10-27.json`.
+Nessuna migrazione o modifica cloud; i gate manuali M1 restano distinti.
+

@@ -16,6 +16,19 @@ PGlite esegue il vero motore Postgres e verifica schema, trigger e RLS con ruoli
 
 La durata massima video è controllata nel browser. Il server verifica dimensione e firma del contenitore, ma non esegue ffprobe/antivirus né certifica la durata dei file inviati via API. Per la beta su invito il limite di byte protegge la quota; prima di aprire a sconosciuti va introdotta una pipeline media con decodifica e convalida in isolamento. La ricodifica browser dipende da MediaRecorder/captureStream; se non disponibile, si accettano solo file già entro 3 MiB.
 
+## Bootstrap M1 nativo — 27 ottobre 2026
+
+`GET /api/native/bootstrap` richiede bearer verificato/MFA e usa
+`lib/server/native-feed.ts`: tre query RLS del chiamante, con colonne
+esplicite per profili, post/media/cerchie e follow propri. Restituisce soltanto
+`user_id, me, profiles, posts, follows, nextCursor, nextPostId`.
+Nessuna lettura di chat, notifiche, moderazione, eventi o federazione;
+nessun client amministrativo. Il bootstrap web e le sue modalità cookie/bearer
+restano disponibili senza modifiche. Il client Swift aggiorna solo il percorso;
+modelli, paginazione, epoch e compatibilità dei token non cambiano.
+Installato e osservato 200 dal telefono; nessun benchmark comparativo.
+Dettagli correnti e gate aperti: `ios/README.md`.
+
 ## App nativa: adapter bearer (M0, lato server)
 
 **Aggiornamento M1 al 24 ottobre 2026:** feed/media accettano bearer e le scritture

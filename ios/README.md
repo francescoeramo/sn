@@ -2,6 +2,24 @@
 
 ## Consolidamento del 27 ottobre 2026
 
+### Bootstrap nativo limitato a M1
+
+L’app usa ora `GET /api/native/bootstrap`, bearer obbligatorio anche se esistono
+cookie, MFA e RLS del chiamante. `lib/server/native-feed.ts` legge soltanto
+profili, post/media/legami alle cerchie e follow propri: tre query, colonne
+esplicite, nessun client amministrativo. Non interroga chat, notifiche, eventi,
+moderazione o federazione. Ordine data/UUID, limite 40, scadenze e cursore
+composto conservati. I legami alle cerchie sono incorporati in ogni post.
+Il vecchio bootstrap web/cookie e le vecchie build restano compatibili.
+
+Verifica completa `npm run check`: lint/typecheck, 193 test e build Next.js
+superati. 56 XCTest Linux e build Darwin superati; installazione USB verificata,
+28 controlli interni iPhone superati. Dopo il ripristino dell’avvio normale:
+refresh 200 e nuovo bootstrap 200 in 3,1 s nei log. È una singola osservazione,
+non una misura comparativa dell’aumento di velocità.
+Evidenza: `docs/evidence/ios-m1-native-feed-2026-10-27.json`.
+Nessuna migrazione o modifica cloud; i gate manuali M1 restano distinti.
+
 ### Pubblicazione e aggiornamento feed concorrenti
 
 Una lettura feed o pagina iniziata prima di una pubblicazione non può più
@@ -125,7 +143,7 @@ Rete di questa sessione: Wi-Fi disconnesso su richiesta, hotspot USB
 `172.20.10.3:3000`; endpoint e ATS riallineati. Non chiude i gate manuali M1.
 
 
-Aggiornato al 24 ottobre 2026: M1 installata via USB, backend raggiungibile via Wi-Fi; collaudo runtime esteso aperto.
+Aggiornato al 27 ottobre 2026: M1 installata via USB, backend sull’hotspot USB; collaudo runtime esteso aperto.
 Il client nativo usa le API SN; backend Next.js e Supabase restano condivisi con il sito.
 
 ## Automazione del 26 ottobre 2026

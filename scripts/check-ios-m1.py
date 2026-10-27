@@ -92,7 +92,8 @@ def main():
                                   'ios/ContractChecks/main.swift', '-o', executable])
             run('models', [executable])
         run('server', ['npm', 'test', '--', 'tests/native-social.test.ts',
-                       'tests/native-auth.test.ts', 'tests/security-api.test.ts', 'tests/rules.test.ts'])
+                       'tests/native-auth.test.ts', 'tests/security-api.test.ts', 'tests/rules.test.ts',
+                       'tests/native-feed.test.ts'])
         run('typecheck', ['npm', 'run', 'typecheck'])
         run('lint', ['npm', 'run', 'lint'])
         run('darwin-build', ['xtool', 'dev', 'build'], cwd=root / 'ios')

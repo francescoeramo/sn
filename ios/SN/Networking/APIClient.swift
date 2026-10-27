@@ -46,7 +46,7 @@ struct APIClient: APIClientProtocol {
     }
 
     func bootstrap(accessToken: String) async throws -> Bootstrap {
-        let data = try await request(path: "/api/bootstrap", method: "GET", token: accessToken, body: nil)
+        let data = try await request(path: "/api/native/bootstrap", method: "GET", token: accessToken, body: nil)
         return try decode(Bootstrap.self, from: data)
     }
 

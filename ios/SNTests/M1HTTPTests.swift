@@ -41,7 +41,7 @@ final class M1HTTPTests: XCTestCase {
         XCTAssertEqual(coordinator.homePosts.count, 40)
         XCTAssertTrue(M1HTTPFixture.control.validRequests)
         XCTAssertEqual(M1HTTPFixture.control.requests,
-                       ["/api/native/auth/login", "/api/native/auth/mfa", "/api/bootstrap"])
+                       ["/api/native/auth/login", "/api/native/auth/mfa", "/api/native/bootstrap"])
         let pending = M1HTTPFixture.coordinator(screen: "mfa")
         await pending.restore()
         XCTAssertEqual(pending.state, .mfaRequired(factorId: "fixture-factor"))

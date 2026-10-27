@@ -1,3 +1,4 @@
+import { nativeFeedSnapshot } from '@/lib/server/native-feed';
 import { syncChat } from '@/lib/server/chat';
 import {
   acknowledgeChatGroupMessage,
@@ -149,6 +150,10 @@ export async function GET(request: NextRequest, { params }: Context) {
     if (route === 'auth/sessions') {
       const { db } = await identity();
       return json(checked(await db.rpc('my_sessions')));
+    }
+    if (route === 'native/bootstrap') {
+      requireBearer(request);
+      return json(await nativeFeedSnapshot(await identityFrom(request)));
     }
     if (route === 'bootstrap') return json(await snapshot(await identityFrom(request)));
     if (route === 'profile/posts') {

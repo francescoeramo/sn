@@ -111,7 +111,7 @@ final class M1HTTPFixture: URLProtocol, @unchecked Sendable {
                     payload["mfa_required"] = true
                     payload["factor_id"] = "fixture-factor"
                 }
-            } else if url.path == "/api/bootstrap" {
+            } else if url.path == "/api/native/bootstrap" {
                 payload = ["user_id": Self.userId,
                     "me": ["id": Self.userId, "username": "collaudo", "display_name": "Collaudo M1"],
                     "profiles": [["id": Self.userId, "username": "collaudo", "display_name": "Collaudo M1", "bio": "Dati sintetici locali"]],
