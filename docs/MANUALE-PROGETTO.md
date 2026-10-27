@@ -2,6 +2,14 @@
 
 ## Consolidamento del 27 ottobre 2026
 
+Verifica finale: 44 XCTest Linux, 18 contratti modelli, 77 test server/regole,
+typecheck, lint e build Darwin superati; sette test rete dopo il nuovo vincolo.
+Installazione USB Verifying 100%, exit 0. Venti controlli sintetici interni
+superati sull'iPhone e avvio normale ripristinato automaticamente:
+`docs/evidence/ios-m1-usb-2026-10-27.json` (dal README: `../docs/evidence/`).
+Nessun accesso alla galleria o scrittura di post cloud. Route finale soltanto
+hotspot USB. Picker reale, audit accessibilità e ascolto VoiceOver restano aperti.
+
 Il preparatore accetta ora `--interface enp8s0f3u1c4i2` per vincolare
 rilevamento e `--host` all'interfaccia USB: nessun fallback al Wi-Fi se manca
 o è inattiva. Sette regressioni offline superate; diagnostica reale USB pronta.
