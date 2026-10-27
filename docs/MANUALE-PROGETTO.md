@@ -2,6 +2,13 @@
 
 ## Consolidamento del 27 ottobre 2026
 
+### Arresto completo delle verifiche scadute
+
+Il collaudo M1 avvia ogni fase in un gruppo di processi dedicato. Timeout o
+interruzione terminano anche i processi figli, evitando compilatori/installatori
+rimasti in background. Cinque regressioni del runner superate, inclusa una
+prova reale con un figlio che ignora SIGTERM; nessun device coinvolto.
+
 ### Un solo comando per collaudo, installazione e diagnostica
 
 Con il Python del venv pymobiledevice3:

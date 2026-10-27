@@ -2,12 +2,39 @@
 """Run the local M1 gates, optionally followed by the installed iPhone UI checks."""
 import argparse
 import json
+import os
+import signal
 import subprocess
 import sys
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
+
+
+def execute(command, cwd, stream, timeout=900):
+    """A failed/timed-out gate must not leave compilers or device installers running."""
+    process = subprocess.Popen(command, cwd=cwd, stdout=stream, stderr=subprocess.STDOUT,
+                               start_new_session=True)
+    try:
+        code = process.wait(timeout=timeout)
+        return subprocess.CompletedProcess(command, code)
+    except (subprocess.TimeoutExpired, KeyboardInterrupt):
+        try:
+            os.killpg(process.pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+        try:
+            process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            pass
+        # The parent may exit before a descendant that ignores SIGTERM.
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        process.wait()
+        raise
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -37,8 +64,7 @@ def main():
         print(name + '…', flush=True)
         try:
             with log.open('w') as stream:
-                process = subprocess.run(command, cwd=cwd, stdout=stream, stderr=subprocess.STDOUT,
-                                         timeout=900)
+                process = execute(command, cwd=cwd, stream=stream)
             result['status'] = 'passed' if process.returncode == 0 else 'failed'
             result['exit_code'] = process.returncode
         except OSError as error:

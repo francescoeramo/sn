@@ -6,6 +6,7 @@ import json
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -24,10 +25,29 @@ class M1RunnerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             script = Path(directory) / 'scripts' / 'check-ios-m1.py'
             with patch.object(runner, '__file__', str(script)), patch.object(sys, 'argv', ['runner', *arguments]), \
-                    patch.object(runner.subprocess, 'run', side_effect=execute), contextlib.redirect_stdout(io.StringIO()):
+                    patch.object(runner, 'execute', side_effect=execute), contextlib.redirect_stdout(io.StringIO()):
                 code = runner.main()
             report = json.loads(next(Path(directory).glob('.impeccable/review/*/report.json')).read_text())
         return code, calls, report
+
+    def test_timeout_stops_child_processes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            pidfile = Path(directory) / "child.pid"
+            child = ("import signal,time,pathlib,os,sys; signal.signal(signal.SIGTERM,signal.SIG_IGN); "
+                     "pathlib.Path(sys.argv[1]).write_text(str(os.getpid())); time.sleep(30)")
+            script = ("import subprocess,sys,time; "
+                      "subprocess.Popen([sys.executable,'-c',sys.argv[2],sys.argv[1]]); time.sleep(30)")
+            with (Path(directory) / "log").open("w") as stream:
+                with self.assertRaises(subprocess.TimeoutExpired):
+                    runner.execute([sys.executable, "-c", script, str(pidfile), child], directory, stream, timeout=1)
+            self.assertTrue(pidfile.exists(), "The test must actually start a child")
+            state = Path("/proc") / pidfile.read_text() / "stat"
+            for _ in range(50):
+                if not state.exists() or state.read_text().split()[2] == "Z":
+                    break
+                time.sleep(.01)
+            self.assertTrue(not state.exists() or state.read_text().split()[2] == "Z",
+                            "A timed-out gate must not keep its child alive")
 
     def test_default_runs_local_checks_without_install_or_device(self):
         code, calls, report = self.invoke([])
