@@ -20,6 +20,14 @@ vi.mock('@/lib/server/supabase', async (importOriginal) => {
       fixture.queryCalls.push(['eq', key, value]);
       return query;
     },
+    in: (key: string, value: unknown[]) => {
+      fixture.queryCalls.push(['in', key, value]);
+      return query;
+    },
+    gt: (key: string, value: string) => {
+      fixture.queryCalls.push(['gt', key, value]);
+      return query;
+    },
     is: (key: string, value: null) => {
       fixture.queryCalls.push(['is', key, value]);
       return query;
@@ -306,4 +314,32 @@ it('feed retains the timestamp-only web contract and rejects invalid tie-breaker
   fixture.queryCalls.length = 0;
   expect((await get(`posts?before=${before}&post_id=invalid`, 'Bearer valid')).status).toBe(400);
   expect(fixture.queryCalls).toHaveLength(0);
+});
+
+it('native stories requires bearer/MFA even with cookies and rejects incomplete or unsafe cursors', async () => {
+  const missing = await GET(
+    new NextRequest('https://sn.test/api/native/stories', {
+      headers: { cookie: 'valid-web-session' },
+    }),
+    { params: Promise.resolve({ path: ['native', 'stories'] }) },
+  );
+  expect(missing.status).toBe(401);
+  expect(fixture.calls).toEqual([]);
+  expect((await get('native/stories', 'Bearer bad')).status).toBe(401);
+  fixture.mfa = true;
+  expect((await get('native/stories', 'Bearer valid')).status).toBe(403);
+  fixture.mfa = false;
+  for (const query of [
+    'before=bad',
+    'post_id=00000000-0000-4000-8000-000000000001',
+    'before=2026-10-27T10:00:00Z&post_id=bad',
+  ]) {
+    expect((await get('native/stories?' + query, 'Bearer valid')).status).toBe(400);
+  }
+  const response = await get('native/stories', 'Bearer valid');
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual({ stories: [], nextCursor: null });
+  expect(response.headers.get('cache-control')).toBe('private, no-store');
+  expect(response.headers.get('set-cookie')).toBeNull();
+  expect(response.headers.get('access-control-allow-origin')).toBeNull();
 });

@@ -36,9 +36,9 @@
     "semantic_hash": "d3203eadd8c9b03ed79088d41effa2ad"
   },
   "app/api/[...path]/route.ts": {
-    "mtime": 1793097921.8377814,
-    "seen": 1793098164.3506227,
-    "ast_hash": "f5a9ac4ce508613afbe7b5fe7199e9b1",
+    "mtime": 1793137970.7815797,
+    "seen": 1793138033.5125802,
+    "ast_hash": "8d3f6e528ce987733d41af7762a7c6f2",
     "semantic_hash": ""
   },
   "app/auth/callback/route.ts": {
@@ -924,9 +924,9 @@
     "semantic_hash": ""
   },
   "docs/MANUALE-PROGETTO.md": {
-    "mtime": 1793137909.4023855,
-    "seen": 1793137911.98278,
-    "ast_hash": "8cb1ee302bd31fccfb7d723bfb0bf24c",
+    "mtime": 1793138030.9596312,
+    "seen": 1793138033.5130532,
+    "ast_hash": "ec994279c83bfea108e8ed3f47903ce8",
     "semantic_hash": ""
   },
   "docs/PIANO-APP-NATIVA.md": {
@@ -966,9 +966,9 @@
     "semantic_hash": ""
   },
   "ios/README.md": {
-    "mtime": 1793137909.4032862,
-    "seen": 1793137911.9827998,
-    "ast_hash": "1594813d53cd84d5f4b95c053d815fa0",
+    "mtime": 1793138030.9606411,
+    "seen": 1793138033.513078,
+    "ast_hash": "04a2549808ea6d6eb1e4cfb7d0f0b0e6",
     "semantic_hash": ""
   },
   "ios/project.yml": {
@@ -1194,9 +1194,9 @@
     "semantic_hash": ""
   },
   "tests/native-social.test.ts": {
-    "mtime": 1793097947.3094995,
-    "seen": 1793098164.3507845,
-    "ast_hash": "0303ff3926467b2c7b4c295e5376b44b",
+    "mtime": 1793137970.86158,
+    "seen": 1793138033.5130115,
+    "ast_hash": "8d3ce89aa5565deb2243be321cd8a4b7",
     "semantic_hash": ""
   },
   "ios/ContractChecks/main.swift": {
@@ -1398,21 +1398,21 @@
     "semantic_hash": ""
   },
   "docs/PIANO-IOS-M2.md": {
-    "mtime": 1793100819.3161151,
-    "seen": 1793136643.3291028,
-    "ast_hash": "84a6710b48975085e3d905885fb3c114",
+    "mtime": 1793138030.9583561,
+    "seen": 1793138033.5130575,
+    "ast_hash": "1e58b0c97e2d08240e4ab504d8a0d995",
     "semantic_hash": ""
   },
   "docs/PROSSIMA-SESSIONE.md": {
-    "mtime": 1793137909.4017074,
-    "seen": 1793137911.9827871,
-    "ast_hash": "33faa6e0965a8b2b933987c27ac4ea64",
+    "mtime": 1793138030.958965,
+    "seen": 1793138033.5130627,
+    "ast_hash": "35fd5890835447bb85b18f6648c91346",
     "semantic_hash": ""
   },
   "docs/STATO-IOS.md": {
-    "mtime": 1793137909.401299,
-    "seen": 1793137911.9827912,
-    "ast_hash": "d8adad26078ef95426bb4035867cd527",
+    "mtime": 1793138030.958744,
+    "seen": 1793138033.5130675,
+    "ast_hash": "6956684628f6aaa1e1bd75c8beacf2e0",
     "semantic_hash": ""
   },
   "docs/evidence/ios-network-recovery-2026-10-27.md": {
@@ -1467,6 +1467,18 @@
     "mtime": 1793137909.4011014,
     "seen": 1793137911.9825087,
     "ast_hash": "1f8acc69be383a64c6065f590cdecdc0",
+    "semantic_hash": ""
+  },
+  "lib/server/native-stories.ts": {
+    "mtime": 1793137970.6495793,
+    "seen": 1793138033.5128436,
+    "ast_hash": "f861c37f9c1fedc3a831fdec882b7b33",
+    "semantic_hash": ""
+  },
+  "tests/native-stories.test.ts": {
+    "mtime": 1793137990.9816453,
+    "seen": 1793138033.5130124,
+    "ast_hash": "50a864f3c11e8131d6bf30c5463692b7",
     "semantic_hash": ""
   }
 }

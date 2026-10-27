@@ -1,3 +1,4 @@
+import { nativeStoriesPage } from '@/lib/server/native-stories';
 import { nativeFeedSnapshot } from '@/lib/server/native-feed';
 import { syncChat } from '@/lib/server/chat';
 import {
@@ -150,6 +151,17 @@ export async function GET(request: NextRequest, { params }: Context) {
     if (route === 'auth/sessions') {
       const { db } = await identity();
       return json(checked(await db.rpc('my_sessions')));
+    }
+    if (route === 'native/stories') {
+      requireBearer(request);
+      const subject = await identityFrom(request);
+      const before = request.nextUrl.searchParams.get('before');
+      const postId = request.nextUrl.searchParams.get('post_id');
+      const cursor =
+        before !== null || postId !== null
+          ? postCursorInput.parse({ created_at: before, post_id: postId })
+          : undefined;
+      return json(await nativeStoriesPage(subject, cursor));
     }
     if (route === 'native/bootstrap') {
       requireBearer(request);

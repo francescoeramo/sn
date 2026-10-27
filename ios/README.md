@@ -2,10 +2,18 @@
 
 <!-- sn-ios-context:start -->
 > **Stato iOS al 27 ottobre 2026:** M1 accettata per lo sviluppo: picker/VoiceOver confermati,
-> contrasto corretto e testo massimo verificato su iPhone; M2 storie pianificata, non implementata.
+> contrasto corretto e testo massimo verificato su iPhone; M2.1: lettura server implementata, player da sviluppare.
 > [Stato ed evidenze](../docs/STATO-IOS.md) · [Piano M2](../docs/PIANO-IOS-M2.md) · [Ripresa sessione](../docs/PROSSIMA-SESSIONE.md).
 > Le sezioni datate conservano il loro valore storico; questa revisione documentale non aggiunge nuove prove.
 <!-- sn-ios-context:end -->
+
+## Primo incremento M2.1 — lettura server
+
+Disponibile GET /api/native/stories: bearer/MFA/RLS, storie attive proprie e dei
+seguiti, paginazione 40+1 con data/UUID, solo flag di lettura del chiamante.
+Bootstrap M1 invariato; nessuna nuova migrazione, scrittura o operazione cloud.
+Player e modelli Swift restano il prossimo incremento. Contratto e limiti nel
+piano M2 e in STATO-IOS.md; non considerare completata M2.1.
 
 ## Chiusura M1 — verifica finale del 27 ottobre sera
 

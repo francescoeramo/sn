@@ -1,7 +1,8 @@
 # M2 — Storie native iOS
 
-Piano del **27 ottobre 2026**. Stato: **pianificato, nessuna implementazione M2**.
-La richiesta di creare questo piano non attesta chiusura M1, nuove prove o rilascio.
+Piano del **27 ottobre 2026**. Stato: **M2.1 in corso; lettura server implementata, player SwiftUI non ancora implementato**.
+M1 accettata per lo sviluppo il 27 ottobre sera; prove nel rapporto finale.
+Questo piano non attesta il completamento del player o il rilascio.
 Riferimenti: [stato](STATO-IOS.md), [contratto nativo](PIANO-APP-NATIVA.md),
 [istruzioni di ripresa](PROSSIMA-SESSIONE.md).
 
@@ -64,6 +65,26 @@ Gli endpoint nativi nuovi entrano in un'allowlist esplicita e richiedono bearer
 anche se ci sono cookie. Nessun bypass globale di Origin; conservare i POST web.
 Risposte private/no-store, validazione UUID/cursori/corpi e limiti byte effettivi.
 Non usare il generico `/api/action` senza adattarne in modo circoscritto il contratto.
+
+### Contratto lettura finalizzato — 27 ottobre sera
+
+`GET /api/native/stories` è implementato. Bearer obbligatorio, identità/MFA già
+verificate e client RLS del chiamante. Query solo su follow propri accettati,
+storie attive proprie/dei seguiti e ricevute del solo chiamante per gli ID della
+pagina. Nessun viewer altrui, chat, notifica o nuovo dato nel bootstrap M1.
+
+Risposta `{ stories: [...], nextCursor: { created_at, post_id } | null }`.
+Ogni storia espone id, author_id, body, kind, media_path/media_type/alt nullable,
+content_warning nullable, created_at, expires_at, author (profilo minimo RLS,
+nullable), media (allegati ordinabili per position) e viewed booleano. Solo
+`expires_at > ora UTC`; ordinamento created_at/id decrescente. Limite 40 con
+lookahead 41, cursore derivato dall’ultima riga restituita, non dal lookahead.
+`before` e `post_id` devono essere entrambi presenti e validi o entrambi assenti.
+Scadenze/visibilità vengono rivalutate a ogni pagina; niente snapshot persistente.
+Lettura non registra visualizzazioni. Le altre tre route restano proposte.
+
+Test query/HTTP sono stub; le RLS esistenti sono verificate separatamente in
+PGlite. Nessuna nuova verifica Supabase cloud o prova di player su device.
 
 ## 5. Incrementi e condizioni di uscita
 

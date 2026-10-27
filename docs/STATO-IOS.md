@@ -11,7 +11,7 @@ di accessibilità certificato o un rilascio pubblico.
 | M0 — sessione | Funzionante su iPhone | Login, MFA, rinnovo, logout/riapertura e recupero offline confermati; le singole conferme non certificano tutta la matrice tecnica |
 | M0.5 — crypto 1:1 | Completata | Rapporto CryptoKit/Web Crypto del 15 ottobre: 35 controlli, tre dispositivi e allegato; nessuna chat UI o trasferimento storico impliciti |
 | M1 — feed, profilo e foto | Chiusa per la tappa di sviluppo | Feed e archivio proprio paginati, pubblicazione con una foto, avvisi e recupero sessione; evidenze di accettazione sotto |
-| M2 — storie native | Pianificata, non implementata | [Piano M2](PIANO-IOS-M2.md), prerequisito M1 ora soddisfatto |
+| M2 — storie native | M2.1 in corso: lettura server implementata, player da sviluppare | [Piano M2](PIANO-IOS-M2.md), lettura indipendente e finita; nessuna pubblicazione o player attestati |
 | Parità completa e rilascio | Da completare | Interazioni, altri profili/modifica profilo, chat, gruppi, cerchie, eventi, registrazione/recovery e distribuzione hanno lavoro separato |
 
 ## Ultime evidenze, senza riesecuzione in questa sessione
@@ -84,3 +84,11 @@ Lo sviluppo iOS non autorizza distribuzione pubblica, spesa o attivazione federa
 A ogni nuova sessione leggere [PROSSIMA-SESSIONE.md](PROSSIMA-SESSIONE.md).
 Aggiornare questo file quando cambia lo stato, senza duplicare interi verbali
 negli altri documenti. Stime verbali di durata non sono scadenze o evidenze.
+
+## Incremento M2.1 — contratto di lettura
+
+`GET /api/native/stories` implementato con bearer/MFA/RLS, solo autori propri o
+seguiti accettati, scadenza attiva, pagine 40+1 e cursore data/UUID. Il flag viewed
+legge soltanto ricevute del chiamante. Nessuna scrittura o ampliamento bootstrap.
+Stato/server e test non significano player implementato o verificato su iPhone.
+Prossimo incremento: modelli/stato Swift e player foto secondo PIANO-IOS-M2.md.

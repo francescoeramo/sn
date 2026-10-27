@@ -924,9 +924,9 @@
     "semantic_hash": ""
   },
   "docs/MANUALE-PROGETTO.md": {
-    "mtime": 1793137412.6340659,
-    "seen": 1793137414.7944756,
-    "ast_hash": "8d177ae9eec209cc06cc1558e3075c38",
+    "mtime": 1793137909.4023855,
+    "seen": 1793137911.98278,
+    "ast_hash": "8cb1ee302bd31fccfb7d723bfb0bf24c",
     "semantic_hash": ""
   },
   "docs/PIANO-APP-NATIVA.md": {
@@ -966,9 +966,9 @@
     "semantic_hash": ""
   },
   "ios/README.md": {
-    "mtime": 1793137412.6350193,
-    "seen": 1793137414.7944994,
-    "ast_hash": "2deeb419b65471d0f7bfd4f22f4fdc7e",
+    "mtime": 1793137909.4032862,
+    "seen": 1793137911.9827998,
+    "ast_hash": "1594813d53cd84d5f4b95c053d815fa0",
     "semantic_hash": ""
   },
   "ios/project.yml": {
@@ -1284,15 +1284,15 @@
     "semantic_hash": ""
   },
   "scripts/check-ios-m1-device.py": {
-    "mtime": 1793137637.805826,
-    "seen": 1793137640.3297613,
-    "ast_hash": "7a233e75a8eff20c95d962170bf68d83",
+    "mtime": 1793137819.175518,
+    "seen": 1793137911.9826353,
+    "ast_hash": "62336a1605fb46899ad7cf455b3fa1e6",
     "semantic_hash": ""
   },
   "docs/IOS-M1-VERIFICA.md": {
-    "mtime": 1793137412.635568,
-    "seen": 1793137414.7944734,
-    "ast_hash": "f93c12ba30edf3df7727763cbe67d5fa",
+    "mtime": 1793137909.4038465,
+    "seen": 1793137911.9827788,
+    "ast_hash": "c21f4bb2d087acdaa38dab071f7f0554",
     "semantic_hash": ""
   },
   "docs/evidence/ios-m1-accessibility-2026-10-24.json": {
@@ -1404,15 +1404,15 @@
     "semantic_hash": ""
   },
   "docs/PROSSIMA-SESSIONE.md": {
-    "mtime": 1793137368.0726466,
-    "seen": 1793137390.5729,
-    "ast_hash": "b555019702ee9da20c9083335f0ba439",
+    "mtime": 1793137909.4017074,
+    "seen": 1793137911.9827871,
+    "ast_hash": "33faa6e0965a8b2b933987c27ac4ea64",
     "semantic_hash": ""
   },
   "docs/STATO-IOS.md": {
-    "mtime": 1793137340.6500783,
-    "seen": 1793137341.8868492,
-    "ast_hash": "1cc0e8739867b1b100c393faa654a172",
+    "mtime": 1793137909.401299,
+    "seen": 1793137911.9827912,
+    "ast_hash": "d8adad26078ef95426bb4035867cd527",
     "semantic_hash": ""
   },
   "docs/evidence/ios-network-recovery-2026-10-27.md": {
@@ -1458,9 +1458,15 @@
     "semantic_hash": ""
   },
   "scripts/check-ios-fixture-contrast.py": {
-    "mtime": 1793137683.1336231,
-    "seen": 1793137741.7381248,
-    "ast_hash": "b78e7b102637fdf3c1ee4b63c036d964",
+    "mtime": 1793137800.9726849,
+    "seen": 1793137911.982634,
+    "ast_hash": "32c3f88ef29d2224bec3986e845896b8",
+    "semantic_hash": ""
+  },
+  "docs/evidence/ios-m1-accessibility-resolution-2026-10-27.json": {
+    "mtime": 1793137909.4011014,
+    "seen": 1793137911.9825087,
+    "ast_hash": "1f8acc69be383a64c6065f590cdecdc0",
     "semantic_hash": ""
   }
 }
