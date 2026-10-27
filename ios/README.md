@@ -2,6 +2,14 @@
 
 ## Consolidamento del 27 ottobre 2026
 
+### Rinnovi concorrenti dopo nuovo accesso
+
+Un rinnovo tardivo, riuscito o fallito, non può più cancellare il riferimento
+al rinnovo in corso della nuova sessione. Due scenari riprodotti prima del fix:
+una terza richiesta avviava un rinnovo duplicato. Il completamento ora libera
+solo il lavoro appartenente alla propria epoch. 45 XCTest Linux superati;
+build Darwin verificata. Nessuna modifica API/cloud.
+
 Verifica finale: 44 XCTest Linux, 18 contratti modelli, 77 test server/regole,
 typecheck, lint e build Darwin superati; sette test rete dopo il nuovo vincolo.
 Installazione USB Verifying 100%, exit 0. Venti controlli sintetici interni

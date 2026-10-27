@@ -22,6 +22,43 @@ final class AuthCoordinatorTests: XCTestCase {
             expiresAt: pair.expiresAt, tokenType: pair.tokenType)
     }
 
+    func testOldRefreshCompletionCannotDetachNewSessionRefresh() async throws {
+        for oldResult: Result<TokenPair, APIError> in [.success(tokens()), .failure(.transport)] {
+            let api = MockAPI()
+            let store = MemoryTokenStore()
+            store.tokens = tokens(expiresIn: -120)
+            await api.suspendRefresh()
+            await api.setRefreshResult(oldResult)
+            let coordinator = AuthCoordinator(api: api, store: store)
+            let restoring = Task { await coordinator.restore() }
+            await api.waitForRefresh()
+            let logout = Task { await coordinator.logout() }
+            for _ in 0..<100 where coordinator.state != .signedOut { await Task.yield() }
+            await api.setLoginResult(.success(loginResponse(tokens(expiresIn: -120))))
+            await api.setRefreshResult(.success(tokens()))
+            await api.setBootstrapResult(.success(bootstrap()))
+            await api.setMediaResult(.success(Data([1, 2, 3])))
+            let login = Task { await coordinator.login(email: "fixture@example.invalid", password: "fixture") }
+            for _ in 0..<1000 {
+                if await api.refreshCount == 2 { break }
+                await Task.yield()
+            }
+            let started = await api.refreshCount
+            XCTAssertEqual(started, 2)
+            await api.releaseRefresh(number: 1)
+            await restoring.value
+            await logout.value
+            let image = Task { try await coordinator.image(path: "fixture/new-session.jpg") }
+            for _ in 0..<100 { await Task.yield() }
+            let refreshes = await api.refreshCount
+            XCTAssertEqual(refreshes, 2, "An old completion must not detach the new refresh")
+            await api.releaseRefresh()
+            await login.value
+            _ = try await image.value
+            XCTAssertNotNil(store.tokens)
+        }
+    }
+
     func testOldBootstrapUnauthorizedCannotRefreshNewLogin() async {
         let api = MockAPI()
         let store = MemoryTokenStore()

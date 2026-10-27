@@ -77,7 +77,7 @@ actor MockAPI: APIClientProtocol {
     }
     private(set) var postCursors: [String] = []
     var refreshDelayNanoseconds: UInt64 = 0
-    private var refreshGate: CheckedContinuation<Void, Never>?
+    private var refreshGates: [Int: CheckedContinuation<Void, Never>] = [:]
     private var refreshStarted: CheckedContinuation<Void, Never>?
     private var holdRefresh = false
     private(set) var logoutTokens: [String] = []
@@ -89,8 +89,13 @@ actor MockAPI: APIClientProtocol {
     }
     func releaseRefresh() {
         holdRefresh = false
-        refreshGate?.resume()
-        refreshGate = nil
+        let gates = refreshGates.values
+        refreshGates.removeAll()
+        gates.forEach { $0.resume() }
+    }
+
+    func releaseRefresh(number: Int) {
+        refreshGates.removeValue(forKey: number)?.resume()
     }
 
     private(set) var loginCount = 0
@@ -112,9 +117,11 @@ actor MockAPI: APIClientProtocol {
 
     func refresh(refreshToken: String) async throws -> TokenPair {
         refreshCount += 1
+        let number = refreshCount
+        let response = refreshResult
         if holdRefresh {
             await withCheckedContinuation { continuation in
-                refreshGate = continuation
+                refreshGates[number] = continuation
                 refreshStarted?.resume()
                 refreshStarted = nil
             }
@@ -122,7 +129,7 @@ actor MockAPI: APIClientProtocol {
         if refreshDelayNanoseconds > 0 {
             try? await Task.sleep(nanoseconds: refreshDelayNanoseconds)
         }
-        return try refreshResult.get()
+        return try response.get()
     }
 
     func verifyMfa(accessToken: String, factorId: String, code: String) async throws -> TokenPair {

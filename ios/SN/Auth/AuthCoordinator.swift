@@ -498,14 +498,15 @@ final class AuthCoordinator: ObservableObject {
         refreshTask = task
         do {
             var pair = try await task.value
-            refreshTask = nil
             guard expectedEpoch == epoch else { throw CancellationError() }
+            refreshTask = nil
             pair.pendingMfaFactorId = tokens?.pendingMfaFactorId
             tokens = pair
             try? store.save(pair)
             return pair
         } catch {
-            refreshTask = nil
+            // An old session must not clear the refresh owned by a later login.
+            if expectedEpoch == epoch { refreshTask = nil }
             throw error
         }
     }

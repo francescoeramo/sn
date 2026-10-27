@@ -924,9 +924,9 @@
     "semantic_hash": ""
   },
   "docs/MANUALE-PROGETTO.md": {
-    "mtime": 1793096165.3303995,
-    "seen": 1793096167.3346357,
-    "ast_hash": "dd8c547a10b69a4a8b451261946e06bd",
+    "mtime": 1793096205.7796137,
+    "seen": 1793096207.0855207,
+    "ast_hash": "19d2137de92719bb4d5415c19a4bc738",
     "semantic_hash": ""
   },
   "docs/PIANO-APP-NATIVA.md": {
@@ -966,9 +966,9 @@
     "semantic_hash": ""
   },
   "ios/README.md": {
-    "mtime": 1793096165.3298764,
-    "seen": 1793096167.3346515,
-    "ast_hash": "e3aab0a6744a1ef6e9be32b579178504",
+    "mtime": 1793096205.7789724,
+    "seen": 1793096207.0855312,
+    "ast_hash": "a2ac5354e46014b0df32dada27962b5d",
     "semantic_hash": ""
   },
   "ios/project.yml": {
@@ -1335,6 +1335,12 @@
     "mtime": 1793008966.7873378,
     "seen": 1793009006.5552886,
     "ast_hash": "ddb6954e1d032d1ff599cc4b32741c60",
+    "semantic_hash": ""
+  },
+  "docs/evidence/ios-m1-usb-2026-10-27.json": {
+    "mtime": 1793096194.0232644,
+    "seen": 1793096207.0853367,
+    "ast_hash": "4127352f508a3b0c867ae05a920e27d1",
     "semantic_hash": ""
   }
 }
