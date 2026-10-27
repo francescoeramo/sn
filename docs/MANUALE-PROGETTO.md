@@ -2,6 +2,12 @@
 
 ## Consolidamento del 27 ottobre 2026
 
+Il preparatore accetta ora `--interface enp8s0f3u1c4i2` per vincolare
+rilevamento e `--host` all'interfaccia USB: nessun fallback al Wi-Fi se manca
+o è inattiva. Sette regressioni offline superate; diagnostica reale USB pronta.
+Comando completo: `python scripts/prepare-ios-dev.py --interface enp8s0f3u1c4i2 --install`.
+Non modifica automaticamente rete o firewall.
+
 Una risposta bootstrap 401 della sessione precedente non può più rinnovare la
 sessione creata da un nuovo login. Bootstrap riusa la lettura protetta con epoch
 catturata; il rinnovo controlla l'epoch prima di avviare richieste. Regressione

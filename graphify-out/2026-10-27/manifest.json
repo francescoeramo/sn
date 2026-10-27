@@ -234,9 +234,9 @@
     "semantic_hash": ""
   },
   "ios/SN/Auth/AuthCoordinator.swift": {
-    "mtime": 1793096089.003733,
-    "seen": 1793096106.6128812,
-    "ast_hash": "395af6d53b0611ac50885c0dfe83a9aa",
+    "mtime": 1793096124.064908,
+    "seen": 1793096144.6370788,
+    "ast_hash": "dc2f48285460a72cfc87a471c9d081c2",
     "semantic_hash": ""
   },
   "ios/SN/Auth/TokenStore.swift": {

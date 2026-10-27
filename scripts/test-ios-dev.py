@@ -28,6 +28,20 @@ class DevelopmentNetworkTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 dev.select_host('missing', self.interfaces(*hosts), [{'dst': 'default', 'dev': 'wifi'}])
 
+    def test_interface_constraint_overrides_configured_wifi(self):
+        interfaces = self.interfaces('192.168.1.9') + [
+            {'ifname': 'usb', 'flags': ['UP'], 'addr_info': [{'local': '172.20.10.3'}]}]
+        routes = [{'dst': 'default', 'dev': 'wifi'}, {'dst': 'default', 'dev': 'usb'}]
+        self.assertEqual(dev.select_host('192.168.1.9', interfaces, routes, device='usb'), '172.20.10.3')
+        with self.assertRaises(ValueError):
+            dev.select_host('192.168.1.9', interfaces, routes, explicit='192.168.1.9', device='usb')
+
+    def test_missing_or_down_interface_never_falls_back_to_wifi(self):
+        for extra in [[], [{'ifname': 'usb', 'flags': [], 'addr_info': [{'local': '172.20.10.3'}]}]]:
+            with self.assertRaises(ValueError):
+                dev.select_host('192.168.1.9', self.interfaces('192.168.1.9') + extra,
+                                [{'dst': 'default', 'dev': 'wifi'}], device='usb')
+
     def test_update_changes_only_endpoint_and_its_ats_exception(self):
         original = (Path(__file__).resolve().parent.parent / 'ios/SN/Info.plist').read_text()
         old = plistlib.loads(original.encode())['SNApiBaseURL'].split('/')[2].split(':')[0]

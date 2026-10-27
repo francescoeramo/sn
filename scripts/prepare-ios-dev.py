@@ -26,9 +26,11 @@ def command(*args):
     return subprocess.check_output(args, cwd=ROOT, text=True, stderr=subprocess.PIPE, timeout=30).strip()
 
 
-def select_host(configured, interfaces, routes, explicit=None):
+def select_host(configured, interfaces, routes, explicit=None, device=None):
     available = {}
     for interface in interfaces:
+        if device and interface['ifname'] != device:
+            continue
         if 'UP' not in interface.get('flags', []):
             continue
         for entry in interface.get('addr_info', []):
@@ -82,6 +84,7 @@ def backend_ready(host):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--host', help='Private IPv4 assigned to this computer; otherwise reuse/detect it')
+    parser.add_argument('--interface', help='Use only this network interface; never fall back to another network')
     parser.add_argument('--check', action='store_true', help='Diagnose only; do not modify files or services')
     parser.add_argument('--install', action='store_true', help='Build, sign and install via USB after preparing the backend')
     args = parser.parse_args()
@@ -89,7 +92,7 @@ def main():
         path = ROOT / 'ios/SN/Info.plist'
         configured = urlsplit(plistlib.loads(path.read_bytes())['SNApiBaseURL']).hostname
         host = select_host(configured, json.loads(command('ip', '-j', '-4', 'address')),
-                           json.loads(command('ip', '-j', '-4', 'route')), args.host)
+                           json.loads(command('ip', '-j', '-4', 'route')), args.host, args.interface)
         if args.check:
             ready = configured == host and backend_ready(host)
             print('Ambiente iOS: ' + ('pronto' if ready else 'da preparare') + ' · ' + host)
