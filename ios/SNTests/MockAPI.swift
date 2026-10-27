@@ -173,9 +173,31 @@ actor MockAPI: APIClientProtocol {
         try publishResult.get()
     }
 
+    private var bootstrapGate: CheckedContinuation<Void, Never>?
+    private var bootstrapStarted: CheckedContinuation<Void, Never>?
+    private var holdBootstrap = false
+    func suspendBootstrap() { holdBootstrap = true }
+    func waitForBootstrap() async {
+        if holdBootstrap && bootstrapGate != nil { return }
+        await withCheckedContinuation { bootstrapStarted = $0 }
+    }
+    func releaseBootstrap() {
+        holdBootstrap = false
+        bootstrapGate?.resume()
+        bootstrapGate = nil
+    }
+
     func bootstrap(accessToken: String) async throws -> Bootstrap {
         bootstrapCount += 1
-        return try bootstrapResult.get()
+        let response = bootstrapResult
+        if holdBootstrap {
+            await withCheckedContinuation { continuation in
+                bootstrapGate = continuation
+                bootstrapStarted?.resume()
+                bootstrapStarted = nil
+            }
+        }
+        return try response.get()
     }
 }
 

@@ -21,7 +21,7 @@
 	     con l'indirizzo del computer raggiungibile dall'iPhone (hotspot USB o HTTPS). -->
 	<!-- Sviluppo via Wi-Fi autorizzato il 24 ottobre 2026: verificare l'indirizzo prima della build. -->
 	<key>SNApiBaseURL</key>
-	<string>http://192.168.1.251:3000</string>
+	<string>http://172.20.10.3:3000</string>
 	<!-- iOS 14+: una connessione a un indirizzo privato della rete locale richiede il
 	     consenso dell'utente. Il testo compare nel prompt di sistema. -->
 	<key>NSLocalNetworkUsageDescription</key>
@@ -35,7 +35,7 @@
 		<true/>
 		<key>NSExceptionDomains</key>
 		<dict>
-			<key>192.168.1.251</key>
+			<key>172.20.10.3</key>
 			<dict>
 				<key>NSExceptionAllowsInsecureHTTPLoads</key>
 				<true/>

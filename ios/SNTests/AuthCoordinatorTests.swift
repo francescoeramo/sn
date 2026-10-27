@@ -22,6 +22,28 @@ final class AuthCoordinatorTests: XCTestCase {
             expiresAt: pair.expiresAt, tokenType: pair.tokenType)
     }
 
+    func testOldBootstrapUnauthorizedCannotRefreshNewLogin() async {
+        let api = MockAPI()
+        let store = MemoryTokenStore()
+        store.tokens = tokens()
+        await api.setBootstrapResult(.failure(.unauthorized(code: nil)))
+        await api.suspendBootstrap()
+        let coordinator = AuthCoordinator(api: api, store: store)
+        let restoring = Task { await coordinator.restore() }
+        await api.waitForBootstrap()
+        await coordinator.logout()
+        await api.setLoginResult(.success(loginResponse(tokens())))
+        let login = Task { await coordinator.login(email: "fixture@example.invalid", password: "fixture") }
+        for _ in 0..<100 where !coordinator.isAuthenticating { await Task.yield() }
+        for _ in 0..<100 { await Task.yield() }
+        await api.releaseBootstrap()
+        await restoring.value
+        await login.value
+        let refreshes = await api.refreshCount
+        XCTAssertEqual(refreshes, 0, "An old response must never refresh a new session")
+        XCTAssertNotNil(store.tokens)
+    }
+
     func testPendingMfaSurvivesStorageRoundTripAndRelaunch() async throws {
         let api = MockAPI()
         await api.setLoginResult(.success(loginResponse(tokens(), mfa: true)))

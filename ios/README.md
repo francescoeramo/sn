@@ -1,5 +1,15 @@
 # SN per iOS: SwiftUI e xtool
 
+## Consolidamento del 27 ottobre 2026
+
+Una risposta bootstrap 401 della sessione precedente non può più rinnovare la
+sessione creata da un nuovo login. Bootstrap riusa la lettura protetta con epoch
+catturata; il rinnovo controlla l'epoch prima di avviare richieste. Regressione
+riprodotta prima del fix (un refresh indebito), poi verificata nel runner Linux.
+Rete di questa sessione: Wi-Fi disconnesso su richiesta, hotspot USB
+`172.20.10.3:3000`; endpoint e ATS riallineati. Non chiude i gate manuali M1.
+
+
 Aggiornato al 24 ottobre 2026: M1 installata via USB, backend raggiungibile via Wi-Fi; collaudo runtime esteso aperto.
 Il client nativo usa le API SN; backend Next.js e Supabase restano condivisi con il sito.
 

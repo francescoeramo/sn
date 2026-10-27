@@ -419,6 +419,8 @@ final class AuthCoordinator: ObservableObject {
         let requestEpoch = epoch
         do {
             let token = try await validAccessToken()
+            guard requestEpoch == epoch else { throw CancellationError() }
+            try Task.checkCancellation()
             let result = try await operation(token)
             guard requestEpoch == epoch else { throw CancellationError() }
             return result
@@ -464,11 +466,8 @@ final class AuthCoordinator: ObservableObject {
     // MARK: - Interno
 
     private func bootstrapWithRefresh() async throws -> Bootstrap {
-        do {
-            return try await api.bootstrap(accessToken: try await validAccessToken())
-        } catch let error as APIError where error.isUnauthorized {
-            let pair = try await performRefresh(expectedEpoch: epoch)
-            return try await api.bootstrap(accessToken: pair.accessToken)
+        try await read { [api] token in
+            try await api.bootstrap(accessToken: token)
         }
     }
 
@@ -484,6 +483,7 @@ final class AuthCoordinator: ObservableObject {
 
     /// Single-flight: una sola richiesta di rinnovo in volo; i chiamanti attendono la stessa Task.
     private func performRefresh(expectedEpoch: Int) async throws -> TokenPair {
+        guard expectedEpoch == epoch else { throw CancellationError() }
         if let inFlight = refreshTask {
             let pair = try await inFlight.value
             guard expectedEpoch == epoch else { throw CancellationError() }
