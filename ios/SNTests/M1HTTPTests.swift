@@ -7,6 +7,21 @@ import FoundationNetworking
 
 @MainActor
 final class M1HTTPTests: XCTestCase {
+    func testSyntheticStorageFailureKeepsFeedAndExposesLocalRetry() async {
+        let coordinator = M1HTTPFixture.coordinator(screen: "storage")
+        await coordinator.restore()
+        XCTAssertEqual(coordinator.homePosts.count, 40)
+        XCTAssertTrue(coordinator.sessionStorageNeedsRetry)
+        XCTAssertFalse(coordinator.offline)
+        let requests = M1HTTPFixture.control.requests
+        coordinator.retrySessionStorage()
+        XCTAssertEqual(M1HTTPFixture.control.requests, requests)
+        XCTAssertTrue(coordinator.sessionStorageNeedsRetry)
+        XCTAssertTrue(M1HTTPFixture.control.validRequests)
+        await coordinator.logout()
+        XCTAssertFalse(coordinator.sessionStorageNeedsRetry)
+    }
+
     func testDefaultTransportDisablesHTTPDiskCacheAndCookies() {
         let configuration = APIClient(baseURL: URL(string: "https://sn-m1.invalid")!).session.configuration
         XCTAssertNil(configuration.urlCache)

@@ -18,6 +18,7 @@ struct SNApp: App {
     #if DEBUG
     private var fixtureStateLabel: String {
         guard ProcessInfo.processInfo.environment["SN_M1_FIXTURE_SCREEN"] != nil else { return "" }
+        if coordinator.sessionStorageNeedsRetry { return " · Salvataggio" }
         switch coordinator.state {
         case .loading: return " · Attesa"
         case .signedOut: return " · Accesso"

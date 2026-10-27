@@ -211,7 +211,13 @@ actor MockAPI: APIClientProtocol {
 
 final class MemoryTokenStore: TokenStore {
     var tokens: TokenPair?
+    var saveError: Error?
+    private(set) var saveAttempts = 0
     func load() -> TokenPair? { tokens }
-    func save(_ tokens: TokenPair) throws { self.tokens = tokens }
+    func save(_ tokens: TokenPair) throws {
+        saveAttempts += 1
+        if let saveError { throw saveError }
+        self.tokens = tokens
+    }
     func clear() { tokens = nil }
 }

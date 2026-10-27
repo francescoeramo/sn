@@ -6,6 +6,9 @@ struct SessionView: View {
 
     var body: some View {
         List {
+            if coordinator.sessionStorageNeedsRetry {
+                Section { SessionStorageNotice() }
+            }
             Section {
                 Text("Qui puoi verificare la connessione al tuo account o uscire da SN.")
                     .font(.footnote)

@@ -103,6 +103,60 @@ final class AuthCoordinatorTests: XCTestCase {
         XCTAssertNotNil(store.tokens)
     }
 
+    func testFailedSessionSaveKeepsAccessAndRetriesCurrentTokensWithoutNetwork() async {
+        let api = MockAPI()
+        let pair = tokens()
+        await api.setLoginResult(.success(loginResponse(pair)))
+        await api.setBootstrapResult(.success(bootstrap()))
+        let store = MemoryTokenStore()
+        store.saveError = APIError.transport
+        let coordinator = AuthCoordinator(api: api, store: store)
+        await coordinator.login(email: "fixture@example.invalid", password: "fixture")
+        XCTAssertEqual(coordinator.state, .signedIn(me: bootstrap().me))
+        XCTAssertFalse(coordinator.offline)
+        XCTAssertNil(store.tokens)
+        XCTAssertTrue(coordinator.sessionStorageNeedsRetry)
+        store.saveError = nil
+        coordinator.retrySessionStorage()
+        XCTAssertFalse(coordinator.sessionStorageNeedsRetry)
+        XCTAssertEqual(store.tokens, pair)
+        let requests = await api.loginCount
+        let refreshes = await api.refreshCount
+        XCTAssertEqual(requests, 1)
+        XCTAssertEqual(refreshes, 0)
+        let attempts = store.saveAttempts
+        coordinator.retrySessionStorage()
+        XCTAssertEqual(store.saveAttempts, attempts, "A successful save is not repeatedly rewritten")
+    }
+
+    func testFailedRotationSaveRetriesLatestMfaMetadataAndLogoutCancelsRetry() async {
+        let api = MockAPI()
+        let store = MemoryTokenStore()
+        var pending = tokens(expiresIn: -120)
+        pending.pendingMfaFactorId = "fixture-factor"
+        store.tokens = pending
+        store.saveError = APIError.transport
+        let rotated = tokens()
+        await api.setRefreshResult(.success(rotated))
+        await api.setMfaResult(.failure(.server(status: 400, message: "Invalid", code: "mfa_invalid")))
+        let coordinator = AuthCoordinator(api: api, store: store)
+        await coordinator.restore()
+        await coordinator.verifyMfa(code: "123456")
+        XCTAssertTrue(coordinator.sessionStorageNeedsRetry)
+        XCTAssertEqual(store.tokens, pending, "A rejected save preserves the old record")
+        store.saveError = nil
+        coordinator.retrySessionStorage()
+        XCTAssertEqual(store.tokens?.accessToken, rotated.accessToken)
+        XCTAssertEqual(store.tokens?.pendingMfaFactorId, "fixture-factor")
+        XCTAssertFalse(coordinator.sessionStorageNeedsRetry)
+        await coordinator.logout()
+        let attempts = store.saveAttempts
+        coordinator.retrySessionStorage()
+        XCTAssertEqual(store.saveAttempts, attempts)
+        XCTAssertNil(store.tokens)
+        XCTAssertFalse(coordinator.sessionStorageNeedsRetry)
+    }
+
     func testMfaInputAcceptsPastedCodeAndRejectsOtherCharactersWithoutRequest() async {
         let api = MockAPI()
         let store = MemoryTokenStore()

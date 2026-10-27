@@ -109,7 +109,7 @@ def main():
             report['device'] = 'passed'
         if args.auth_ui:
             run('auth-ui', [sys.executable, 'scripts/check-ios-auth-ui.py',
-                            '--output', str(output / 'auth-ui')])
+                            '--screens', 'login', 'mfa', 'storage', '--output', str(output / 'auth-ui')])
             report['auth_ui'] = 'passed'
         report['status'] = 'passed'
     except (RuntimeError, KeyboardInterrupt):

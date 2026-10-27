@@ -33,7 +33,7 @@ async def run(args):
             async with AccessibilityAudit(rsd) as ax:
                 size = next(setting.value for setting in await ax.settings() if setting.key == 'DYNAMIC_TYPE')
             try:
-                for screen in ('login', 'mfa'):
+                for screen in args.screens:
                     for appearance in ('dark', 'light'):
                         await config.set_user_interface_style(appearance)
                         async with AppServiceService(rsd) as service:
@@ -47,7 +47,7 @@ async def run(args):
                             ocr = subprocess.run(['tesseract', 'stdin', 'stdout'], input=data,
                                                  capture_output=True, check=True, timeout=10)
                             text = ocr.stdout.decode().casefold()
-                            expected = 'accesso' in text if screen == 'login' else 'mfa' in text
+                            expected = {'login': 'accesso', 'mfa': 'mfa', 'storage': 'salvataggio'}[screen] in text
                             if 'collaudo' in text and expected:
                                 break
                         else:
@@ -80,5 +80,6 @@ async def run(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--screens', nargs='+', choices=['login', 'mfa', 'storage'], default=['login', 'mfa'])
     parser.add_argument('--output', type=Path, default=Path('.impeccable/review/auth-ui'))
     raise SystemExit(asyncio.run(run(parser.parse_args())))

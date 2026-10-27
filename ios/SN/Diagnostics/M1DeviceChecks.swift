@@ -95,6 +95,22 @@ enum M1DeviceChecks {
         await coordinator.logout()
         record("logout_clears_feed_profile", coordinator.feed.isEmpty && coordinator.profilePosts.isEmpty && coordinator.state == .signedOut)
 
+        let pendingMfa = M1HTTPFixture.coordinator(screen: "mfa")
+        await pendingMfa.restore()
+        record("restored_mfa_keeps_feed_closed", pendingMfa.state == .mfaRequired(factorId: "fixture-factor") && pendingMfa.feed.isEmpty)
+        await pendingMfa.verifyMfa(code: " 123456 ")
+        record("pasted_mfa_code_opens_fixture_feed", pendingMfa.homePosts.count == 40)
+        await pendingMfa.logout()
+        record("mfa_logout_returns_to_login", pendingMfa.state == .signedOut)
+        let failedStorage = M1HTTPFixture.coordinator(screen: "storage")
+        await failedStorage.restore()
+        record("storage_failure_keeps_memory_session", failedStorage.sessionStorageNeedsRetry && !failedStorage.offline && failedStorage.homePosts.count == 40)
+        let storageRequests = M1HTTPFixture.control.requests.count
+        failedStorage.retrySessionStorage()
+        record("storage_retry_never_sends_auth_requests", M1HTTPFixture.control.requests.count == storageRequests && failedStorage.sessionStorageNeedsRetry)
+        await failedStorage.logout()
+        record("logout_clears_storage_warning", !failedStorage.sessionStorageNeedsRetry)
+
         let report: [String: Any] = ["platform": "ios-device", "transport": "URLSession with synthetic URLProtocol",
             "run_id": ProcessInfo.processInfo.environment["SN_M1_CHECK_RUN_ID"] ?? "",
             "real_user_data": false, "status": checks.allSatisfy { $0["passed"] as? Bool == true } ? "passed" : "failed",

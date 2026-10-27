@@ -2,6 +2,26 @@
 
 ## Consolidamento del 27 ottobre 2026
 
+### Errori di salvataggio sessione visibili e recuperabili
+
+Un errore Keychain non viene più ignorato: i token correnti restano in RAM e
+l’app mostra un avviso nelle sezioni native, conservando navigazione e composer.
+Riprova salva solo la coppia attuale, inclusa l’eventuale MFA in attesa, senza
+login o refresh. Il ritorno in primo piano ritenta automaticamente una volta;
+un salvataggio riuscito o il logout eliminano l’avviso. Un fallimento non
+diventa errore di rete e non cancella il record precedente.
+
+53 XCTest Linux, contratti, test server, typecheck/lint e build Darwin superati.
+Comando unico con installazione USB, diagnostica interna e sei schermate
+sintetiche completato. Il primo installer foto si era fermato dopo il trasferimento
+senza verifica: interrotto, non attestato come riuscito; il successivo ha verificato
+100%. Ventotto controlli iPhone superati, inclusi preparazione foto fuori UI,
+cancellazione, MFA e salvataggio simulato fallito. Avviso spostato da un inset
+globale alle liste dopo il controllo visivo; build finale reinstallata e catture
+chiare/scure confermate. Evidenza:
+`docs/evidence/ios-m1-session-storage-2026-10-27.json`.
+Nessun dato personale, galleria o nuova scrittura cloud nelle prove.
+
 ### Arresto completo delle verifiche scadute
 
 Il collaudo M1 avvia ogni fase in un gruppo di processi dedicato. Timeout o

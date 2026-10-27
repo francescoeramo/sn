@@ -6,6 +6,9 @@ struct MfaView: View {
 
     var body: some View {
         Form {
+            if coordinator.sessionStorageNeedsRetry {
+                Section { SessionStorageNotice() }
+            }
             Section("Verifica in due passaggi") {
                 Text("Inserisci il codice a 6 cifre dell'app authenticator.")
                     .font(.footnote)

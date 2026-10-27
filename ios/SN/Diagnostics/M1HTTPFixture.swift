@@ -22,12 +22,22 @@ final class M1HTTPFixture: URLProtocol, @unchecked Sendable {
     private final class FixtureStore: TokenStore {
         var tokens: TokenPair? = TokenPair(accessToken: "m1-fixture", refreshToken: "fixture-refresh",
             expiresAt: Int(Date().timeIntervalSince1970) + 3600, tokenType: "bearer")
+        private let failWrites: Bool
+        private enum StoreError: Error { case unavailable }
         init(screen: String?) {
+            failWrites = screen == "storage"
+            if failWrites {
+                tokens = TokenPair(accessToken: "m1-fixture", refreshToken: "fixture-refresh",
+                    expiresAt: Int(Date().timeIntervalSince1970) - 120, tokenType: "bearer")
+            }
             if screen == "login" { tokens = nil }
             if screen == "mfa" { tokens?.pendingMfaFactorId = "fixture-factor" }
         }
         func load() -> TokenPair? { tokens }
-        func save(_ value: TokenPair) throws { tokens = value }
+        func save(_ value: TokenPair) throws {
+            if failWrites { throw StoreError.unavailable }
+            tokens = value
+        }
         func clear() { tokens = nil }
     }
 
@@ -47,7 +57,7 @@ final class M1HTTPFixture: URLProtocol, @unchecked Sendable {
         func receive(_ request: URLRequest) throws {
             try lock.withLock {
                 paths.append(request.url!.path + (request.url!.query.map { "?" + $0 } ?? ""))
-                let expectedBearer = request.url?.path == "/api/native/auth/login" ? nil : "Bearer m1-fixture"
+                let expectedBearer = ["/api/native/auth/login", "/api/native/auth/refresh"].contains(request.url?.path ?? "") ? nil : "Bearer m1-fixture"
                 contractValid = contractValid && request.value(forHTTPHeaderField: "Authorization") == expectedBearer
                     && !request.httpShouldHandleCookies && request.cachePolicy == .reloadIgnoringLocalCacheData
                 if disconnected { throw URLError(.notConnectedToInternet) }
@@ -94,7 +104,7 @@ final class M1HTTPFixture: URLProtocol, @unchecked Sendable {
             else if params["before"] != nil { rows = [] } // Legacy timestamp-only cursor skips ties.
             let page = Array(rows.prefix(40))
             var payload: [String: Any]
-            if url.path == "/api/native/auth/login" || url.path == "/api/native/auth/mfa" {
+            if ["/api/native/auth/login", "/api/native/auth/mfa", "/api/native/auth/refresh"].contains(url.path) {
                 payload = ["access_token": "m1-fixture", "refresh_token": "fixture-refresh",
                     "expires_at": Int(Date().timeIntervalSince1970) + 3600, "token_type": "bearer"]
                 if url.path == "/api/native/auth/login" {

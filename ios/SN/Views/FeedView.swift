@@ -11,6 +11,9 @@ struct FeedView: View {
         TabView {
             NavigationStack {
                 List {
+                    if coordinator.sessionStorageNeedsRetry {
+                        Section { SessionStorageNotice() }
+                    }
                     if let message = coordinator.lastErrorMessage {
                         Section {
                             Text(message).foregroundStyle(.primary)
@@ -56,6 +59,9 @@ struct FeedView: View {
             .tabItem { Label("Feed", systemImage: "house") }
             NavigationStack {
                 List {
+                    if coordinator.sessionStorageNeedsRetry {
+                        Section { SessionStorageNotice() }
+                    }
                     Section {
                         Text(me?.displayName ?? me?.username ?? "Il tuo profilo").font(.title2.bold())
                         if let me { Text("@\(me.username)").foregroundStyle(.primary) }

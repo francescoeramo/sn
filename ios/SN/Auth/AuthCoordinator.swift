@@ -17,6 +17,7 @@ final class AuthCoordinator: ObservableObject {
     @Published var lastErrorMessage: String?
     @Published private(set) var isProbing = false
     @Published private(set) var isAuthenticating = false
+    @Published private(set) var sessionStorageNeedsRetry = false
     @Published private(set) var lastVerifiedAt: Date?
 
     @Published private(set) var feed: [FeedPost] = []
@@ -123,7 +124,7 @@ final class AuthCoordinator: ObservableObject {
             if response.mfaRequired == true, let factorId = response.factorId {
                 tokens = pair
                 pendingMfaFactorId = factorId
-                try? store.save(pair)
+                persist(pair)
                 state = .mfaRequired(factorId: factorId)
                 return
             }
@@ -184,6 +185,7 @@ final class AuthCoordinator: ObservableObject {
         tokens = nil
         pendingMfaFactorId = nil
         store.clear()
+        sessionStorageNeedsRetry = false
         offline = false
         lastErrorMessage = nil
         clearFeed()
@@ -508,7 +510,7 @@ final class AuthCoordinator: ObservableObject {
             refreshTask = nil
             pair.pendingMfaFactorId = tokens?.pendingMfaFactorId
             tokens = pair
-            try? store.save(pair)
+            persist(pair)
             return pair
         } catch {
             // An old session must not clear the refresh owned by a later login.
@@ -517,12 +519,27 @@ final class AuthCoordinator: ObservableObject {
         }
     }
 
+    /// Retry only the current in-memory pair; no auth request or token rotation.
+    func retrySessionStorage() {
+        guard sessionStorageNeedsRetry, let tokens else { return }
+        persist(tokens)
+    }
+
+    private func persist(_ pair: TokenPair) {
+        do {
+            try store.save(pair)
+            sessionStorageNeedsRetry = false
+        } catch {
+            sessionStorageNeedsRetry = true
+        }
+    }
+
     private func commit(_ pair: TokenPair) {
         epoch += 1
         var verified = pair
         verified.pendingMfaFactorId = nil
         tokens = verified
-        try? store.save(verified)
+        persist(verified)
     }
 
     private func resetToSignedOut() {
@@ -531,6 +548,7 @@ final class AuthCoordinator: ObservableObject {
         tokens = nil
         pendingMfaFactorId = nil
         store.clear()
+        sessionStorageNeedsRetry = false
         clearFeed()
         offline = false
         state = .signedOut
