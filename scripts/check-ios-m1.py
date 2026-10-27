@@ -14,12 +14,16 @@ def main():
     device = parser.add_mutually_exclusive_group()
     device.add_argument('--device-bundle', help='Also exercise the installed DEBUG app with this signed bundle ID')
     device.add_argument('--probe', action='store_true', help='Run internal iPhone diagnostics without UI automation')
+    parser.add_argument('--install-interface', help='After local gates, prepare and install using only this interface')
+    parser.add_argument('--auth-ui', action='store_true', help='Capture synthetic login/MFA screens on the installed iPhone')
     args = parser.parse_args()
     root = Path(__file__).resolve().parent.parent
     output = root / '.impeccable/review' / ('m1-check-' + datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ'))
     output.mkdir(parents=True)
     report = {'status': 'running', 'checks': [], 'scope': 'Local synthetic tests; no cloud writes',
-              'device': 'requested' if args.device_bundle or args.probe else 'not_run'}
+              'device': 'requested' if args.device_bundle or args.probe else 'not_run',
+              'installation': 'requested' if args.install_interface else 'not_run',
+              'auth_ui': 'requested' if args.auth_ui else 'not_run'}
     report_path = output / 'report.json'
 
     def save():
@@ -52,6 +56,7 @@ def main():
             raise RuntimeError(name)
 
     try:
+        run('runner-contract', [sys.executable, '-B', 'scripts/test-ios-m1-runner.py'])
         run('development-network', [sys.executable, '-B', 'scripts/test-ios-dev.py'])
         run('session', ['bash', 'scripts/check-ios-session.sh'])
         with tempfile.TemporaryDirectory(prefix='sn-m1-contract-') as temporary:
@@ -65,6 +70,10 @@ def main():
         run('typecheck', ['npm', 'run', 'typecheck'])
         run('lint', ['npm', 'run', 'lint'])
         run('darwin-build', ['xtool', 'dev', 'build'], cwd=root / 'ios')
+        if args.install_interface:
+            run('usb-install', [sys.executable, 'scripts/prepare-ios-dev.py',
+                                '--interface', args.install_interface, '--install'])
+            report['installation'] = 'passed'
         if args.device_bundle:
             run('device', [sys.executable, 'scripts/check-ios-m1-device.py', '--bundle',
                            args.device_bundle, '--output', str(output / 'device')])
@@ -72,6 +81,10 @@ def main():
         elif args.probe:
             run('device-probe', [sys.executable, 'scripts/check-ios-probe.py', '--output', str(output / 'device-probe.json')])
             report['device'] = 'passed'
+        if args.auth_ui:
+            run('auth-ui', [sys.executable, 'scripts/check-ios-auth-ui.py',
+                            '--output', str(output / 'auth-ui')])
+            report['auth_ui'] = 'passed'
         report['status'] = 'passed'
     except (RuntimeError, KeyboardInterrupt):
         report['status'] = 'failed'

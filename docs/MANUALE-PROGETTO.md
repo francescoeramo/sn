@@ -2,6 +2,17 @@
 
 ## Consolidamento del 27 ottobre 2026
 
+### Un solo comando per collaudo, installazione e diagnostica
+
+Con il Python del venv pymobiledevice3:
+`scripts/check-ios-m1.py --install-interface enp8s0f3u1c4i2 --probe --auth-ui`.
+Prima esegue tutti i controlli locali e la build; solo dopo prepara l’interfaccia
+indicata e installa via USB. Solo un’installazione verificata consente di
+avviare diagnostica interna e catture sintetiche login/MFA.
+Quattro regressioni offline verificano ordine, arresto al primo errore e
+assenza di installazione/device nel comando senza flag. Incluse nella CI e
+nel collaudo M1. Il comando predefinito resta esclusivamente locale.
+
 ### Trasporto HTTP effimero
 
 APIClient usa per impostazione predefinita una URLSession effimera, senza URLCache,
