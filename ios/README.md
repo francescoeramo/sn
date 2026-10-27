@@ -2,6 +2,16 @@
 
 ## Consolidamento del 27 ottobre 2026
 
+### Pubblicazione e aggiornamento feed concorrenti
+
+Una lettura feed o pagina iniziata prima di una pubblicazione non può più
+sostituire lo snapshot corrente né nascondere il nuovo post. Dopo un invio
+riuscito, il completamento della vecchia lettura avvia una sola rilettura del
+bootstrap; nessun retry della scrittura. Errori transitori superati vengono
+scartati, rifiuti definitivi della sessione continuano a causare il logout.
+Regressione iniziale riprodotta; 56 XCTest Linux e build Darwin superati,
+con casi refresh, paginazione, errore tardivo e sessione invalidata.
+
 ### Errori di salvataggio sessione visibili e recuperabili
 
 Un errore Keychain non viene più ignorato: i token correnti restano in RAM e

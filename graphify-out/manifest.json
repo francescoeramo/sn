@@ -234,9 +234,9 @@
     "semantic_hash": ""
   },
   "ios/SN/Auth/AuthCoordinator.swift": {
-    "mtime": 1793097301.3950117,
-    "seen": 1793097352.9130087,
-    "ast_hash": "af92d683a83790e4e748f1ec3f6513a9",
+    "mtime": 1793097735.9529796,
+    "seen": 1793097880.789335,
+    "ast_hash": "0e0343f629d7eb34b75230bc2de529de",
     "semantic_hash": ""
   },
   "ios/SN/Auth/TokenStore.swift": {
@@ -294,15 +294,15 @@
     "semantic_hash": ""
   },
   "ios/SNTests/AuthCoordinatorTests.swift": {
-    "mtime": 1793097554.522861,
-    "seen": 1793097679.4383578,
-    "ast_hash": "72fe4e83da2816f9d2c030c4e759a6dc",
+    "mtime": 1793097765.1314244,
+    "seen": 1793097880.7893531,
+    "ast_hash": "14094ded82568691f1de6c49e9cc4aa8",
     "semantic_hash": ""
   },
   "ios/SNTests/MockAPI.swift": {
-    "mtime": 1793097301.395328,
-    "seen": 1793097352.9130268,
-    "ast_hash": "5860ca240305160b323a0853c1eaba8c",
+    "mtime": 1793097717.8644805,
+    "seen": 1793097880.789355,
+    "ast_hash": "a80639b9bd77e99b989470153cf98978",
     "semantic_hash": ""
   },
   "lib/client/action-feedback.ts": {
@@ -924,9 +924,9 @@
     "semantic_hash": ""
   },
   "docs/MANUALE-PROGETTO.md": {
-    "mtime": 1793097677.5233436,
-    "seen": 1793097679.4384642,
-    "ast_hash": "7c39d211aad1e97c9b5133477891ad30",
+    "mtime": 1793097878.7892416,
+    "seen": 1793097880.789459,
+    "ast_hash": "885e2410ea279c5b02b47b26a10b231d",
     "semantic_hash": ""
   },
   "docs/PIANO-APP-NATIVA.md": {
@@ -966,9 +966,9 @@
     "semantic_hash": ""
   },
   "ios/README.md": {
-    "mtime": 1793097677.5222855,
-    "seen": 1793097679.438473,
-    "ast_hash": "c56f75ea67c197611580890c6888d872",
+    "mtime": 1793097878.788579,
+    "seen": 1793097880.789467,
+    "ast_hash": "bf2a17fbfd603f18108654cbb2142a00",
     "semantic_hash": ""
   },
   "ios/project.yml": {

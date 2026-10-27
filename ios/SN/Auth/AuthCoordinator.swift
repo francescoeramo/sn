@@ -24,6 +24,8 @@ final class AuthCoordinator: ObservableObject {
     @Published private(set) var profiles: [FeedProfile] = []
     @Published private(set) var nextCursor: String?
     private var nextPostId: String?
+    private var feedGeneration = 0
+    private var feedRefreshPending = false
     @Published private(set) var isLoadingMore = false
     @Published private(set) var connectionGeneration = 0
     @Published private(set) var profilePosts: [FeedPost] = []
@@ -212,12 +214,22 @@ final class AuthCoordinator: ObservableObject {
             return
         }
         let probeEpoch = epoch
+        let requestGeneration = feedGeneration
         isProbing = true
         lastVerifiedAt = nil
-        defer { if probeEpoch == epoch { isProbing = false } }
+        defer {
+            if probeEpoch == epoch {
+                isProbing = false
+                resumePendingFeedRefresh()
+            }
+        }
         do {
             let bootstrap = try await bootstrapWithRefresh()
             guard probeEpoch == epoch else { return }
+            guard requestGeneration == feedGeneration else {
+                feedRefreshPending = true
+                return
+            }
             currentUserId = bootstrap.userId
             followedIds = Set(bootstrap.follows.filter { $0.follower_id == bootstrap.userId && $0.accepted }.map(\.following_id))
             circlePostIds = Set(bootstrap.circlePosts.map(\.post_id))
@@ -235,6 +247,7 @@ final class AuthCoordinator: ObservableObject {
             if error.isDefinitiveSessionFailure {
                 resetToSignedOut()
             } else {
+                guard requestGeneration == feedGeneration else { feedRefreshPending = true; return }
                 markOffline(error)
             }
         } catch is CancellationError {
@@ -242,6 +255,7 @@ final class AuthCoordinator: ObservableObject {
             return
         } catch {
             guard probeEpoch == epoch else { return }
+            guard requestGeneration == feedGeneration else { feedRefreshPending = true; return }
             offline = true
             lastErrorMessage = ErrorMessages.message(for: .transport)
             state = .signedIn(me: cachedMe)
@@ -252,13 +266,23 @@ final class AuthCoordinator: ObservableObject {
         guard !isLoadingMore, !isProbing, let cursor = nextCursor else { return }
         let requestEpoch = epoch
         isLoadingMore = true
+        let requestGeneration = feedGeneration
         let postId = nextPostId
-        defer { if requestEpoch == epoch { isLoadingMore = false } }
+        defer {
+            if requestEpoch == epoch {
+                isLoadingMore = false
+                resumePendingFeedRefresh()
+            }
+        }
         do {
             let page = try await read { [api] token in
                 try await api.posts(accessToken: token, before: cursor, postId: postId)
             }
             guard requestEpoch == epoch else { return }
+            guard requestGeneration == feedGeneration else {
+                feedRefreshPending = true
+                return
+            }
             var known = Set(feed.map(\.id))
             feed.append(contentsOf: page.posts.filter { known.insert($0.id).inserted })
             nextCursor = page.nextCursor
@@ -269,6 +293,11 @@ final class AuthCoordinator: ObservableObject {
             return
         } catch {
             guard requestEpoch == epoch else { return }
+            if (error as? APIError)?.isDefinitiveSessionFailure == true {
+                handleFeedError(error)
+                return
+            }
+            guard requestGeneration == feedGeneration else { feedRefreshPending = true; return }
             handleFeedError(error)
         }
     }
@@ -398,6 +427,14 @@ final class AuthCoordinator: ObservableObject {
             try await api.publish(accessToken: token, post: post)
         }
         profileGeneration += 1
+        feedGeneration += 1
+        if isProbing || isLoadingMore { feedRefreshPending = true }
+    }
+
+    private func resumePendingFeedRefresh() {
+        guard feedRefreshPending, !isProbing, !isLoadingMore, tokens != nil else { return }
+        feedRefreshPending = false
+        Task { await self.probe() }
     }
 
     /// Proactive refresh is allowed before sending, but a write is attempted only once.
@@ -451,6 +488,7 @@ final class AuthCoordinator: ObservableObject {
     private func clearFeed() {
         isProbing = false
         isLoadingMore = false
+        feedRefreshPending = false
         imageTasks.values.forEach { $0.cancel() }
         imageTasks.removeAll()
         imageCache.removeAllObjects()

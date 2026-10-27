@@ -144,9 +144,31 @@ actor MockAPI: APIClientProtocol {
         logoutTokens.append(accessToken)
     }
 
+    private var postsGate: CheckedContinuation<Void, Never>?
+    private var postsStarted: CheckedContinuation<Void, Never>?
+    private var holdPosts = false
+    func suspendPosts() { holdPosts = true }
+    func waitForPosts() async {
+        if postsGate != nil { return }
+        await withCheckedContinuation { postsStarted = $0 }
+    }
+    func releasePosts() {
+        postsGate?.resume()
+        postsGate = nil
+    }
+
     func posts(accessToken: String, before: String, postId: String?) async throws -> FeedPage {
         postCursors.append(before)
-        return try postsResult.get()
+        let response = postsResult
+        if holdPosts {
+            holdPosts = false
+            await withCheckedContinuation { continuation in
+                postsGate = continuation
+                postsStarted?.resume()
+                postsStarted = nil
+            }
+        }
+        return try response.get()
     }
     func media(accessToken: String, path: String) async throws -> Data {
         mediaCount += 1

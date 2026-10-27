@@ -103,6 +103,87 @@ final class AuthCoordinatorTests: XCTestCase {
         XCTAssertNotNil(store.tokens)
     }
 
+    func testDefinitiveSessionFailureAfterPublicationStillLogsOutWithoutQueuedRead() async throws {
+        let api = MockAPI()
+        let store = MemoryTokenStore()
+        store.tokens = tokens()
+        await api.setBootstrapResult(.success(Bootstrap(userId: "user-id", me: bootstrap().me,
+            posts: [post("old")], nextCursor: "initial")))
+        let coordinator = AuthCoordinator(api: api, store: store)
+        await coordinator.restore()
+        await api.setPostsResult(.failure(.server(status: 403, message: "Invalid", code: "session_invalid")))
+        await api.suspendPosts()
+        let loading = Task { await coordinator.loadMore() }
+        await api.waitForPosts()
+        try await coordinator.sendPost(body: "New", alt: "", path: nil)
+        await api.releasePosts()
+        await loading.value
+        XCTAssertEqual(coordinator.state, .signedOut)
+        XCTAssertTrue(coordinator.feed.isEmpty)
+        XCTAssertNil(store.tokens)
+        let reads = await api.bootstrapCount
+        XCTAssertEqual(reads, 1)
+    }
+
+    func testPublicationDuringPaginationReplacesOldPageAndErrorsWithNewSnapshot() async throws {
+        for response: Result<FeedPage, APIError> in [
+            .success(FeedPage(posts: [post("older")], nextCursor: "old-page")),
+            .failure(.transport),
+        ] {
+            let api = MockAPI()
+            let store = MemoryTokenStore()
+            store.tokens = tokens()
+            await api.setBootstrapResult(.success(Bootstrap(userId: "user-id", me: bootstrap().me,
+                posts: [post("old")], nextCursor: "initial")))
+            let coordinator = AuthCoordinator(api: api, store: store)
+            await coordinator.restore()
+            await api.setPostsResult(response)
+            await api.suspendPosts()
+            let loading = Task { await coordinator.loadMore() }
+            await api.waitForPosts()
+            try await coordinator.sendPost(body: "New", alt: "", path: nil)
+            await api.setBootstrapResult(.success(Bootstrap(userId: "user-id", me: bootstrap().me,
+                posts: [post("new"), post("old")], nextCursor: "updated")))
+            await api.releasePosts()
+            await loading.value
+            for _ in 0..<1000 {
+                if coordinator.feed.first?.id == "new" { break }
+                await Task.yield()
+            }
+            XCTAssertEqual(coordinator.feed.map(\.id), ["new", "old"])
+            XCTAssertEqual(coordinator.nextCursor, "updated")
+            XCTAssertFalse(coordinator.offline)
+            XCTAssertNil(coordinator.lastErrorMessage)
+            let requests = await api.postCursors
+            XCTAssertEqual(requests, ["initial"])
+        }
+    }
+
+    func testPublicationDuringFeedRefreshLoadsTheNewSnapshotAutomatically() async throws {
+        let api = MockAPI()
+        let store = MemoryTokenStore()
+        store.tokens = tokens()
+        await api.setBootstrapResult(.success(Bootstrap(userId: "user-id", me: bootstrap().me,
+                                                       posts: [post("old")])))
+        let coordinator = AuthCoordinator(api: api, store: store)
+        await coordinator.restore()
+        await api.suspendBootstrap()
+        let loading = Task { await coordinator.probe() }
+        await api.waitForBootstrap()
+        try await coordinator.sendPost(body: "New", alt: "", path: nil)
+        await api.setBootstrapResult(.success(Bootstrap(userId: "user-id", me: bootstrap().me,
+                                                       posts: [post("new"), post("old")])))
+        await api.releaseBootstrap()
+        await loading.value
+        for _ in 0..<1000 {
+            if coordinator.feed.first?.id == "new" { break }
+            await Task.yield()
+        }
+        XCTAssertEqual(coordinator.feed.map(\.id), ["new", "old"])
+        let posts = await api.publishedPosts
+        XCTAssertEqual(posts.count, 1, "Only the idempotent read may be retried")
+    }
+
     func testFailedSessionSaveKeepsAccessAndRetriesCurrentTokensWithoutNetwork() async {
         let api = MockAPI()
         let pair = tokens()
