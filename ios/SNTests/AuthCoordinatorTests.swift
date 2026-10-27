@@ -59,6 +59,27 @@ final class AuthCoordinatorTests: XCTestCase {
         }
     }
 
+    func testNewLoginLoadsFeedWhileOldBootstrapIsStillPending() async {
+        let api = MockAPI()
+        let store = MemoryTokenStore()
+        store.tokens = tokens()
+        await api.setBootstrapResult(.success(bootstrap()))
+        await api.suspendBootstrap()
+        let coordinator = AuthCoordinator(api: api, store: store)
+        let restoring = Task { await coordinator.restore() }
+        await api.waitForBootstrap()
+        await coordinator.logout()
+        XCTAssertFalse(coordinator.isProbing, "Logout releases the old session's loading state")
+        await api.setLoginResult(.success(loginResponse(tokens())))
+        await coordinator.login(email: "fixture@example.invalid", password: "fixture")
+        let reads = await api.bootstrapCount
+        XCTAssertEqual(reads, 2, "The old request must not block the new session")
+        XCTAssertEqual(coordinator.state, .signedIn(me: bootstrap().me))
+        await api.releaseBootstrap()
+        await restoring.value
+        XCTAssertEqual(coordinator.state, .signedIn(me: bootstrap().me))
+    }
+
     func testOldBootstrapUnauthorizedCannotRefreshNewLogin() async {
         let api = MockAPI()
         let store = MemoryTokenStore()
@@ -70,6 +91,7 @@ final class AuthCoordinatorTests: XCTestCase {
         await api.waitForBootstrap()
         await coordinator.logout()
         await api.setLoginResult(.success(loginResponse(tokens())))
+        await api.setBootstrapResult(.success(bootstrap()))
         let login = Task { await coordinator.login(email: "fixture@example.invalid", password: "fixture") }
         for _ in 0..<100 where !coordinator.isAuthenticating { await Task.yield() }
         for _ in 0..<100 { await Task.yield() }

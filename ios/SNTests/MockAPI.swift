@@ -185,7 +185,7 @@ actor MockAPI: APIClientProtocol {
     private var holdBootstrap = false
     func suspendBootstrap() { holdBootstrap = true }
     func waitForBootstrap() async {
-        if holdBootstrap && bootstrapGate != nil { return }
+        if bootstrapGate != nil { return }
         await withCheckedContinuation { bootstrapStarted = $0 }
     }
     func releaseBootstrap() {
@@ -198,6 +198,7 @@ actor MockAPI: APIClientProtocol {
         bootstrapCount += 1
         let response = bootstrapResult
         if holdBootstrap {
+            holdBootstrap = false
             await withCheckedContinuation { continuation in
                 bootstrapGate = continuation
                 bootstrapStarted?.resume()

@@ -2,6 +2,15 @@
 
 ## Consolidamento del 27 ottobre 2026
 
+### Nuovo accesso durante una lettura precedente
+
+Il logout libera immediatamente gli stati di caricamento feed/paginazione.
+Le risposte tardive non possono sbloccare i controlli della sessione successiva.
+Riprodotto un accesso che salvava i token ma restava sulla schermata login perché
+il vecchio bootstrap teneva occupata la verifica. Ora la nuova sessione carica
+subito il feed senza aspettare la vecchia richiesta. 46 XCTest Linux e build
+Darwin superati; API e cloud invariati.
+
 ### Rinnovi concorrenti dopo nuovo accesso
 
 Un rinnovo tardivo, riuscito o fallito, non può più cancellare il riferimento

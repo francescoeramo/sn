@@ -208,7 +208,7 @@ final class AuthCoordinator: ObservableObject {
         let probeEpoch = epoch
         isProbing = true
         lastVerifiedAt = nil
-        defer { isProbing = false }
+        defer { if probeEpoch == epoch { isProbing = false } }
         do {
             let bootstrap = try await bootstrapWithRefresh()
             guard probeEpoch == epoch else { return }
@@ -247,7 +247,7 @@ final class AuthCoordinator: ObservableObject {
         let requestEpoch = epoch
         isLoadingMore = true
         let postId = nextPostId
-        defer { isLoadingMore = false }
+        defer { if requestEpoch == epoch { isLoadingMore = false } }
         do {
             let page = try await read { [api] token in
                 try await api.posts(accessToken: token, before: cursor, postId: postId)
@@ -443,6 +443,8 @@ final class AuthCoordinator: ObservableObject {
     }
 
     private func clearFeed() {
+        isProbing = false
+        isLoadingMore = false
         imageTasks.values.forEach { $0.cancel() }
         imageTasks.removeAll()
         imageCache.removeAllObjects()
