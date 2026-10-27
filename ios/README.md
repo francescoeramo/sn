@@ -1,5 +1,26 @@
 # SN per iOS: SwiftUI e xtool
 
+<!-- sn-ios-context:start -->
+> **Stato iOS al 27 ottobre 2026:** M1 implementata e installata, picker e VoiceOver
+> confermati; audit contrasto/Dynamic Type ancora aperto; M2 storie pianificata, non implementata.
+> [Stato ed evidenze](../docs/STATO-IOS.md) · [Piano M2](../docs/PIANO-IOS-M2.md) · [Ripresa sessione](../docs/PROSSIMA-SESSIONE.md).
+> Le sezioni datate conservano il loro valore storico; questa revisione documentale non aggiunge nuove prove.
+<!-- sn-ios-context:end -->
+
+## Consolidamento serale del 27 ottobre 2026
+
+Picker (selezione, annullamento, sostituzione, rimozione) e VoiceOver in Feed e
+Profilo confermati dall’utente sulla build Wi-Fi. Corrette due regressioni: errori
+Profilo superati da una pubblicazione e retry di una lettura già cancellata
+durante il refresh condiviso. 59 XCTest Linux, build Darwin, installazione USB
+Verifying 100% e 28 controlli interni iPhone riusciti; avvio normale ripristinato.
+
+Audit contrasto ancora con rilievi; il setter del testo massimo è ignorato dal
+sistema, accertato con readback. Il runner ora interrompe quella prova se il
+valore non è applicato. M1 resta aperta, M2 non iniziata. Dettagli correnti in
+[STATO-IOS.md](../docs/STATO-IOS.md).
+
+
 ## Consolidamento del 27 ottobre 2026
 
 ### Riprova finale riuscita — installazione e avvisi
@@ -380,7 +401,8 @@ M1 non dichiarata completamente collaudata; M2 non iniziata.
 | M0 — sessione | Flussi principali funzionanti su iPhone: login, verifica sessione, rinnovo, logout/riapertura, recupero offline, MFA | Conferme dell'utente nella sessione del 15 ottobre; test server in `tests/native-auth.test.ts` |
 | M0.5 — crypto 1:1 | Completata su iPhone con CryptoKit, in entrambe le direzioni web ↔ iPhone | [Rapporto](../docs/evidence/ios-crypto-interop-2026-10-15.json): 35 controlli, tre risposte su tre dispositivi, allegato verificato |
 | M1 — feed, profilo, post con immagine | Implementato e installato via USB, collaudo runtime aperto | Contratto in [PIANO-APP-NATIVA.md](../docs/PIANO-APP-NATIVA.md) |
-| XCTest sessione/bozza | 30 test di logica eseguiti su Linux; runner Darwin/SwiftUI ancora non eseguito | `bash scripts/check-ios-session.sh`; shim di Combine, API/store in memoria |
+| XCTest sessione/HTTP/bozza | Ultimo consolidamento: 56 test Linux; runner Darwin/SwiftUI distinto | `bash scripts/check-ios-session.sh`; shim Combine e trasporto sintetico |
+| M2 — storie native | Pianificata, non implementata; dopo chiusura gate M1 | [Piano M2](../docs/PIANO-IOS-M2.md) e [ripresa sessioni](../docs/PROSSIMA-SESSIONE.md) |
 
 La versione 0.2 contiene feed cronologico con aggiornamento manuale, paginazione
 esplicita, avvisi sui contenuti, lettura autenticata delle immagini, proprio profilo

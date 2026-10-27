@@ -10,4 +10,6 @@ il singolo lettore cancellato non invia il retry e non modifica l’archivio.
 `bash scripts/check-ios-session.sh`: 59 XCTest Linux superati, shim Combine,
 non runner Darwin/SwiftUI. `xtool dev build` da ios/: riuscita, 5,80 secondi.
 Nessuna nuova API, migrazione, scrittura cloud o retry di scritture.
-Installazione e diagnostica device sono registrate separatamente al loro esito.
+Installazione finale da ios/ con xtool dev run --usb: Verifying 100%, exit 0.
+28 controlli interni iPhone superati, avvio normale ripristinato: vedi
+[ios-m1-final-probe-2026-10-27-evening.json](ios-m1-final-probe-2026-10-27-evening.json).

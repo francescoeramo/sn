@@ -29,6 +29,13 @@ I conteggi appartengono ai rapporti e non sostituiscono una nuova esecuzione.
 
 ## Chiusura M1: lavoro immediato
 
+Audit serale ripetuto con fixture sintetiche: rilievi di contrasto persistono.
+Il sistema ignora la richiesta di testo massimo (readback 0,2727 invece di 1):
+le vecchie catture “massimo” non dimostrano il ridimensionamento. Il runner ora
+verifica il valore applicato prima di attestare la prova. Tema, dimensione e
+avvio normale ripristinati. [Evidenza](evidence/ios-m1-accessibility-2026-10-27-evening.json).
+
+
 - [x] Prova manuale del PhotosPicker: selezione, annullamento, sostituzione e rimozione foto, confermate dall’utente il 27 ottobre sera.
 - [x] VoiceOver funzionante in Feed e Profilo, confermato dall’utente nella stessa sessione.
 - [ ] Verifica accessibilità della build finale: VoiceOver ascoltato, Dynamic Type,

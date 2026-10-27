@@ -1,5 +1,26 @@
 # SN — manuale operativo del progetto
 
+<!-- sn-ios-context:start -->
+> **Stato iOS al 27 ottobre 2026:** M1 implementata e installata, picker e VoiceOver
+> confermati; audit contrasto/Dynamic Type ancora aperto; M2 storie pianificata, non implementata.
+> [Stato ed evidenze](STATO-IOS.md) · [Piano M2](PIANO-IOS-M2.md) · [Ripresa sessione](PROSSIMA-SESSIONE.md).
+> Le sezioni datate conservano il loro valore storico; questa revisione documentale non aggiunge nuove prove.
+<!-- sn-ios-context:end -->
+
+## Consolidamento serale del 27 ottobre 2026
+
+Picker (selezione, annullamento, sostituzione, rimozione) e VoiceOver in Feed e
+Profilo confermati dall’utente sulla build Wi-Fi. Corrette due regressioni: errori
+Profilo superati da una pubblicazione e retry di una lettura già cancellata
+durante il refresh condiviso. 59 XCTest Linux, build Darwin, installazione USB
+Verifying 100% e 28 controlli interni iPhone riusciti; avvio normale ripristinato.
+
+Audit contrasto ancora con rilievi; il setter del testo massimo è ignorato dal
+sistema, accertato con readback. Il runner ora interrompe quella prova se il
+valore non è applicato. M1 resta aperta, M2 non iniziata. Dettagli correnti in
+[STATO-IOS.md](STATO-IOS.md).
+
+
 ## Consolidamento del 27 ottobre 2026
 
 ### Riprova finale riuscita — installazione e avvisi
@@ -221,7 +242,7 @@ Audit accessibilità ripetuto sull'iPhone: rilievi ancora presenti, evidenza in
 ripristinati automaticamente. M1 resta aperta per accessibilità/picker;
 nessuna modifica cloud o avanzamento M2. Dettagli correnti in `ios/README.md`.
 
-> Guida per chi prende in carico sviluppo e responsabilità operative. Aggiornato al 15 ottobre 2026: stato iOS M0/M0.5, Supabase e passaggio a M1. Il manuale riunisce le informazioni principali in un solo file: aggiornare questo documento quando cambia architettura, sicurezza, roadmap o procedura operativa.
+> Guida per chi prende in carico sviluppo e responsabilità operative. Quadro storico del 15 ottobre 2026: stato iOS M0/M0.5, Supabase e passaggio a M1. Il manuale riunisce le informazioni principali in un solo file: aggiornare questo documento quando cambia architettura, sicurezza, roadmap o procedura operativa.
 
 ## 1. In breve
 
@@ -503,7 +524,7 @@ Altri elementi da roadmap lunga/brief e non parte della beta: dirette (servizio 
 
 L’**adapter bearer lato server** per l’app nativa M0 è già presente (`native/auth/login|refresh|logout|mfa`, `tokenDatabase`, `identityFrom`), descritto in `docs/ARCHITETTURA.md` e in `docs/PIANO-APP-NATIVA.md`. È usato dal prototipo di sviluppo verificato su iPhone; non equivale a distribuzione pubblica o completamento del client social. Lo sviluppo è richiesto dal proprietario, il rilascio resta separato.
 
-### Ambiente iOS attuale (15 ottobre 2026)
+### Ambiente iOS al 15 ottobre 2026 (storico; superato dallo stato corrente)
 
 Il client SwiftUI usa SwiftPM e xtool su Linux. Swift 6.4.1, SDK Darwin iPhoneOS 27.0,
 target iOS 17 e iPhone con iOS 27.0.1. Build, firma, installazione e runtime verificati.

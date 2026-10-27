@@ -60,8 +60,8 @@ async def run(args):
                     async with ScreenCaptureService(rsd) as screen:
                         image = (await screen.capture_screenshot())['image']
                     verification = subprocess.run(['tesseract', 'stdin', 'stdout'], input=image,
-                                                  check=True, capture_output=True)
-                    check(name + '_capture_fixture', b'collaudo' in verification.stdout.lower())
+                                                  check=True, capture_output=True, timeout=10)
+                    check(name + '_capture_fixture', all(marker in verification.stdout.lower() for marker in (b'collaudo m1', b'dati locali')))
                     path = args.output / (name + '.png')
                     path.write_bytes(image)
                     return path, struct.unpack('>II', image[16:24])
@@ -85,6 +85,10 @@ async def run(args):
                         y = (int(word['top']) + int(word['height']) / 2) * 65535 / height
                         await tap(round(x), round(y))
 
+                    async def guard_fixture():
+                        # OCR verifies the visible local banner without moving AX focus/scroll.
+                        await capture('audit_guard')
+
                     async def page(name, expected):
                         captions = await asyncio.wait_for(snapshot(), 90)
                         posts = {x for x in captions if re.fullmatch(r'Post collaudo \d{3}', x)}
@@ -100,9 +104,12 @@ async def run(args):
                         check('feed_terminal_ui', any(x.startswith('Sei in pari') for x in captions)
                               and not any(x.startswith('Carica i post precedenti') for x in captions))
                     # The tab target is read from the standard portrait iPhone tab bar.
+                    await guard_fixture()
                     await tap(49151, 61000)
-                    captions = await page('profile_first_page', 40)
-                    check('profile_tab_selected', any(x.startswith('Profilo,') and 'Selected' in x for x in captions))
+                    if not args.audit_only:
+                        captions = await page('profile_first_page', 40)
+                        check('profile_tab_selected', any(x.startswith('Profilo,') and 'Selected' in x for x in captions))
+                    await guard_fixture()
                     if not args.audit_only:
                         await more('profile_load_second')
                         await page('profile_second_page', 80)
@@ -112,21 +119,23 @@ async def run(args):
                               and not any(x.startswith('Carica i post precedenti') for x in captions))
 
                     for style in ('dark', 'light'):
-                        await snapshot()
+                        await guard_fixture()
                         await config.set_user_interface_style(style)
                         await asyncio.sleep(.5)
                         async with AccessibilityAudit(rsd) as ax:
                             issues = await asyncio.wait_for(ax.run_audit(AUDITS), 45)
-                        await snapshot()
                         check('profile_audit_' + style, len(issues) == 0, fatal=False, issues=[x.json() for x in issues])
                         await capture('profile_' + style)
-                    await snapshot()
+                    await guard_fixture()
                     async with AccessibilityAudit(rsd) as ax:
                         await ax.set_setting('DYNAMIC_TYPE', 1.0)
                     await asyncio.sleep(.5)
                     async with AccessibilityAudit(rsd) as ax:
+                        actual_size = next(x.value for x in await ax.settings() if x.key == 'DYNAMIC_TYPE')
+                    # Never label a capture as maximum text when the OS ignored the setting.
+                    check('maximum_dynamic_type_setting_applied', actual_size == 1.0, actual=actual_size)
+                    async with AccessibilityAudit(rsd) as ax:
                         issues = await asyncio.wait_for(ax.run_audit(AUDITS), 45)
-                    await snapshot()
                     check('profile_audit_maximum_dynamic_type', len(issues) == 0, fatal=False, issues=[x.json() for x in issues])
                     await capture('profile_maximum_dynamic_type')
                     finished = True

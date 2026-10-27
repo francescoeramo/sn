@@ -1,0 +1,225 @@
+{
+  "platform": "ios-device",
+  "input": "CoreDevice HID",
+  "data": "85 synthetic posts through URLSession/URLProtocol",
+  "checks": [
+    {
+      "name": "audit_guard_capture_fixture",
+      "passed": true
+    },
+    {
+      "name": "audit_guard_capture_fixture",
+      "passed": true
+    },
+    {
+      "name": "audit_guard_capture_fixture",
+      "passed": true
+    },
+    {
+      "name": "profile_audit_dark",
+      "passed": false,
+      "issues": [
+        {
+          "element_rect_value": "{{4, 65}, {124.33333333333331, 13.333333333333329}}",
+          "issue_classification": "testTypeDynamicText",
+          "font_size": 0.0,
+          "ml_generated_description": null,
+          "long_description_extra_info": [
+            "UIContentSizeCategoryLarge"
+          ]
+        },
+        {
+          "element_rect_value": "{{16, 300.33333333333331}, {361, 38.666666666666686}}",
+          "issue_classification": "testTypeContrast",
+          "font_size": 13.0,
+          "ml_generated_description": null,
+          "long_description_extra_info": [
+            "The text contrast ratio is 1.01. This is based on color #000000 compared with color #010101. "
+          ],
+          "foreground_color": "#000000",
+          "background_color": "#010101"
+        },
+        {
+          "element_rect_value": "{{36, 762}, {86.333333333333329, 14.333333333333371}}",
+          "issue_classification": "testTypeContrast",
+          "font_size": 12.0,
+          "ml_generated_description": null,
+          "long_description_extra_info": [
+            "The text contrast ratio is 1.35. This is based on color #1C1C1E compared with color #333336. "
+          ],
+          "foreground_color": "#1C1C1E",
+          "background_color": "#333336"
+        },
+        {
+          "element_rect_value": "{{36, 788.33333333333337}, {136.66666666666666, 20.333333333333258}}",
+          "issue_classification": "testTypeContrast",
+          "font_size": 17.0,
+          "ml_generated_description": null,
+          "long_description_extra_info": [
+            "The text contrast ratio is 1.01. This is based on color #2D2D2E compared with color #2D2E2F. "
+          ],
+          "foreground_color": "#2D2D2E",
+          "background_color": "#2D2E2F"
+        },
+        {
+          "element_rect_value": "{{36, 830.66666666666663}, {86.333333333333329, 14.333333333333371}}",
+          "issue_classification": "testTypeContrast",
+          "font_size": 12.0,
+          "ml_generated_description": null,
+          "long_description_extra_info": [
+            "The text contrast ratio is 1.00. This is based on color #2D2D2E compared with color #2C2D2E. "
+          ],
+          "foreground_color": "#2D2D2E",
+          "background_color": "#2C2D2E"
+        }
+      ]
+    },
+    {
+      "name": "profile_dark_capture_fixture",
+      "passed": true
+    },
+    {
+      "name": "audit_guard_capture_fixture",
+      "passed": true
+    },
+    {
+      "name": "profile_audit_light",
+      "passed": false,
+      "issues": [
+        {
+          "element_rect_value": "{{4, 65}, {124.33333333333331, 13.333333333333329}}",
+          "issue_classification": "testTypeDynamicText",
+          "font_size": 0.0,
+          "ml_generated_description": null,
+          "long_description_extra_info": [
+            "UIContentSizeCategoryLarge"
+          ]
+        },
+        {
+          "element_rect_value": "{{16, 300.33333333333331}, {361, 38.666666666666686}}",
+          "issue_classification": "testTypeContrast",
+          "font_size": 13.0,
+          "ml_generated_description": null,
+          "long_description_extra_info": [
+            "The text contrast ratio is 1.02. This is based on color #F2F2F7 compared with color #F0F0F5. "
+          ],
+          "foreground_color": "#F2F2F7",
+          "background_color": "#F0F0F5"
+        },
+        {
+          "element_rect_value": "{{36, 762}, {86.333333333333329, 14.333333333333371}}",
+          "issue_classification": "testTypeContrast",
+          "font_size": 12.0,
+          "ml_generated_description": null,
+          "long_description_extra_info": [
+            "The text contrast ratio is 1.44. This is based on color #FFFFFF compared with color #D7D7D9. "
+          ],
+          "foreground_color": "#FFFFFF",
+          "background_color": "#D7D7D9"
+        },
+        {
+          "element_rect_value": "{{36, 788.33333333333337}, {136.66666666666666, 20.333333333333258}}",
+          "issue_classification": "testTypeContrast",
+          "font_size": 17.0,
+          "ml_generated_description": null,
+          "long_description_extra_info": [
+            "The text contrast ratio is 1.01. This is based on color #F5F5F5 compared with color #F4F4F4. "
+          ],
+          "foreground_color": "#F5F5F5",
+          "background_color": "#F4F4F4"
+        },
+        {
+          "element_rect_value": "{{36, 830.66666666666663}, {86.333333333333329, 14.333333333333371}}",
+          "issue_classification": "testTypeContrast",
+          "font_size": 12.0,
+          "ml_generated_description": null,
+          "long_description_extra_info": [
+            "The text contrast ratio is 1.00. This is based on color #F5F5F5 compared with color #F6F5F5. "
+          ],
+          "foreground_color": "#F5F5F5",
+          "background_color": "#F6F5F5"
+        }
+      ]
+    },
+    {
+      "name": "profile_light_capture_fixture",
+      "passed": true
+    },
+    {
+      "name": "audit_guard_capture_fixture",
+      "passed": true
+    },
+    {
+      "name": "maximum_dynamic_type_setting_applied",
+      "passed": false,
+      "actual": 0.2727272727272727
+    },
+    {
+      "name": "profile_audit_maximum_dynamic_type",
+      "passed": false,
+      "issues": [
+        {
+          "element_rect_value": "{{4, 65}, {124.33333333333331, 13.333333333333329}}",
+          "issue_classification": "testTypeDynamicText",
+          "font_size": 0.0,
+          "ml_generated_description": null,
+          "long_description_extra_info": [
+            "UIContentSizeCategoryLarge"
+          ]
+        },
+        {
+          "element_rect_value": "{{16, 300.33333333333331}, {361, 38.666666666666686}}",
+          "issue_classification": "testTypeContrast",
+          "font_size": 13.0,
+          "ml_generated_description": null,
+          "long_description_extra_info": [
+            "The text contrast ratio is 1.02. This is based on color #F2F2F7 compared with color #F0F0F5. "
+          ],
+          "foreground_color": "#F2F2F7",
+          "background_color": "#F0F0F5"
+        },
+        {
+          "element_rect_value": "{{36, 762}, {86.333333333333329, 14.333333333333371}}",
+          "issue_classification": "testTypeContrast",
+          "font_size": 12.0,
+          "ml_generated_description": null,
+          "long_description_extra_info": [
+            "The text contrast ratio is 1.44. This is based on color #FFFFFF compared with color #D7D7D9. "
+          ],
+          "foreground_color": "#FFFFFF",
+          "background_color": "#D7D7D9"
+        },
+        {
+          "element_rect_value": "{{36, 788.33333333333337}, {136.66666666666666, 20.333333333333258}}",
+          "issue_classification": "testTypeContrast",
+          "font_size": 17.0,
+          "ml_generated_description": null,
+          "long_description_extra_info": [
+            "The text contrast ratio is 1.01. This is based on color #F5F5F5 compared with color #F4F4F4. "
+          ],
+          "foreground_color": "#F5F5F5",
+          "background_color": "#F4F4F4"
+        },
+        {
+          "element_rect_value": "{{36, 830.66666666666663}, {86.333333333333329, 14.333333333333371}}",
+          "issue_classification": "testTypeContrast",
+          "font_size": 12.0,
+          "ml_generated_description": null,
+          "long_description_extra_info": [
+            "The text contrast ratio is 1.00. This is based on color #F5F5F5 compared with color #F6F5F5. "
+          ],
+          "foreground_color": "#F5F5F5",
+          "background_color": "#F6F5F5"
+        }
+      ]
+    },
+    {
+      "name": "profile_maximum_dynamic_type_capture_fixture",
+      "passed": true
+    }
+  ],
+  "settings_restored": true,
+  "status": "failed",
+  "scope": "Synthetic M1 profile; no AX traversal around audit; manual picker and VoiceOver separately confirmed by user",
+  "limitation": "Requested maximum Dynamic Type ignored: readback 0.2727272727272727 instead of 1.0; maximum-size capture is not evidence of scaling. Contrast findings unresolved."
+}
