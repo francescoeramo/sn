@@ -943,4 +943,55 @@ final class AuthCoordinatorTests: XCTestCase {
         XCTAssertEqual(coordinator.profilePosts.map(\.id), ["new", "old"])
     }
 
+    func testPublicationDiscardsStaleProfileFailuresAndReloadsArchive() async throws {
+        for error: APIError in [.transport, .invalidResponse] {
+            let api = MockAPI()
+            await api.setBootstrapResult(.success(bootstrap()))
+            await api.setProfilePostsResult(.failure(error))
+            await api.suspendProfile()
+            let store = MemoryTokenStore()
+            store.tokens = tokens()
+            let coordinator = AuthCoordinator(api: api, store: store)
+            await coordinator.restore()
+            let loading = Task { await coordinator.loadProfile() }
+            await api.waitForProfile()
+            try await coordinator.sendPost(body: "Nuovo", alt: "", path: nil)
+            await api.setProfilePostsResult(.success(ProfilePostsPage(posts: [post("new")], nextCursor: nil)))
+            await api.releaseProfile()
+            await loading.value
+            for _ in 0..<1000 {
+                if coordinator.profileHasLoaded { break }
+                await Task.yield()
+            }
+            XCTAssertEqual(coordinator.profilePosts.map(\.id), ["new"])
+            XCTAssertNil(coordinator.profileError)
+            XCTAssertNil(coordinator.lastErrorMessage)
+            XCTAssertFalse(coordinator.offline)
+            let reads = await api.profileCursors.count
+            XCTAssertEqual(reads, 2, "Only one replacement read is needed")
+        }
+    }
+
+    func testStaleProfileDefinitiveFailureStillLogsOutAfterPublication() async throws {
+        let api = MockAPI()
+        await api.setBootstrapResult(.success(bootstrap()))
+        await api.setProfilePostsResult(.failure(.unauthorized(code: "session_invalid")))
+        await api.setRefreshResult(.failure(.unauthorized(code: "session_invalid")))
+        await api.suspendProfile()
+        let store = MemoryTokenStore()
+        store.tokens = tokens()
+        let coordinator = AuthCoordinator(api: api, store: store)
+        await coordinator.restore()
+        let loading = Task { await coordinator.loadProfile() }
+        await api.waitForProfile()
+        try await coordinator.sendPost(body: "Nuovo", alt: "", path: nil)
+        await api.releaseProfile()
+        await loading.value
+        XCTAssertEqual(coordinator.state, .signedOut)
+        XCTAssertNil(store.tokens)
+        XCTAssertTrue(coordinator.profilePosts.isEmpty)
+        let reads = await api.profileCursors.count
+        XCTAssertEqual(reads, 1)
+    }
+
 }

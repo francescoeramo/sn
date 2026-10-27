@@ -294,8 +294,8 @@
     "semantic_hash": ""
   },
   "ios/SNTests/AuthCoordinatorTests.swift": {
-    "mtime": 1793097765.1314244,
-    "seen": 1793097880.7893531,
+    "mtime": 1793136543.5348196,
+    "seen": 1793136643.3289254,
     "ast_hash": "14094ded82568691f1de6c49e9cc4aa8",
     "semantic_hash": ""
   },
@@ -858,117 +858,117 @@
     "semantic_hash": ""
   },
   "AGENTS.md": {
-    "mtime": 1792085336.4360023,
-    "seen": 1792085592.167926,
-    "ast_hash": "7f483509be2d0ce57cf5e56bc6cadd97",
+    "mtime": 1793100770.1034768,
+    "seen": 1793136643.3290837,
+    "ast_hash": "15df645b8a0a4e1343b1fb0307517532",
     "semantic_hash": ""
   },
   "CLAUDE.md": {
-    "mtime": 1788948361.375867,
-    "seen": 1791824229.3695233,
-    "ast_hash": "5c27369b226fcf2be8a6cfe52224e767",
+    "mtime": 1793100770.104021,
+    "seen": 1793136643.3290846,
+    "ast_hash": "f9a63a29e889e0a41c367b0dcb081f92",
     "semantic_hash": ""
   },
   "PRODUCT.md": {
-    "mtime": 1792085590.2031064,
-    "seen": 1792085592.1679282,
-    "ast_hash": "c8622a156773202e06093cb8a1ba8883",
+    "mtime": 1793100770.1372933,
+    "seen": 1793136643.329086,
+    "ast_hash": "0f8e2d6a43941e34fb12ce4cb150af7a",
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1792085336.4355764,
-    "seen": 1792085592.1679296,
-    "ast_hash": "44b6fdcdbbfab9bc8f7f526d2eb67d97",
+    "mtime": 1793100819.312137,
+    "seen": 1793136643.3290868,
+    "ast_hash": "38418bb9977706c08a1c4465f4e0e8f6",
     "semantic_hash": ""
   },
   "SN-prompt-progetto.md": {
-    "mtime": 1789996702.218949,
-    "seen": 1791824229.3695252,
-    "ast_hash": "26c09bdfbee7c0c73579c68160c1a254",
+    "mtime": 1793100770.123899,
+    "seen": 1793136643.3290877,
+    "ast_hash": "349483e6a6b5c20374a79d45d6bbd5fc",
     "semantic_hash": ""
   },
   "docs/ARCHITETTURA.md": {
-    "mtime": 1793098162.3708277,
-    "seen": 1793098164.3507984,
-    "ast_hash": "f601445becefcd5f9f067ed9724af062",
+    "mtime": 1793100770.1239605,
+    "seen": 1793136643.3290887,
+    "ast_hash": "923cc66ff00970b82641089ddfba1598",
     "semantic_hash": ""
   },
   "docs/BACKUP.md": {
-    "mtime": 1790095708.70049,
-    "seen": 1791824229.3695273,
-    "ast_hash": "02717cf4a29855f483ef5a56edf571f9",
+    "mtime": 1793100770.1252542,
+    "seen": 1793136643.3290899,
+    "ast_hash": "d20ac5762147ae5b7c7beeeb9d8eb7e9",
     "semantic_hash": ""
   },
   "docs/CHECKLIST-DEPLOY.md": {
-    "mtime": 1792085422.676738,
-    "seen": 1792085592.167936,
-    "ast_hash": "567f06ca939022f4421166fc14d218f9",
+    "mtime": 1793100770.125724,
+    "seen": 1793136643.3290908,
+    "ast_hash": "bca3a34f8cf8e15d789d7d32ac87e875",
     "semantic_hash": ""
   },
   "docs/CRITTOGRAFIA.md": {
-    "mtime": 1792085422.6762805,
-    "seen": 1792085592.167937,
-    "ast_hash": "fb7501facee69d830b39ae34565d6c0f",
+    "mtime": 1793100770.1264105,
+    "seen": 1793136643.3290918,
+    "ast_hash": "a649d3f2bb5d65286c926c282f8f95da",
     "semantic_hash": ""
   },
   "docs/DECISIONI.md": {
-    "mtime": 1792085422.6777909,
-    "seen": 1792085592.167938,
-    "ast_hash": "3dd7e376097c06bad8058b3260d8af23",
+    "mtime": 1793100770.1269531,
+    "seen": 1793136643.329093,
+    "ast_hash": "071b9ba41d6c72ca44d4cdc314c8b3ee",
     "semantic_hash": ""
   },
   "docs/EMAIL.md": {
-    "mtime": 1791021572.855594,
-    "seen": 1791824229.36953,
-    "ast_hash": "c416dbfd07f6064688e1295bf3e494c4",
+    "mtime": 1793100770.1275814,
+    "seen": 1793136643.3290937,
+    "ast_hash": "75a10d5386de399ca46cd28a02824212",
     "semantic_hash": ""
   },
   "docs/MANUALE-PROGETTO.md": {
-    "mtime": 1793098750.7170315,
-    "seen": 1793098752.6757913,
-    "ast_hash": "66ced4d180edc2cd0607e7df06993133",
+    "mtime": 1793100770.1389744,
+    "seen": 1793136643.3291,
+    "ast_hash": "3616dd4c1ad74617daba215f3c9a913b",
     "semantic_hash": ""
   },
   "docs/PIANO-APP-NATIVA.md": {
-    "mtime": 1793098337.638312,
-    "seen": 1793098752.6757932,
-    "ast_hash": "f552c5549ca62430647b1a377ac20c73",
+    "mtime": 1793100770.132312,
+    "seen": 1793136643.329102,
+    "ast_hash": "2cf4c5388b9eabf8b442c3c043a793f1",
     "semantic_hash": ""
   },
   "docs/PIANO-PROFILI-CAROUSEL-HOME.md": {
-    "mtime": 1790878375.1856978,
-    "seen": 1791824229.3695319,
-    "ast_hash": "db4fe8beb1774b9cb338d4961cea3c57",
+    "mtime": 1793100770.1330497,
+    "seen": 1793136643.3291042,
+    "ast_hash": "5df13a7953ce1ed63e601dbdc3a1e8a4",
     "semantic_hash": ""
   },
   "docs/PIANO-UX-MOBILE-AUTH.md": {
-    "mtime": 1790847567.7292633,
-    "seen": 1791824229.3695323,
-    "ast_hash": "ce0bc075ad366a502fd4f4f263b59252",
+    "mtime": 1793100770.1337545,
+    "seen": 1793136643.3291054,
+    "ast_hash": "015481830a328f4e3151f3bbc766d0ea",
     "semantic_hash": ""
   },
   "docs/ROADMAP.md": {
-    "mtime": 1792085590.202761,
-    "seen": 1792085592.1679473,
-    "ast_hash": "96e52ed0b81fb6ce7ee2ffdead868df5",
+    "mtime": 1793100819.3136644,
+    "seen": 1793136643.3291073,
+    "ast_hash": "fef4343455f793bde18c0ebc24b006d6",
     "semantic_hash": ""
   },
   "docs/TEST-RESULTS.md": {
-    "mtime": 1792835488.8250065,
-    "seen": 1792835491.0511875,
-    "ast_hash": "e838976f49f200c4510122bdc13fafd8",
+    "mtime": 1793100770.137916,
+    "seen": 1793136643.3291106,
+    "ast_hash": "06e239e4fc85f0be9bed02689362815e",
     "semantic_hash": ""
   },
   "docs/VERIFICA.md": {
-    "mtime": 1792085422.6765034,
-    "seen": 1792085592.1679497,
-    "ast_hash": "d2425101161d4c2c02f25547ea0b1856",
+    "mtime": 1793100819.3144217,
+    "seen": 1793136643.329112,
+    "ast_hash": "dfb99c88e78928f77feb589ec65e2779",
     "semantic_hash": ""
   },
   "ios/README.md": {
-    "mtime": 1793098750.7168322,
-    "seen": 1793098752.6758,
-    "ast_hash": "85521014aa4ada415c6ca1f6e0fa37a1",
+    "mtime": 1793100819.3152254,
+    "seen": 1793136643.3291152,
+    "ast_hash": "2c027ac6375ef039e9611437d08151c1",
     "semantic_hash": ""
   },
   "ios/project.yml": {
@@ -984,9 +984,9 @@
     "semantic_hash": ""
   },
   "primaDiContinuare.md": {
-    "mtime": 1792085336.436481,
-    "seen": 1792085592.1679552,
-    "ast_hash": "c7ac70e2447930c19bed8ea1f17ff5e5",
+    "mtime": 1793100770.1043653,
+    "seen": 1793136643.3291202,
+    "ast_hash": "ebfd91604f293c166b158a42d34887f7",
     "semantic_hash": ""
   },
   "supabase/templates/confirmation.html": {
@@ -1026,21 +1026,21 @@
     "semantic_hash": ""
   },
   ".agents/skills/sn-ios-xtool/SKILL.md": {
-    "mtime": 1792085422.6679509,
-    "seen": 1792085592.167921,
-    "ast_hash": "9d41c52e6c1f3fdd885292b8db2be517",
+    "mtime": 1793100770.1121376,
+    "seen": 1793136643.3290792,
+    "ast_hash": "54ba10361cd4823d7bba14223831ac0b",
     "semantic_hash": ""
   },
   "docs/OPENCODE.md": {
-    "mtime": 1792835488.8266556,
-    "seen": 1792835491.0511823,
-    "ast_hash": "b1a830c48af72060dc736ca7d4d9fc68",
+    "mtime": 1793100770.1309605,
+    "seen": 1793136643.3291008,
+    "ast_hash": "b20bb8c69b9234b9853706e22043e899",
     "semantic_hash": ""
   },
   "docs/agents/sn-ios.md": {
-    "mtime": 1792085411.8981657,
-    "seen": 1792085592.1679506,
-    "ast_hash": "5713c8160918360a6306b106acc8d0a8",
+    "mtime": 1793100770.1359959,
+    "seen": 1793136643.329113,
+    "ast_hash": "47fe194c3f28cbb2497ec5c0dbdb38cd",
     "semantic_hash": ""
   },
   "supabase/migrations/20261015164952_restrict_rls_auto_enable_execution.sql": {
@@ -1116,9 +1116,9 @@
     "semantic_hash": ""
   },
   "docs/IOS-CRYPTO-INTEROP.md": {
-    "mtime": 1792085082.7588298,
-    "seen": 1792085092.182767,
-    "ast_hash": "126a174d5e98ecf05b9069ba2a71d89f",
+    "mtime": 1793100770.128048,
+    "seen": 1793136643.329097,
+    "ast_hash": "d22b07e5c34b8d88f0df7509cf91a1fd",
     "semantic_hash": ""
   },
   "docs/evidence/ios-crypto-interop-2026-10-15.json": {
@@ -1164,9 +1164,9 @@
     "semantic_hash": ""
   },
   "docs/SECURITY-AUDIT-2026-10-19.md": {
-    "mtime": 1792419785.2704954,
-    "seen": 1792763906.7965238,
-    "ast_hash": "f0625545e83a8c9dbf538f10ad7d87e5",
+    "mtime": 1793100770.1347423,
+    "seen": 1793136643.3291085,
+    "ast_hash": "5f0257aaa84dc582355fe3eea05fdd7d",
     "semantic_hash": ""
   },
   "docs/evidence/cloud-security-2026-10-19.json": {
@@ -1206,9 +1206,9 @@
     "semantic_hash": ""
   },
   "docs/IOS-M1-INTERFACCIA.md": {
-    "mtime": 1792832533.4246078,
-    "seen": 1792832535.2859356,
-    "ast_hash": "16d971eecc3aa22908b7248e5937ccc4",
+    "mtime": 1793100770.128722,
+    "seen": 1793136643.329098,
+    "ast_hash": "d50e7aa17a09732d4971ba36c06c870c",
     "semantic_hash": ""
   },
   "ios/SN/Auth/TokenStoreProtocol.swift": {
@@ -1230,9 +1230,9 @@
     "semantic_hash": ""
   },
   "ios/SessionChecks/README.md": {
-    "mtime": 1792765549.5880065,
-    "seen": 1792765743.88238,
-    "ast_hash": "2ee099b6c63373ba8b412597c364b0d2",
+    "mtime": 1793100770.1369324,
+    "seen": 1793136643.3291159,
+    "ast_hash": "d56371cce379b88e9a522dbbcb4afb11",
     "semantic_hash": ""
   },
   "ios/SN/Models/PostDraft.swift": {
@@ -1290,9 +1290,9 @@
     "semantic_hash": ""
   },
   "docs/IOS-M1-VERIFICA.md": {
-    "mtime": 1793006679.687845,
-    "seen": 1793006685.3958097,
-    "ast_hash": "bdd19a5955245ca63688679aac0f21a5",
+    "mtime": 1793100770.1293623,
+    "seen": 1793136643.3290987,
+    "ast_hash": "b8917bfe9031dbdca271a47b12c9fff3",
     "semantic_hash": ""
   },
   "docs/evidence/ios-m1-accessibility-2026-10-24.json": {
@@ -1386,9 +1386,39 @@
     "semantic_hash": ""
   },
   "docs/evidence/ios-m1-content-warning-2026-10-27.json": {
-    "mtime": 1793098750.7166445,
-    "seen": 1793098752.6756396,
-    "ast_hash": "a4325b10951f5f73fbeff19293f8dec7",
+    "mtime": 1793099642.589899,
+    "seen": 1793099644.6609123,
+    "ast_hash": "1b7fb2ae6e25d96fa0ed3d4882b9ba1b",
+    "semantic_hash": ""
+  },
+  "docs/INDICE-DOCUMENTAZIONE.md": {
+    "mtime": 1793100770.140042,
+    "seen": 1793136643.3290954,
+    "ast_hash": "2ecb387dfef0357d052c07ed447eadfd",
+    "semantic_hash": ""
+  },
+  "docs/PIANO-IOS-M2.md": {
+    "mtime": 1793100819.3161151,
+    "seen": 1793136643.3291028,
+    "ast_hash": "84a6710b48975085e3d905885fb3c114",
+    "semantic_hash": ""
+  },
+  "docs/PROSSIMA-SESSIONE.md": {
+    "mtime": 1793100668.71501,
+    "seen": 1793136643.329106,
+    "ast_hash": "fcdbde94b9727101fdcbea2b4701a2f1",
+    "semantic_hash": ""
+  },
+  "docs/STATO-IOS.md": {
+    "mtime": 1793100668.7100098,
+    "seen": 1793136643.3291092,
+    "ast_hash": "bfd589a501e8eaa4076965d6568e288a",
+    "semantic_hash": ""
+  },
+  "docs/evidence/ios-network-recovery-2026-10-27.md": {
+    "mtime": 1793136641.3131618,
+    "seen": 1793136643.329114,
+    "ast_hash": "2d7de028122f2e1eb5edbc99219b5c47",
     "semantic_hash": ""
   }
 }

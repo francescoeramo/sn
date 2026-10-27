@@ -345,6 +345,13 @@ final class AuthCoordinator: ObservableObject {
             return
         } catch {
             guard requestEpoch == epoch else { return }
+            // A superseded read must not overwrite the successful publication's state.
+            // Definitive session failures still take priority over a queued refresh.
+            if (error as? APIError)?.isDefinitiveSessionFailure != true,
+               requestGeneration != profileGeneration {
+                profileRefreshPending = true
+                return
+            }
             profileError = ErrorMessages.message(for: (error as? APIError) ?? .transport)
             handleFeedError(error)
         }
