@@ -1,7 +1,7 @@
 # Graph Report - sn  (2026-10-27)
 
 ## Corpus Check
-- 212 files · ~165,116 words
+- 213 files · ~165,387 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 11 file(s) not represented in the graph (top: (none) 5, .resolved 2, .example 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `e4dd9284`
+- Built from commit: `83d7e466`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -146,16 +146,16 @@
 10. `APIError` - 29 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `Modifiche al workflow` --references--> `body()`  [INFERRED]
-  docs/OPENCODE.md → app/api/[...path]/route.ts
-- `4.8 Modifiche server` --references--> `sameOrigin()`  [INFERRED]
-  docs/PIANO-APP-NATIVA.md → app/api/[...path]/route.ts
 - `Interfaccia e dati` --references--> `SocialApp()`  [INFERRED]
   docs/MANUALE-PROGETTO.md → components/social-app.tsx
-- `4.6 Logout e revoca (F2, F4)` --references--> `AuthCoordinator`  [INFERRED]
-  docs/PIANO-APP-NATIVA.md → ios/SN/Auth/AuthCoordinator.swift
+- `Server e autenticazione` --references--> `adminDatabase()`  [INFERRED]
+  docs/MANUALE-PROGETTO.md → lib/server/supabase.ts
+- `Ban degli account (15 ottobre 2026)` --references--> `authenticated()`  [INFERRED]
+  docs/MANUALE-PROGETTO.md → lib/server/supabase.ts
 - `4.10 Modelli M0 (R5)` --references--> `LoginRequest`  [INFERRED]
   docs/PIANO-APP-NATIVA.md → ios/SN/Models/Session.swift
+- `Automazione ripetibile` --references--> `APIClient`  [INFERRED]
+  docs/IOS-M1-VERIFICA.md → ios/SN/Networking/APIClient.swift
 
 ## Import Cycles
 - None detected.
@@ -503,7 +503,7 @@ Cohesion: 0.33
 Nodes (6): Automazione ripetibile, Collaudo M1 su iPhone — 24 ottobre 2026, Difetto riprodotto e corretto, Limiti ancora aperti, Perimetro ed evidenze, Ripresa automatizzata del 26 ottobre
 
 ## Knowledge Gaps
-- **82 isolated node(s):** `CryptoKit`, `Crypto`, `invalidPacket`, `missingKey`, `expired` (+77 more)
+- **82 isolated node(s):** `.canPublish`, `.hasChanges`, `.warning`, `Combine`, `ImageIO` (+77 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 802 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 - **61 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -511,15 +511,15 @@ Nodes (6): Automazione ripetibile, Collaudo M1 su iPhone — 24 ottobre 2026, Di
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `4.12 Ordine di esecuzione` connect `ApiError` to `SN — Piano app nativa iOS (SwiftUI)`, `CodingKeys`, `TokenPair`, `AuthCoordinator`?**
-  _High betweenness centrality (0.173) - this node is a cross-community bridge._
+  _High betweenness centrality (0.164) - this node is a cross-community bridge._
 - **Are the 43 inferred relationships involving `AuthCoordinator` (e.g. with `4.12 Ordine di esecuzione` and `4.6 Logout e revoca (F2, F4)`) actually correct?**
   _`AuthCoordinator` has 43 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `CryptoKit`, `Crypto`, `invalidPacket` to the rest of the system?**
+- **What connects `.canPublish`, `.hasChanges`, `.warning` to the rest of the system?**
   _82 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `api/[...path]/route.ts` be split into smaller, more focused modules?**
   _Cohesion score 0.14789915966386555 - nodes in this community are weakly interconnected._
 - **Why does `AuthCoordinator` connect `AuthCoordinator` to `.probe`, `M1HTTPFixture`, `TokenPair`, `SNApp`, `MemoryTokenStore`, `SN — Piano app nativa iOS (SwiftUI)`, `FeedPost`, `ComposePostView`, `View`, `Data`, `Foundation`, `FeedView.swift`, `ApiError`, `MockAPI`?**
-  _High betweenness centrality (0.168) - this node is a cross-community bridge._
+  _High betweenness centrality (0.158) - this node is a cross-community bridge._
 - **Are the 35 inferred relationships involving `MockAPI` (e.g. with `.testAmbiguousPublicationIsNotAutomaticallyRetried()` and `.testCachedImageDoesNotPretendConnectionRecovered()`) actually correct?**
   _`MockAPI` has 35 INFERRED edges - model-reasoned connections that need verification._
 - **Should `rules.ts` be split into smaller, more focused modules?**
