@@ -475,7 +475,11 @@ final class AuthCoordinator: ObservableObject {
             guard requestEpoch == epoch else { throw CancellationError() }
             return result
         } catch let error as APIError where error.isUnauthorized {
+            try Task.checkCancellation()
             let pair = try await performRefresh(expectedEpoch: requestEpoch)
+            // Cancelling one reader must not cancel the refresh shared by the session,
+            // but it must prevent that reader from issuing its follow-up request.
+            try Task.checkCancellation()
             let result = try await operation(pair.accessToken)
             guard requestEpoch == epoch else { throw CancellationError() }
             return result

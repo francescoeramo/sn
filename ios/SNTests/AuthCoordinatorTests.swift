@@ -994,4 +994,28 @@ final class AuthCoordinatorTests: XCTestCase {
         XCTAssertEqual(reads, 1)
     }
 
+    func testCancelledProfileReadDoesNotRetryAfterSharedRefresh() async {
+        let api = MockAPI()
+        await api.setBootstrapResult(.success(bootstrap()))
+        await api.setProfilePostsResult(.failure(.unauthorized(code: nil)))
+        await api.setRefreshResult(.success(tokens()))
+        await api.suspendRefresh()
+        let store = MemoryTokenStore()
+        store.tokens = tokens()
+        let coordinator = AuthCoordinator(api: api, store: store)
+        await coordinator.restore()
+        let loading = Task { await coordinator.loadProfile() }
+        await api.waitForRefresh()
+        loading.cancel()
+        await api.setProfilePostsResult(.success(ProfilePostsPage(posts: [post("cancelled")], nextCursor: nil)))
+        await api.releaseRefresh()
+        await loading.value
+        let reads = await api.profileCursors.count
+        XCTAssertEqual(reads, 1, "A cancelled reader must not issue a second HTTP request")
+        XCTAssertTrue(coordinator.profilePosts.isEmpty)
+        XCTAssertFalse(coordinator.isLoadingProfile)
+        XCTAssertNil(coordinator.profileError)
+        XCTAssertNotNil(store.tokens, "The shared refresh remains valid for the session")
+    }
+
 }

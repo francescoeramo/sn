@@ -234,9 +234,9 @@
     "semantic_hash": ""
   },
   "ios/SN/Auth/AuthCoordinator.swift": {
-    "mtime": 1793097735.9529796,
-    "seen": 1793097880.789335,
-    "ast_hash": "0e0343f629d7eb34b75230bc2de529de",
+    "mtime": 1793137140.0366035,
+    "seen": 1793137188.1345456,
+    "ast_hash": "2bea51c5237c85dd555924b8aea44cfd",
     "semantic_hash": ""
   },
   "ios/SN/Auth/TokenStore.swift": {
@@ -294,9 +294,9 @@
     "semantic_hash": ""
   },
   "ios/SNTests/AuthCoordinatorTests.swift": {
-    "mtime": 1793136543.5348196,
-    "seen": 1793136643.3289254,
-    "ast_hash": "14094ded82568691f1de6c49e9cc4aa8",
+    "mtime": 1793137122.9779663,
+    "seen": 1793137188.134571,
+    "ast_hash": "f9aeabc3b10ba579c817b5b7fb580221",
     "semantic_hash": ""
   },
   "ios/SNTests/MockAPI.swift": {
@@ -1410,15 +1410,21 @@
     "semantic_hash": ""
   },
   "docs/STATO-IOS.md": {
-    "mtime": 1793100668.7100098,
-    "seen": 1793136643.3291092,
-    "ast_hash": "bfd589a501e8eaa4076965d6568e288a",
+    "mtime": 1793137170.5272908,
+    "seen": 1793137188.1347528,
+    "ast_hash": "46f6a591cb2dfbb6bcdc2efe61af7941",
     "semantic_hash": ""
   },
   "docs/evidence/ios-network-recovery-2026-10-27.md": {
     "mtime": 1793136641.3131618,
     "seen": 1793136643.329114,
     "ast_hash": "2d7de028122f2e1eb5edbc99219b5c47",
+    "semantic_hash": ""
+  },
+  "docs/evidence/ios-m1-profile-race-2026-10-27.md": {
+    "mtime": 1793137186.6387944,
+    "seen": 1793137202.6841784,
+    "ast_hash": "ae70d65d6c3192699a4cd347c8815e8c",
     "semantic_hash": ""
   }
 }
