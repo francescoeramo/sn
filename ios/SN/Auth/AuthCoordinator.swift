@@ -140,6 +140,10 @@ final class AuthCoordinator: ObservableObject {
 
     func verifyMfa(code: String) async {
         guard !isAuthenticating else { return }
+        guard let code = MfaCode.normalized(code) else {
+            lastErrorMessage = ErrorMessages.message(for: .server(status: 400, message: "", code: "mfa_invalid"))
+            return
+        }
         isAuthenticating = true
         defer { isAuthenticating = false }
         let requestEpoch = epoch

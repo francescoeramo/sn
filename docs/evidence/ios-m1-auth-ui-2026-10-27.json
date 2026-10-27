@@ -1,0 +1,29 @@
+{
+  "status": "passed",
+  "scope": "Synthetic SN auth screens; no input or AX traversal",
+  "checks": [
+    {
+      "screen": "login",
+      "appearance": "dark",
+      "passed": true
+    },
+    {
+      "screen": "login",
+      "appearance": "light",
+      "passed": true
+    },
+    {
+      "screen": "mfa",
+      "appearance": "dark",
+      "passed": true
+    },
+    {
+      "screen": "mfa",
+      "appearance": "light",
+      "passed": true
+    }
+  ],
+  "normal_launch_restored": true,
+  "settings_restored": true,
+  "verification": "Screens captured from physical iPhone and visually inspected; not a full VoiceOver or accessibility audit."
+}

@@ -125,3 +125,12 @@ struct Bootstrap: Decodable, Sendable {
         case me, posts, profiles, nextCursor, nextPostId, circlePosts, follows
     }
 }
+
+/// Input formatting only; the server remains responsible for verifying the code.
+enum MfaCode {
+    static func normalized(_ raw: String) -> String? {
+        let code = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard code.utf8.count == 6, code.utf8.allSatisfy({ (48...57).contains($0) }) else { return nil }
+        return code
+    }
+}

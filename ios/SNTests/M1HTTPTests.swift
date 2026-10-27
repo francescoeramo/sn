@@ -4,6 +4,26 @@ import XCTest
 
 @MainActor
 final class M1HTTPTests: XCTestCase {
+    func testSyntheticLoginMfaAndCancellationUseOnlyFixtureHTTP() async {
+        let coordinator = M1HTTPFixture.coordinator(screen: "login")
+        await coordinator.restore()
+        XCTAssertEqual(coordinator.state, .signedOut)
+        await coordinator.login(email: "fixture@example.invalid", password: "fixture")
+        XCTAssertEqual(coordinator.state, .mfaRequired(factorId: "fixture-factor"))
+        XCTAssertTrue(coordinator.feed.isEmpty)
+        await coordinator.verifyMfa(code: "123456")
+        XCTAssertEqual(coordinator.homePosts.count, 40)
+        XCTAssertTrue(M1HTTPFixture.control.validRequests)
+        XCTAssertEqual(M1HTTPFixture.control.requests,
+                       ["/api/native/auth/login", "/api/native/auth/mfa", "/api/bootstrap"])
+        let pending = M1HTTPFixture.coordinator(screen: "mfa")
+        await pending.restore()
+        XCTAssertEqual(pending.state, .mfaRequired(factorId: "fixture-factor"))
+        await pending.logout()
+        XCTAssertEqual(pending.state, .signedOut)
+        XCTAssertEqual(M1HTTPFixture.control.requests, ["/api/native/auth/logout"])
+    }
+
     func testMalformedBootstrapPreservesSessionAndFeedWithoutClaimingNoConnection() async {
         M1HTTPFixture.control.reset()
         let store = MemoryTokenStore()

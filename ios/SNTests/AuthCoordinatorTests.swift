@@ -103,6 +103,46 @@ final class AuthCoordinatorTests: XCTestCase {
         XCTAssertNotNil(store.tokens)
     }
 
+    func testMfaInputAcceptsPastedCodeAndRejectsOtherCharactersWithoutRequest() async {
+        let api = MockAPI()
+        let store = MemoryTokenStore()
+        await api.setLoginResult(.success(loginResponse(tokens(), mfa: true)))
+        let coordinator = AuthCoordinator(api: api, store: store)
+        await coordinator.login(email: "fixture@example.invalid", password: "fixture")
+        for invalid in ["", "12345", "1234567", "123 456", "abcdef", "１２３４５６", "١٢٣٤٥٦"] {
+            await coordinator.verifyMfa(code: invalid)
+        }
+        let invalidRequests = await api.mfaCount
+        XCTAssertEqual(invalidRequests, 0)
+        XCTAssertEqual(coordinator.state, .mfaRequired(factorId: "fixture-factor"))
+        XCTAssertNotNil(store.tokens)
+        XCTAssertEqual(MfaCode.normalized(" \n123456\t"), "123456")
+        await api.setMfaResult(.success(tokens()))
+        await api.setBootstrapResult(.success(bootstrap()))
+        await coordinator.verifyMfa(code: " 123456 ")
+        let requests = await api.mfaCount
+        XCTAssertEqual(requests, 1)
+        XCTAssertEqual(coordinator.state, .signedIn(me: bootstrap().me))
+    }
+
+    func testCancellingRestoredMfaClearsStoredChallengeAndRevokesSession() async {
+        let api = MockAPI()
+        let store = MemoryTokenStore()
+        var pair = tokens()
+        pair.pendingMfaFactorId = "fixture-factor"
+        store.tokens = pair
+        let coordinator = AuthCoordinator(api: api, store: store)
+        await coordinator.restore()
+        await coordinator.logout()
+        XCTAssertEqual(coordinator.state, .signedOut)
+        XCTAssertNil(store.tokens)
+        let revoked = await api.logoutTokens
+        XCTAssertEqual(revoked, [pair.accessToken])
+        let reopened = AuthCoordinator(api: api, store: store)
+        await reopened.restore()
+        XCTAssertEqual(reopened.state, .signedOut)
+    }
+
     func testPendingMfaSurvivesStorageRoundTripAndRelaunch() async throws {
         let api = MockAPI()
         await api.setLoginResult(.success(loginResponse(tokens(), mfa: true)))

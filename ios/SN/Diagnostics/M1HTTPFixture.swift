@@ -11,9 +11,9 @@ final class M1HTTPFixture: URLProtocol, @unchecked Sendable {
     static let control = Control()
 
     @MainActor
-    static func coordinator() -> AuthCoordinator {
+    static func coordinator(screen: String? = nil) -> AuthCoordinator {
         control.reset()
-        let store = FixtureStore()
+        let store = FixtureStore(screen: screen)
         let defaults = UserDefaults(suiteName: "it.sn.m1-fixture")!
         defaults.removePersistentDomain(forName: "it.sn.m1-fixture")
         return AuthCoordinator(api: client(), store: store, defaults: defaults)
@@ -22,6 +22,10 @@ final class M1HTTPFixture: URLProtocol, @unchecked Sendable {
     private final class FixtureStore: TokenStore {
         var tokens: TokenPair? = TokenPair(accessToken: "m1-fixture", refreshToken: "fixture-refresh",
             expiresAt: Int(Date().timeIntervalSince1970) + 3600, tokenType: "bearer")
+        init(screen: String?) {
+            if screen == "login" { tokens = nil }
+            if screen == "mfa" { tokens?.pendingMfaFactorId = "fixture-factor" }
+        }
         func load() -> TokenPair? { tokens }
         func save(_ value: TokenPair) throws { tokens = value }
         func clear() { tokens = nil }
@@ -43,7 +47,8 @@ final class M1HTTPFixture: URLProtocol, @unchecked Sendable {
         func receive(_ request: URLRequest) throws {
             try lock.withLock {
                 paths.append(request.url!.path + (request.url!.query.map { "?" + $0 } ?? ""))
-                contractValid = contractValid && request.value(forHTTPHeaderField: "Authorization") == "Bearer m1-fixture"
+                let expectedBearer = request.url?.path == "/api/native/auth/login" ? nil : "Bearer m1-fixture"
+                contractValid = contractValid && request.value(forHTTPHeaderField: "Authorization") == expectedBearer
                     && !request.httpShouldHandleCookies && request.cachePolicy == .reloadIgnoringLocalCacheData
                 if disconnected { throw URLError(.notConnectedToInternet) }
             }
@@ -89,7 +94,14 @@ final class M1HTTPFixture: URLProtocol, @unchecked Sendable {
             else if params["before"] != nil { rows = [] } // Legacy timestamp-only cursor skips ties.
             let page = Array(rows.prefix(40))
             var payload: [String: Any]
-            if url.path == "/api/bootstrap" {
+            if url.path == "/api/native/auth/login" || url.path == "/api/native/auth/mfa" {
+                payload = ["access_token": "m1-fixture", "refresh_token": "fixture-refresh",
+                    "expires_at": Int(Date().timeIntervalSince1970) + 3600, "token_type": "bearer"]
+                if url.path == "/api/native/auth/login" {
+                    payload["mfa_required"] = true
+                    payload["factor_id"] = "fixture-factor"
+                }
+            } else if url.path == "/api/bootstrap" {
                 payload = ["user_id": Self.userId,
                     "me": ["id": Self.userId, "username": "collaudo", "display_name": "Collaudo M1"],
                     "profiles": [["id": Self.userId, "username": "collaudo", "display_name": "Collaudo M1", "bio": "Dati sintetici locali"]],

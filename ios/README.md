@@ -2,6 +2,23 @@
 
 ## Consolidamento del 27 ottobre 2026
 
+### MFA: uscita, incolla e collaudo UI senza dati personali
+
+La verifica in attesa offre «Torna all’accesso» con revoca standard e pulizia
+del marcatore locale. Il codice accetta sei cifre ASCII e spazi esterni da incolla;
+formati incompleti/non numerici non generano richieste. Il server verifica sempre
+il codice. 49 XCTest Linux, contratti, test server, typecheck/lint e build Darwin
+superati; installazione USB Verifying 100%.
+
+Fixture DEBUG login/MFA solo in memoria con trasporto riservato `.invalid`.
+`scripts/check-ios-auth-ui.py` (Python pymobiledevice3) cattura quattro schermate
+sintetiche chiare/scure, conferma marker e stato reale via OCR e ripristina tema,
+testo e avvio normale. Nessun input, attraversamento AX o accesso alla galleria.
+Catture ispezionate; rapporto `docs/evidence/ios-m1-auth-ui-2026-10-27.json`.
+Non equivale all’ascolto VoiceOver o al collaudo MFA di un account reale.
+Il marker DEBUG di stato evita di usare placeholder a basso contrasto come
+segnale OCR; le catture restano escluse da Git.
+
 ### Nuovo accesso durante una lettura precedente
 
 Il logout libera immediatamente gli stati di caricamento feed/paginazione.
