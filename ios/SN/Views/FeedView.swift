@@ -180,6 +180,31 @@ private struct PrivatePostImage: View {
 }
 
 enum PhotoPreparation {
+    enum PreparationError: Error { case invalidImage }
+
+    /// Decode/re-encode away from SwiftUI's actor; only immutable JPEG bytes cross back.
+    static func prepareJPEG(data: Data) async throws -> Data {
+        try Task.checkCancellation()
+        guard data.count <= 32 * 1024 * 1024 else { throw PreparationError.invalidImage }
+        let worker = Task.detached(priority: .userInitiated) {
+            try Task.checkCancellation()
+            guard let image = thumbnail(data: data),
+                  let jpeg = image.jpegData(compressionQuality: 0.8),
+                  jpeg.count <= 3 * 1024 * 1024 else {
+                throw PreparationError.invalidImage
+            }
+            try Task.checkCancellation()
+            return jpeg
+        }
+        return try await withTaskCancellationHandler {
+            let jpeg = try await worker.value
+            try Task.checkCancellation()
+            return jpeg
+        } onCancel: {
+            worker.cancel()
+        }
+    }
+
     static func thumbnail(data: Data) -> UIImage? {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil),
               let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, [

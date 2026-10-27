@@ -101,20 +101,16 @@ struct ComposePostView: View {
 
     private func preparePhoto(_ selected: PhotosPickerItem, revision: Int) async {
         do {
-            guard let data = try await selected.loadTransferable(type: Data.self), data.count <= 32 * 1024 * 1024,
-                  let image = PhotoPreparation.thumbnail(data: data),
-                  let result = image.jpegData(compressionQuality: 0.8), result.count <= 3 * 1024 * 1024 else {
-                if draft.finishPhoto(nil, revision: revision) {
-                    error = "Non riesco a preparare questa foto entro 3 MB. Scegline un’altra."
-                }
-                return
+            guard let data = try await selected.loadTransferable(type: Data.self) else {
+                throw PhotoPreparation.PreparationError.invalidImage
             }
+            let result = try await PhotoPreparation.prepareJPEG(data: data)
             try Task.checkCancellation()
             draft.finishPhoto(result, revision: revision)
         } catch {
             guard !Task.isCancelled else { return }
             if draft.finishPhoto(nil, revision: revision) {
-                self.error = "Impossibile aprire la foto. Riprova a selezionarla."
+                self.error = "Non riesco a preparare questa foto entro 3 MB. Scegline un’altra."
             }
         }
     }

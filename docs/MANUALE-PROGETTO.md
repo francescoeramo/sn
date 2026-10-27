@@ -2,6 +2,16 @@
 
 ## Consolidamento del 27 ottobre 2026
 
+### Preparazione foto fuori dall’interfaccia
+
+Ridimensionamento e ricodifica JPEG ora avvengono in un task separato;
+solo i byte JPEG ritornano al composer. La cancellazione si propaga al worker
+e una selezione superata continua a essere scartata tramite revisione.
+Limiti invariati: sorgente 32 MiB, lato massimo 1600, JPEG 3 MiB senza
+metadati originali. 49 XCTest Linux e build Darwin superati.
+Aggiunti controlli iPhone per dati non immagine e preparazione cancellata;
+la loro esecuzione resta da registrare dopo installazione verificata.
+
 ### MFA: uscita, incolla e collaudo UI senza dati personali
 
 La verifica in attesa offre «Torna all’accesso» con revoca standard e pulizia

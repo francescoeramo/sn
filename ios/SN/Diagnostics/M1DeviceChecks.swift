@@ -53,11 +53,26 @@ enum M1DeviceChecks {
             UIColor.systemBlue.setFill()
             context.fill(CGRect(x: 0, y: 0, width: 3200, height: 2000))
         }
-        if let original = image.jpegData(compressionQuality: 0.9),
-           let prepared = PhotoPreparation.thumbnail(data: original),
-           let jpeg = prepared.jpegData(compressionQuality: 0.8) {
-            record("photo_resized_1600_and_under_3MiB", max(prepared.size.width, prepared.size.height) <= 1600 && jpeg.count <= 3 * 1024 * 1024)
+        if let original = image.jpegData(compressionQuality: 0.9) {
+            do {
+                let jpeg = try await PhotoPreparation.prepareJPEG(data: original)
+                let prepared = UIImage(data: jpeg)
+                record("photo_resized_1600_and_under_3MiB", prepared.map {
+                    max($0.size.width * $0.scale, $0.size.height * $0.scale) <= 1600
+                } == true && jpeg.count <= 3 * 1024 * 1024)
+            } catch { record("photo_resized_1600_and_under_3MiB", false) }
+            let cancelled = Task { try await PhotoPreparation.prepareJPEG(data: original) }
+            cancelled.cancel()
+            do {
+                _ = try await cancelled.value
+                record("cancelled_photo_preparation_has_no_result", false)
+            } catch is CancellationError { record("cancelled_photo_preparation_has_no_result", true) }
+            catch { record("cancelled_photo_preparation_has_no_result", false) }
         } else { record("photo_resized_1600_and_under_3MiB", false) }
+        do {
+            _ = try await PhotoPreparation.prepareJPEG(data: Data([1, 2, 3]))
+            record("invalid_photo_bytes_rejected", false)
+        } catch { record("invalid_photo_bytes_rejected", true) }
 
         let store = KeychainTokenStore(service: "it.sn.app.m1-verification", account: UUID().uuidString)
         defer { store.clear() }
