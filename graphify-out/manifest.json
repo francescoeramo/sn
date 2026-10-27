@@ -924,9 +924,9 @@
     "semantic_hash": ""
   },
   "docs/MANUALE-PROGETTO.md": {
-    "mtime": 1793098750.7170315,
-    "seen": 1793098752.6757913,
-    "ast_hash": "66ced4d180edc2cd0607e7df06993133",
+    "mtime": 1793099642.5911376,
+    "seen": 1793099644.6611412,
+    "ast_hash": "af26e5655843ad316937ca1f0636cc40",
     "semantic_hash": ""
   },
   "docs/PIANO-APP-NATIVA.md": {
@@ -966,9 +966,9 @@
     "semantic_hash": ""
   },
   "ios/README.md": {
-    "mtime": 1793098750.7168322,
-    "seen": 1793098752.6758,
-    "ast_hash": "85521014aa4ada415c6ca1f6e0fa37a1",
+    "mtime": 1793099642.590204,
+    "seen": 1793099644.6611516,
+    "ast_hash": "6d28acf14febe1295d8232c3585adfbb",
     "semantic_hash": ""
   },
   "ios/project.yml": {
@@ -1386,9 +1386,9 @@
     "semantic_hash": ""
   },
   "docs/evidence/ios-m1-content-warning-2026-10-27.json": {
-    "mtime": 1793098750.7166445,
-    "seen": 1793098752.6756396,
-    "ast_hash": "a4325b10951f5f73fbeff19293f8dec7",
+    "mtime": 1793099642.589899,
+    "seen": 1793099644.6609123,
+    "ast_hash": "1b7fb2ae6e25d96fa0ed3d4882b9ba1b",
     "semantic_hash": ""
   }
 }

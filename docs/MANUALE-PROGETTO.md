@@ -2,6 +2,22 @@
 
 ## Consolidamento del 27 ottobre 2026
 
+### Riprova finale riuscita — installazione e avvisi
+
+La build finale del pulsante 44pt è ora installata: `xtool dev run --usb`,
+Verifying 100%, exit 0. Ventotto controlli interni e sei controlli UI
+Mostra/Nascondi in chiaro/scuro superati sull’iPhone. Impostazioni e avvio normale
+ripristinati automaticamente. Superato il precedente limite di installazione;
+rapporto aggiornato in `docs/evidence/ios-m1-content-warning-2026-10-27.json`.
+
+Prima della riprova: connessione Apple chiusa durante lettura certificati;
+poi trovato `usbmuxd` failed/core-dump. Riavviato il servizio, telefono nuovamente
+rilevato, installazione completata senza modificare toolchain o account.
+Non è una diagnosi della causa del crash. Wi-Fi autorizzato dall’utente per
+provisioning/push dopo disattivazione dell’hotspot; installazione e prove via USB.
+Backend ed endpoint dell’app conservati sull’hotspot, nessuno spostamento sulla
+rete Wi-Fi. Picker e ascolto VoiceOver restano distinti da queste fixture.
+
 ### Avvisi: rivelazione reversibile e prova automatica
 
 I post con avviso offrono ora Mostra/Nascondi contenuto; l’avviso resta leggibile
@@ -15,7 +31,7 @@ contenuto personale o post cloud. Impostazioni e avvio normale ripristinati.
 Il comando M1 con --auth-ui include anche questa prova; cinque contratti runner,
 56 XCTest Linux e build Darwin superati. CI del bootstrap nativo verde.
 
-Limite dell’ultimo passaggio: Mostra/Nascondi è verificato sulla build installata;
+Limite del tentativo precedente (superato dalla riprova sopra): Mostra/Nascondi è verificato sulla build installata;
 il successivo spostamento della frame 44pt dentro l’etichetta è compilato, ma
 l’installer è rimasto al trasferimento 100% senza Verifying. Interrotto senza
 attestare l’installazione finale. Rapporto:

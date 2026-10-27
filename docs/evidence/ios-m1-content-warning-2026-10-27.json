@@ -43,7 +43,135 @@
   ],
   "normal_launch_restored": true,
   "settings_restored": true,
-  "final_build": "passed; 44pt frame moved inside the button label",
-  "last_installer_verification": "not_confirmed; transfer reached 100% without Verifying, then intentionally interrupted",
-  "limitation": "Show/hide gestures verified on the preceding installed build; last hit-area placement compiled but not separately rechecked by UI gestures."
+  "final_build": "passed; final 44pt button label build installed and exercised",
+  "limitation": "Synthetic local diagnostics and warning UI only; picker, real account flows and full VoiceOver audit remain separate.",
+  "previous_installer_verification": "not_confirmed; transfer reached 100% without Verifying, then intentionally interrupted",
+  "installation": {
+    "method": "xtool dev run --usb",
+    "verified_percent": 100,
+    "exit_code": 0,
+    "source_commit": "0b004a1",
+    "network": "Wi-Fi for Apple provisioning and Git push; installation over USB",
+    "backend_reconfigured": false
+  },
+  "internal_diagnostics": {
+    "status": "passed",
+    "scope": "SN internal synthetic diagnostics only",
+    "checks": [
+      {
+        "name": "feed_first_40",
+        "passed": true
+      },
+      {
+        "name": "feed_second_80_same_timestamp",
+        "passed": true
+      },
+      {
+        "name": "feed_third_85_unique",
+        "passed": true
+      },
+      {
+        "name": "feed_terminal_no_more_requests",
+        "passed": true
+      },
+      {
+        "name": "profile_first_40_independent",
+        "passed": true
+      },
+      {
+        "name": "profile_second_80_same_timestamp",
+        "passed": true
+      },
+      {
+        "name": "profile_third_85_terminal",
+        "passed": true
+      },
+      {
+        "name": "offline_keeps_session_and_posts",
+        "passed": true
+      },
+      {
+        "name": "foreground_automatic_recovery",
+        "passed": true
+      },
+      {
+        "name": "http_bearer_no_cookies_no_cache",
+        "passed": true
+      },
+      {
+        "name": "late_photo_does_not_unlock_publish",
+        "passed": true
+      },
+      {
+        "name": "remove_photo_clears_media_upload_alt",
+        "passed": true
+      },
+      {
+        "name": "warning_160_utf16_allowed",
+        "passed": true
+      },
+      {
+        "name": "warning_over_160_utf16_rejected",
+        "passed": true
+      },
+      {
+        "name": "photo_resized_1600_and_under_3MiB",
+        "passed": true
+      },
+      {
+        "name": "cancelled_photo_preparation_has_no_result",
+        "passed": true
+      },
+      {
+        "name": "invalid_photo_bytes_rejected",
+        "passed": true
+      },
+      {
+        "name": "isolated_keychain_roundtrip",
+        "passed": true
+      },
+      {
+        "name": "isolated_keychain_update_preserves_mfa",
+        "passed": true
+      },
+      {
+        "name": "isolated_keychain_rotation_clears_pending_mfa",
+        "passed": true
+      },
+      {
+        "name": "isolated_keychain_clear",
+        "passed": true
+      },
+      {
+        "name": "logout_clears_feed_profile",
+        "passed": true
+      },
+      {
+        "name": "restored_mfa_keeps_feed_closed",
+        "passed": true
+      },
+      {
+        "name": "pasted_mfa_code_opens_fixture_feed",
+        "passed": true
+      },
+      {
+        "name": "mfa_logout_returns_to_login",
+        "passed": true
+      },
+      {
+        "name": "storage_failure_keeps_memory_session",
+        "passed": true
+      },
+      {
+        "name": "storage_retry_never_sends_auth_requests",
+        "passed": true
+      },
+      {
+        "name": "logout_clears_storage_warning",
+        "passed": true
+      }
+    ],
+    "normal_launch_restored": true
+  },
+  "usb_service_recovery": "usbmuxd was failed/core-dump; service restarted and USB iPhone rediscovered. Crash cause not diagnosed."
 }
