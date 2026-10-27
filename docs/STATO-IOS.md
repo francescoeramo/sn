@@ -1,6 +1,17 @@
 # Stato iOS — punto di riferimento per le sessioni
 
-Aggiornamento: **27 ottobre 2026, sera**. M1 chiusa per la tappa di sviluppo: picker e VoiceOver confermati,
+Aggiornamento: **27 ottobre 2026, fine sessione**.
+
+## Accettazione del proprietario — 27 ottobre 2026, fine sessione
+
+Il proprietario ha chiesto: «consideralo funzionante, aggiorna i file .md, i push e fermati».
+M2.1 è quindi accettata come funzionante per proseguire lo sviluppo. Questa è
+un’accettazione esplicita del proprietario: non attesta un nuovo ascolto VoiceOver,
+un nuovo audit o una nuova esecuzione dei test. Il rapporto tecnico conserva i
+limiti originali. Sessione fermata dopo aggiornamento documentale e push.
+Prossimo incremento alla ripresa: **M2.2 — pubblicazione storie foto**.
+
+ M1 chiusa per la tappa di sviluppo: picker e VoiceOver confermati,
 contrasto corretto e Dynamic Type massimo verificato su iPhone. Non è un audit
 di accessibilità certificato o un rilascio pubblico.
 
@@ -11,7 +22,7 @@ di accessibilità certificato o un rilascio pubblico.
 | M0 — sessione | Funzionante su iPhone | Login, MFA, rinnovo, logout/riapertura e recupero offline confermati; le singole conferme non certificano tutta la matrice tecnica |
 | M0.5 — crypto 1:1 | Completata | Rapporto CryptoKit/Web Crypto del 15 ottobre: 35 controlli, tre dispositivi e allegato; nessuna chat UI o trasferimento storico impliciti |
 | M1 — feed, profilo e foto | Chiusa per la tappa di sviluppo | Feed e archivio proprio paginati, pubblicazione con una foto, avvisi e recupero sessione; evidenze di accettazione sotto |
-| M2 — storie native | M2.1: lettura e player foto implementati; collaudo accessibilità del player aperto | [Piano M2](PIANO-IOS-M2.md), lettura indipendente e player foto; pubblicazione, video e ricevute native da sviluppare |
+| M2 — storie native | M2.1 accettata come funzionante dal proprietario; prossimo incremento M2.2 | [Piano M2](PIANO-IOS-M2.md), lettura indipendente e player foto; pubblicazione, video e ricevute native da sviluppare |
 | Parità completa e rilascio | Da completare | Interazioni, altri profili/modifica profilo, chat, gruppi, cerchie, eventi, registrazione/recovery e distribuzione hanno lavoro separato |
 
 ## Ultime evidenze, senza riesecuzione in questa sessione
@@ -102,6 +113,7 @@ Mostra/Nascondi, nessun prefetch oltre gli avvisi e avanzamento, chiaro/scuro.
 Testo massimo applicato con readback e ripristinato. Rapporto finale M2 in
 `docs/evidence/ios-m2-player-2026-10-27.json` (prove realmente eseguite).
 
-M2.1 non dichiarata integralmente chiusa: resta ascolto VoiceOver specifico del
-nuovo player, distinto dalla conferma M1. Nessuna storia pubblicata nel cloud.
+M2.1 accettata dal proprietario a fine sessione. L’ascolto VoiceOver del nuovo
+player non è attestato come prova eseguita: l’accettazione supera il gate per lo
+sviluppo successivo senza riscrivere il rapporto tecnico. Nessuna storia pubblicata nel cloud.
 M2.2 (composer foto), M2.3 (video) e M2.4 (ricevute/viewer) restano successivi.

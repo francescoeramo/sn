@@ -1,11 +1,23 @@
 # SN per iOS: SwiftUI e xtool
 
 <!-- sn-ios-context:start -->
-> **Stato iOS al 27 ottobre 2026:** M1 accettata per lo sviluppo: picker/VoiceOver confermati,
-> contrasto corretto e testo massimo verificato su iPhone; M2.1: lettura e player foto implementati, collaudo VoiceOver del player aperto.
-> [Stato ed evidenze](../docs/STATO-IOS.md) · [Piano M2](../docs/PIANO-IOS-M2.md) · [Ripresa sessione](../docs/PROSSIMA-SESSIONE.md).
-> Le sezioni datate conservano il loro valore storico; questa revisione documentale non aggiunge nuove prove.
+> **Stato iOS al 27 ottobre 2026:** M1 chiusa per lo sviluppo; M2.1 lettura e
+> player foto installati e accettati come funzionanti dal proprietario. Prossimo
+> incremento: M2.2 pubblicazione foto, da iniziare alla ripresa.
+> [Stato](../docs/STATO-IOS.md) · [Piano M2](../docs/PIANO-IOS-M2.md) · [Ripresa](../docs/PROSSIMA-SESSIONE.md)
+> I verbali sotto restano storici; l’accettazione non aggiunge prove automatiche o ascolti VoiceOver.
 <!-- sn-ios-context:end -->
+
+## Accettazione del proprietario — 27 ottobre 2026, fine sessione
+
+Il proprietario ha chiesto: «consideralo funzionante, aggiorna i file .md, i push e fermati».
+M2.1 è quindi accettata come funzionante per proseguire lo sviluppo. Questa è
+un’accettazione esplicita del proprietario: non attesta un nuovo ascolto VoiceOver,
+un nuovo audit o una nuova esecuzione dei test. Il rapporto tecnico conserva i
+limiti originali. Sessione fermata dopo aggiornamento documentale e push.
+Prossimo incremento alla ripresa: **M2.2 — pubblicazione storie foto**.
+
+
 
 ## Player foto M2.1 — 27 ottobre sera
 

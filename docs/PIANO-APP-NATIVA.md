@@ -1,9 +1,16 @@
 # SN — Piano app nativa iOS (SwiftUI)
 
-> Direzione, sequenza a tappe e specifica della tappa M0. Documento di lavoro: le voci
-> marcate come "da verificare" o "decisione" NON sono acquisite. Stato 15 ottobre 2026:
-> M0 funzionale confermata dall'utente; M0.5 verificata su iPhone con CryptoKit.
-> Prossimo incremento M1. Matrice tecnica integrale e XCTest sessione restano distinti.
+<!-- sn-ios-context:start -->
+> **Stato iOS al 27 ottobre 2026:** M1 chiusa per lo sviluppo; M2.1 lettura e
+> player foto installati e accettati come funzionanti dal proprietario. Prossimo
+> incremento: M2.2 pubblicazione foto, da iniziare alla ripresa.
+> [Stato](STATO-IOS.md) · [Piano M2](PIANO-IOS-M2.md) · [Ripresa](PROSSIMA-SESSIONE.md)
+> I verbali sotto restano storici; l’accettazione non aggiunge prove automatiche o ascolti VoiceOver.
+<!-- sn-ios-context:end -->
+
+> Contratto generale e verbali storici. Stato corrente: [STATO-IOS.md](STATO-IOS.md).
+> M1 implementata/installata con gate manuali aperti; M2 storie definita in
+> [PIANO-IOS-M2.md](PIANO-IOS-M2.md), ancora da implementare.
 
 ## 1. Direzione e vincoli
 
@@ -25,8 +32,10 @@
 1. **M0** — sessione nativa verificata su iPhone: login, MFA, rinnovo, logout, token su chiamata protetta.
 2. **M0.5** — prova tecnica di cifratura (senza schermate): messaggio web ↔ iPhone in entrambe le direzioni.
 3. **M1** — prima versione funzionante: feed, profilo, pubblicazione di un post con immagine.
-4. **M2+** — storie, chat completa, gruppi, cerchie, eventi, poi parità residua; ogni blocco
-   verificato prima del successivo. Registrazione e recupero password in una tappa successiva a M0.
+4. **M2** — storie native: lettura/player foto, pubblicazione foto, video e visualizzazioni
+   private. Piano e criteri in [PIANO-IOS-M2.md](PIANO-IOS-M2.md); prima chiudere M1.
+5. **Dopo M2** — chat completa, gruppi, cerchie, eventi e parità residua; registrazione,
+   recupero password e altre interazioni richiedono incrementi dedicati. Nessuna data di rilascio acquisita.
 
 ## 3. Regole vincolanti
 
@@ -38,9 +47,9 @@
   nuovi token nel Keychain, rotazione dei refresh token gestita.
 - **R4** — Nessun retry automatico cieco. Refresh+retry solo per letture idempotenti; login, MFA e
   pubblicazione non si ripetono automaticamente.
-- **R5** — Prima versione minima: si riusa il caricamento dati esistente e lo si misura sul telefono.
-  Rimandati bootstrap ridotto, risposte iOS-specifiche, like/commenti. I modelli contengono solo
-  ciò che la risposta scelta richiede davvero.
+- **R5** — Riutilizzare il contratto minimo necessario e misurarlo sul telefono. Dal
+  27 ottobre M1 usa già il bootstrap nativo ridotto; non ampliarlo per tutti i domini
+  futuri. I modelli contengono solo i campi richiesti dalla tappa corrente.
 - **R6** — `logout()` invalida l'epoch del coordinatore: una risposta tardiva di rinnovo non deve
   far rientrare nell'account.
 - **F1** — MFA/logout/refresh nativi usano **GoTrue REST con il bearer**; niente `setSession`,

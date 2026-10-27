@@ -924,9 +924,9 @@
     "semantic_hash": ""
   },
   "docs/MANUALE-PROGETTO.md": {
-    "mtime": 1793139412.578367,
-    "seen": 1793139415.260133,
-    "ast_hash": "05a2d51824d94471c43cf6a9fef5aec4",
+    "mtime": 1793139591.479575,
+    "seen": 1793139594.2743397,
+    "ast_hash": "72250dab72fc6b9eee1c31ff157f3136",
     "semantic_hash": ""
   },
   "docs/PIANO-APP-NATIVA.md": {
@@ -966,9 +966,9 @@
     "semantic_hash": ""
   },
   "ios/README.md": {
-    "mtime": 1793139412.5802755,
-    "seen": 1793139415.2601485,
-    "ast_hash": "950c6639374be471cae5886d6c874213",
+    "mtime": 1793139591.480575,
+    "seen": 1793139594.274362,
+    "ast_hash": "6cc9347a570bc8cb3896dc47fa70d08a",
     "semantic_hash": ""
   },
   "ios/project.yml": {
@@ -1398,9 +1398,9 @@
     "semantic_hash": ""
   },
   "docs/PIANO-IOS-M2.md": {
-    "mtime": 1793139412.577126,
-    "seen": 1793139415.260136,
-    "ast_hash": "3b283325dde5af7a85d4214f466382ad",
+    "mtime": 1793139591.479286,
+    "seen": 1793139594.2743435,
+    "ast_hash": "98a56193b6f2c3df828554e85b58d95a",
     "semantic_hash": ""
   },
   "docs/PROSSIMA-SESSIONE.md": {
@@ -1410,9 +1410,9 @@
     "semantic_hash": ""
   },
   "docs/STATO-IOS.md": {
-    "mtime": 1793139412.5764894,
-    "seen": 1793139415.2601411,
-    "ast_hash": "519f34d125b4a20f751d4f3463de499d",
+    "mtime": 1793139591.47898,
+    "seen": 1793139594.274351,
+    "ast_hash": "8b26983381c51c2bbabe10ba1d832767",
     "semantic_hash": ""
   },
   "docs/evidence/ios-network-recovery-2026-10-27.md": {
@@ -1500,15 +1500,21 @@
     "semantic_hash": ""
   },
   "ios/SNTests/StoriesTests.swift": {
-    "mtime": 1793138421.809271,
-    "seen": 1793138572.553552,
-    "ast_hash": "e2912dd34c7e73a2e12e41a8b5aecd93",
+    "mtime": 1793139526.8313458,
+    "seen": 1793139594.2741466,
+    "ast_hash": "ec364b23cb373bbb400cd9f3abd6bc66",
     "semantic_hash": ""
   },
   "scripts/check-ios-m2-player.py": {
     "mtime": 1793138920.7174153,
     "seen": 1793139415.2600482,
     "ast_hash": "909822c20b93b9e0a8ded03880554d3d",
+    "semantic_hash": ""
+  },
+  "docs/evidence/ios-m2-player-2026-10-27.json": {
+    "mtime": 1793139591.478793,
+    "seen": 1793139594.2740884,
+    "ast_hash": "c711bec6864049fc2263ee4b13810321",
     "semantic_hash": ""
   }
 }

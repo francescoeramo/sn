@@ -1,5 +1,13 @@
 # Piano di continuità — profili, carousel, Home e condivisione
 
+<!-- sn-ios-context:start -->
+> **Stato iOS al 27 ottobre 2026:** M1 chiusa per lo sviluppo; M2.1 lettura e
+> player foto installati e accettati come funzionanti dal proprietario. Prossimo
+> incremento: M2.2 pubblicazione foto, da iniziare alla ripresa.
+> [Stato](STATO-IOS.md) · [Piano M2](PIANO-IOS-M2.md) · [Ripresa](PROSSIMA-SESSIONE.md)
+> I verbali sotto restano storici; l’accettazione non aggiunge prove automatiche o ascolti VoiceOver.
+<!-- sn-ios-context:end -->
+
 Richiesta del 1 ottobre 2026. Questo file conserva requisiti, decisioni e stato del lavoro.
 
 ## Obiettivi

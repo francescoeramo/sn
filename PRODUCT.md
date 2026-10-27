@@ -1,5 +1,13 @@
 # SN — Product
 
+<!-- sn-ios-context:start -->
+> **Stato iOS al 27 ottobre 2026:** M1 chiusa per lo sviluppo; M2.1 lettura e
+> player foto installati e accettati come funzionanti dal proprietario. Prossimo
+> incremento: M2.2 pubblicazione foto, da iniziare alla ripresa.
+> [Stato](docs/STATO-IOS.md) · [Piano M2](docs/PIANO-IOS-M2.md) · [Ripresa](docs/PROSSIMA-SESSIONE.md)
+> I verbali sotto restano storici; l’accettazione non aggiunge prove automatiche o ascolti VoiceOver.
+<!-- sn-ios-context:end -->
+
 <!-- impeccable:product-schema 1 -->
 
 ## Platform
@@ -128,8 +136,9 @@ Definire chi può cambiare la modalità condivisa della conversazione e la durat
 Il proprietario ha richiesto lo sviluppo del client SwiftUI nativo, senza autorizzare
 implicitamente una distribuzione pubblica. M0 funzionale è confermata dall'utente;
 M0.5 è verificata sul telefono con CryptoKit e ritorno Web Crypto (35 controlli,
-più dispositivi e allegato). Il prossimo incremento è M1: feed, profilo e un post
-con immagine. Non sono ancora presenti chat UI o moderazione nel client iOS.
+più dispositivi e allegato). M1 è ora implementata e installata con feed, profilo e un post con immagine, ma
+ha gate manuali aperti. M2 storie è pianificata; chat UI e moderazione native
+restano successive. Questo aggiornamento sostituisce il precedente prossimo passo.
 Vedi `ios/README.md`, `docs/PIANO-APP-NATIVA.md` e `docs/IOS-CRYPTO-INTEROP.md`.
 
 Supabase `sndb` è collegato con 47 migrazioni; ban di 3 giorni, 1 mese, 6 mesi,

@@ -1,5 +1,13 @@
 # Decisioni del 9 settembre 2026
 
+<!-- sn-ios-context:start -->
+> **Stato iOS al 27 ottobre 2026:** M1 chiusa per lo sviluppo; M2.1 lettura e
+> player foto installati e accettati come funzionanti dal proprietario. Prossimo
+> incremento: M2.2 pubblicazione foto, da iniziare alla ripresa.
+> [Stato](STATO-IOS.md) · [Piano M2](PIANO-IOS-M2.md) · [Ripresa](PROSSIMA-SESSIONE.md)
+> I verbali sotto restano storici; l’accettazione non aggiunge prove automatiche o ascolti VoiceOver.
+<!-- sn-ios-context:end -->
+
 1. SN è un social generalista, inizialmente per Francesco e alcuni amici. Non è una community specializzata in fotografia.
 2. Moderazione manuale. Il modello delle segnalazioni permette in futuro un supporto automatico; nessun servizio AI è necessario oggi.
 3. Il costo attuale deve restare zero. Iscrizioni e upload si fermano ai limiti; le donazioni sono una possibilità futura, senza integrazione pagamenti nell’MVP.

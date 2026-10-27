@@ -1,5 +1,13 @@
 # Verifiche
 
+<!-- sn-ios-context:start -->
+> **Stato iOS al 27 ottobre 2026:** M1 chiusa per lo sviluppo; M2.1 lettura e
+> player foto installati e accettati come funzionanti dal proprietario. Prossimo
+> incremento: M2.2 pubblicazione foto, da iniziare alla ripresa.
+> [Stato](STATO-IOS.md) · [Piano M2](PIANO-IOS-M2.md) · [Ripresa](PROSSIMA-SESSIONE.md)
+> I verbali sotto restano storici; l’accettazione non aggiunge prove automatiche o ascolti VoiceOver.
+<!-- sn-ios-context:end -->
+
 ## Eseguibili in locale
 
 Il percorso testato è: interfaccia → salvataggio IndexedDB → ricaricamento → interfaccia. I test browser coprono desktop e mobile, pubblicazione, like, commenti, ricerca, profilo, esportazione e messaggi. Controllano anche assenza di richieste a terzi dalla demo, assenza di errori JavaScript, dimensioni del viewport, rifiuto CSRF e federazione disattivata.
@@ -25,8 +33,9 @@ Queste verifiche parziali non segnano come superata l'intera checklist Auth/Stor
 
 ## Client iOS
 
-M0 funzionale confermata dall'utente. M0.5 verificata direttamente sul telefono con
-CryptoKit: [procedura](IOS-CRYPTO-INTEROP.md) e [rapporto](evidence/ios-crypto-interop-2026-10-15.json).
-Prossimo incremento M1 (feed, profilo, immagine). Restano distinti e non eseguiti gli
-XCTest sessione/SwiftUI e la matrice tecnica hardware completa. Il login MFA dopo
-la migrazione SQL è un controllo di regressione da includere durante M1.
+M0 funzionante confermata e M0.5 completata con CryptoKit. M1 è implementata e
+installata; gli XCTest Linux sessione/HTTP e le fixture device non sostituiscono
+picker manuale e audit/accessibilità con ascolto VoiceOver. I gate sono elencati
+in [STATO-IOS.md](STATO-IOS.md), i verbali in [IOS-M1-VERIFICA.md](IOS-M1-VERIFICA.md).
+M2 storie è solo pianificata: [PIANO-IOS-M2.md](PIANO-IOS-M2.md). Nessun esito
+M2 può essere attribuito alle suite o ai rapporti M1.

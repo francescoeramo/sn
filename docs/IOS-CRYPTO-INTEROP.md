@@ -1,5 +1,13 @@
 # iOS M0.5 — prova di compatibilità crittografica
 
+<!-- sn-ios-context:start -->
+> **Stato iOS al 27 ottobre 2026:** M1 chiusa per lo sviluppo; M2.1 lettura e
+> player foto installati e accettati come funzionanti dal proprietario. Prossimo
+> incremento: M2.2 pubblicazione foto, da iniziare alla ripresa.
+> [Stato](STATO-IOS.md) · [Piano M2](PIANO-IOS-M2.md) · [Ripresa](PROSSIMA-SESSIONE.md)
+> I verbali sotto restano storici; l’accettazione non aggiunge prove automatiche o ascolti VoiceOver.
+<!-- sn-ios-context:end -->
+
 Il modulo `ios/ChatCrypto` implementa il protocollo chat 1:1 v1 già utilizzato da
 `lib/crypto/chat.ts`: P-256 ECDH, HKDF-SHA-256, AES-256-GCM, JWK pubbliche,
 impronte SHA-256, chiave distinta per dispositivo e allegato. AAD mantiene l'ordine

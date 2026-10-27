@@ -1,6 +1,17 @@
 # M2 — Storie native iOS
 
-Piano del **27 ottobre 2026**. Stato: **M2.1 in corso; lettura e player foto implementati; collaudo VoiceOver del nuovo player ancora aperto**.
+## Accettazione del proprietario — 27 ottobre 2026, fine sessione
+
+Il proprietario ha chiesto: «consideralo funzionante, aggiorna i file .md, i push e fermati».
+M2.1 è quindi accettata come funzionante per proseguire lo sviluppo. Questa è
+un’accettazione esplicita del proprietario: non attesta un nuovo ascolto VoiceOver,
+un nuovo audit o una nuova esecuzione dei test. Il rapporto tecnico conserva i
+limiti originali. Sessione fermata dopo aggiornamento documentale e push.
+Prossimo incremento alla ripresa: **M2.2 — pubblicazione storie foto**.
+
+
+
+Piano del **27 ottobre 2026**. Stato: **M2.1 accettata come funzionante dal proprietario; prossimo incremento M2.2**.
 M1 accettata per lo sviluppo il 27 ottobre sera; prove nel rapporto finale.
 Questo piano non attesta il completamento del player o il rilascio.
 Riferimenti: [stato](STATO-IOS.md), [contratto nativo](PIANO-APP-NATIVA.md),
@@ -202,6 +213,6 @@ Aggiornare `STATO-IOS.md` e `ios/README.md` dopo ogni incremento.
 ## 8. Primo passo per la prossima sessione
 
 Leggere [PROSSIMA-SESSIONE.md](PROSSIMA-SESSIONE.md), controllare il diff e i gate M1.
-Dopo la chiusura M1, iniziare esclusivamente M2.1 dal contratto dati e dai test
-server. Riusare componenti standard SwiftUI e i contratti già presenti; non
-implementare contemporaneamente chat, video e nuovi domini.
+M1 chiusa e M2.1 accettata dal proprietario. Alla ripresa iniziare M2.2
+(pubblicazione foto), riusando i contratti e la preparazione media M1.
+Non iniziare video, chat o nuovi domini nello stesso incremento.

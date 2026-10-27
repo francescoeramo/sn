@@ -1,24 +1,27 @@
 # Sviluppo iOS di SN
 
-Lavora in italiano. Usa DeepSeek Flash e completa l'incarico con modifiche piccole e verificabili.
+<!-- sn-ios-context:start -->
+> **Stato iOS al 27 ottobre 2026:** M1 chiusa per lo sviluppo; M2.1 lettura e
+> player foto installati e accettati come funzionanti dal proprietario. Prossimo
+> incremento: M2.2 pubblicazione foto, da iniziare alla ripresa.
+> [Stato](../STATO-IOS.md) · [Piano M2](../PIANO-IOS-M2.md) · [Ripresa](../PROSSIMA-SESSIONE.md)
+> I verbali sotto restano storici; l’accettazione non aggiunge prove automatiche o ascolti VoiceOver.
+<!-- sn-ios-context:end -->
+
+Lavora in italiano. Usa il modello configurato nella sessione e completa l'incarico con modifiche piccole e verificabili.
 Leggi AGENTS.md e il manuale come richiesto dal repository. Per iOS carica la skill
 `sn-ios-xtool`, poi usa `ios/README.md` per comandi e stato verificato.
 
 ## Stato e incremento successivo
 
-Stato al 15 ottobre 2026: M0 funzionale confermata dall'utente e M0.5 completata su
-iPhone con CryptoKit. Evidenza: `docs/evidence/ios-crypto-interop-2026-10-15.json`
-(35 controlli, tre risposte su tre dispositivi e allegato), procedura in
-`docs/IOS-CRYPTO-INTEROP.md`. Il prossimo incremento è M1: feed, profilo e un post
-con immagine. Non ripartire da M0 o rigenerare i vettori M0.5 senza una regressione.
+Leggi [STATO-IOS.md](../STATO-IOS.md) e [PROSSIMA-SESSIONE.md](../PROSSIMA-SESSIONE.md).
+M0 è funzionante, M0.5 completata, M1 implementata e installata; restano i gate
+manuali picker/accessibilità. Le API M1 sono già bearer e gli XCTest sessione/HTTP
+Linux sono distinti dal runner Darwin/SwiftUI. Non rifare M0.5 o l'implementazione M1.
 
-Solo auth native e bootstrap supportano già bearer. Prima di collegare schermate M1,
-verifica paginazione posts, media e scritture action/upload: richiedono adapter mirati,
-con token verificato, RLS e comportamento web preservato. Non rimuovere Origin in
-blocco. Il client installato mostra Sessione, non il feed. Moderazione nativa è M2+.
-Gli XCTest sessione/SwiftUI restano non eseguiti; i due XCTest crypto Linux sono
-eseguiti. In M1 controlla anche login MFA dopo il rafforzamento SQL. Leggi lo stato
-aggiornato nel README prima di usare questo riepilogo come presupposto.
+Il [piano M2](../PIANO-IOS-M2.md) definisce storie native per incrementi.
+Le route elencate sono proposte, non API esistenti. Chiusa M1, iniziare soltanto
+M2.1 dal contratto dati/test e poi dal player foto. Chat e altri domini restano successivi.
 
 ## Metodo
 

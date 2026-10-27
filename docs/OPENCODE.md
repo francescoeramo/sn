@@ -1,5 +1,13 @@
 # OpenCode e DeepSeek Flash per SN
 
+<!-- sn-ios-context:start -->
+> **Stato iOS al 27 ottobre 2026:** M1 chiusa per lo sviluppo; M2.1 lettura e
+> player foto installati e accettati come funzionanti dal proprietario. Prossimo
+> incremento: M2.2 pubblicazione foto, da iniziare alla ripresa.
+> [Stato](STATO-IOS.md) · [Piano M2](PIANO-IOS-M2.md) · [Ripresa](PROSSIMA-SESSIONE.md)
+> I verbali sotto restano storici; l’accettazione non aggiunge prove automatiche o ascolti VoiceOver.
+<!-- sn-ios-context:end -->
+
 Configurazione aggiornata il 15 ottobre 2026 per OpenCode 2.0.29 e API dirette DeepSeek.
 La guida generale per tutti i progetti è `/home/fra/Documents/OpencodeDeepseekFunc.md`.
 Gli agenti globali build, quick, lean_plan e review si aggiungono a quelli specifici di SN.
@@ -19,10 +27,10 @@ L'agente predefinito è `sn_ios`, sul modello `deepseek/deepseek-flash`.
 Per riprendere un incremento scrivi, per esempio:
 
 ```text
-/sn-ios Inizia M1: feed cronologico, profilo e pubblicazione con una immagine.
-M0 funzionale è confermata e M0.5 è verificata con CryptoKit su iPhone.
-Leggi ios/README.md e il diff, adatta al bearer solo le API necessarie,
-preserva il comportamento web e compila con xtool. Distingui build e prova runtime.
+/sn-ios Riprendi SN iOS leggendo docs/PROSSIMA-SESSIONE.md e docs/STATO-IOS.md.
+M1 è implementata e installata: controlla prima picker/accessibilità ancora aperti.
+Dopo chiusura M1 procedi con M2.1 secondo docs/PIANO-IOS-M2.md.
+Preserva bearer/MFA/RLS e web; distingui piano, build, installazione e runtime.
 ```
 
 `/sn-status` usa `sn_quick` per lo stato del progetto. `sn_plan` produce piani senza
@@ -32,38 +40,16 @@ Il prompt dell'agente è in `docs/agents/sn-ios.md`.
 
 ## Stato da cui riprendere
 
-Aggiornamento 24 ottobre 2026: M1 implementata e installata, inclusi recupero
-connessione, cache media RAM e composer con avvisi. 18 XCTest Linux, 10 controlli
-modelli e 30 test server mirati superati. Il collaudo runtime esteso resta aperto;
-non ripartire dall'implementazione M1 descritta nelle note storiche sotto.
-Wi-Fi ora autorizzato e backend a `192.168.1.9:3000`.
-Seguire [ios/README.md](../ios/README.md) per il prossimo passo.
+Al 27 ottobre 2026 M0 è funzionante, M0.5 completata e M1 implementata/installata.
+Le ultime evidenze e i gate manuali sono in [STATO-IOS.md](STATO-IOS.md);
+comandi e rete corrente in [README iOS](../ios/README.md). Le istruzioni del 15/24
+ottobre non vanno usate per ricreare il feed o gli adapter bearer già presenti.
 
-Incrementi successivi della stessa giornata: composer protetto dalle selezioni
-foto tardive; gestione sessione/offline anche nelle scritture; archivio proprio
-indipendente (`profile/posts`, cursore composto). 30 XCTest Linux, 13 controlli
-modelli e 75 test server/regole superati; build finale installata su iPhone.
-Backend in servizio utente `sn-ios-dev` per sopravvivere al riavvio dell'agente.
-Runtime del nuovo profilo confermato dall'utente; refresh/bootstrap/profile/posts/media
-200 osservati. Paginazione oltre 40 e accessibilità restano aperte: non iniziare
-M2 dichiarando concluso il collaudo M1. Fare riferimento al README corrente.
-
-- M0: login, verifica sessione, rinnovo, logout/riapertura, offline e MFA confermati
-  dall'utente. La matrice tecnica completa e gli XCTest sessione/SwiftUI non sono
-  dichiarati eseguiti; il login MFA dopo il rafforzamento SQL resta una regressione M1.
-- M0.5 completata sul telefono: [rapporto CryptoKit](evidence/ios-crypto-interop-2026-10-15.json),
-  35 controlli, tre risposte su tre dispositivi e allegato verificato dal codice web.
-  Due XCTest crypto Linux eseguiti; [procedura](IOS-CRYPTO-INTEROP.md).
-- M1 da implementare: interfaccia feed/profilo/pubblicazione e adapter bearer delle
-  relative API. Solo auth native e bootstrap sono già bearer. Non togliere Origin
-  globalmente e non inviare chiavi Supabase privilegiate al telefono.
-- Supabase dedicato `sndb`: 47 migrazioni allineate, ban a durata e vincolo MFA SQL.
-  Moderazione disponibile sul sito; il client installato resta Login/MFA/Sessione.
-
-Per lo stato corrente prevale [ios/README.md](../ios/README.md). Il prompt
-`docs/agents/sn-ios.md`, la skill locale, il comando `/sn-ios`, il template e il
-profilo locale attivo sono allineati. Aprire una nuova sessione OpenCode per evitare
-contesto storico già caricato; non è necessario cambiare provider o modello.
+M2 è pianificata in [PIANO-IOS-M2.md](PIANO-IOS-M2.md): storie foto/video e viewer
+privati, per incrementi. Prima chiudere M1. Le [istruzioni di ripresa](PROSSIMA-SESSIONE.md)
+valgono per ogni modello, mentre provider/versioni riportati in questa guida
+descrivono la configurazione documentata, senza una nuova verifica in questa sessione.
+Non è necessario cambiare provider o modello per riprendere lo sviluppo.
 
 ## Ragionamento e costo
 

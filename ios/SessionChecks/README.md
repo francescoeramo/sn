@@ -1,10 +1,11 @@
 # Controlli sessione su Linux
 
 <!-- sn-ios-context:start -->
-> **Stato iOS al 27 ottobre 2026:** M1 accettata per lo sviluppo; M2.1 lettura e player foto
-> implementati, ascolto VoiceOver del nuovo player ancora aperto.
-> [Stato ed evidenze](../../docs/STATO-IOS.md) · [Piano M2](../../docs/PIANO-IOS-M2.md) · [Ripresa sessione](../../docs/PROSSIMA-SESSIONE.md).
-> Le sezioni datate conservano il loro valore storico; questa revisione documentale non aggiunge nuove prove.
+> **Stato iOS al 27 ottobre 2026:** M1 chiusa per lo sviluppo; M2.1 lettura e
+> player foto installati e accettati come funzionanti dal proprietario. Prossimo
+> incremento: M2.2 pubblicazione foto, da iniziare alla ripresa.
+> [Stato](../../docs/STATO-IOS.md) · [Piano M2](../../docs/PIANO-IOS-M2.md) · [Ripresa](../../docs/PROSSIMA-SESSIONE.md)
+> I verbali sotto restano storici; l’accettazione non aggiunge prove automatiche o ascolti VoiceOver.
 <!-- sn-ios-context:end -->
 
 `bash scripts/check-ios-session.sh` esegue gli XCTest di `ios/SNTests` sul codice

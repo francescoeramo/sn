@@ -6,6 +6,15 @@ colore del titolo Profilo corretto, Dynamic Type massimo realmente applicato e
 verificato su iPhone. Rilievi strumentali residui motivati nel rapporto finale.
 Non implica audit certificato, parità completa o rilascio. Vault non sincronizzato.
 
+## Accettazione del proprietario — 27 ottobre 2026, fine sessione
+
+Il proprietario ha chiesto: «consideralo funzionante, aggiorna i file .md, i push e fermati».
+M2.1 è quindi accettata come funzionante per proseguire lo sviluppo. Questa è
+un’accettazione esplicita del proprietario: non attesta un nuovo ascolto VoiceOver,
+un nuovo audit o una nuova esecuzione dei test. Il rapporto tecnico conserva i
+limiti originali. Sessione fermata dopo aggiornamento documentale e push.
+Prossimo incremento alla ripresa: **M2.2 — pubblicazione storie foto**.
+
 ## Lettura iniziale
 
 1. `AGENTS.md` e **tutto** `docs/MANUALE-PROGETTO.md`, come richiesto dal repository.
@@ -24,8 +33,9 @@ avvisi, gestione Keychain e concorrenza. M0.5 è chiusa: non rigenerare i vettor
 
 M1 è chiusa per lo sviluppo; vedere STATO-IOS.md e rapporto finale di accessibilità.
 M2.1: lettura server, modelli/stato Swift ed elenco/player foto implementati e
-installati. Vedere rapporto device M2 e STATO-IOS.md. Completare ascolto VoiceOver
-del nuovo player (non sostituito dalla conferma M1), poi M2.2 composer foto.
+installati e accettati come funzionanti dal proprietario. Vedere rapporto device
+M2 e STATO-IOS.md. Proseguire con M2.2 composer foto; non ripetere M1/M2.1 senza
+regressioni. L’accettazione non equivale a un ascolto VoiceOver attestato.
 Le route del piano sono proposte finché non implementate. Non abilitare
 indiscriminatamente /api/action al bearer e non ampliare il bootstrap M1.
 
@@ -83,7 +93,7 @@ note personali. Il vault è una copia locale, non una sincronizzazione automatic
 ```text
 Riprendi SN iOS. Leggi AGENTS.md, docs/MANUALE-PROGETTO.md,
 docs/STATO-IOS.md, ios/README.md e docs/PROSSIMA-SESSIONE.md; controlla il diff.
-M0 e M0.5 non vanno rifatti; M1 è accettata per lo sviluppo. Procedi con M2.1 secondo
+M0 e M0.5 non vanno rifatti; M1 è accettata per lo sviluppo. M2.1 è accettata dal proprietario. Procedi con M2.2 secondo
 docs/PIANO-IOS-M2.md, un incremento alla volta, preservando web/RLS/sessione.
 Distingui pianificato, implementato, testato, installato e verificato su iPhone.
 ```

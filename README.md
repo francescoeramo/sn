@@ -1,5 +1,13 @@
 # SN
 
+<!-- sn-ios-context:start -->
+> **Stato iOS al 27 ottobre 2026:** M1 chiusa per lo sviluppo; M2.1 lettura e
+> player foto installati e accettati come funzionanti dal proprietario. Prossimo
+> incremento: M2.2 pubblicazione foto, da iniziare alla ripresa.
+> [Stato](docs/STATO-IOS.md) · [Piano M2](docs/PIANO-IOS-M2.md) · [Ripresa](docs/PROSSIMA-SESSIONE.md)
+> I verbali sotto restano storici; l’accettazione non aggiunge prove automatiche o ascolti VoiceOver.
+<!-- sn-ios-context:end -->
+
 SN è un social per un piccolo gruppo di amici, con interfaccia in italiano e inglese. Ha un feed finito, profili privati per impostazione predefinita, nuovi messaggi cifrati e nessuna pubblicità.
 
 ## Prova la demo
@@ -27,8 +35,10 @@ npm run test:e2e
 
 Il client SwiftUI usa SwiftPM e xtool su Linux. I flussi M0 sono confermati dall'utente;
 M0.5 (cifratura web ↔ iPhone con allegati) è verificata sul telefono con CryptoKit.
-La build è firmata e installata. Il prossimo incremento è **M1: feed, profilo e post con
-immagine**; l'interfaccia attuale resta il prototipo di sessione, non l'app social completa.
+M1 è implementata e installata: feed cronologico, archivio proprio paginato e post
+con una foto, inclusi avvisi e recupero della sessione. Restano picker manuale e
+verifica accessibilità/VoiceOver. **M2 storie è pianificata**, non implementata;
+leggi [il piano](docs/PIANO-IOS-M2.md) e [le istruzioni di ripresa](docs/PROSSIMA-SESSIONE.md).
 Comandi, evidenze e limiti sono in [ios/README.md](ios/README.md) e nella
 [prova di interoperabilità](docs/IOS-CRYPTO-INTEROP.md).
 Per lavorare con DeepSeek Flash leggi [docs/OPENCODE.md](docs/OPENCODE.md).

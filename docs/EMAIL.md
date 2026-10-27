@@ -1,5 +1,13 @@
 # Email di autenticazione e Resend
 
+<!-- sn-ios-context:start -->
+> **Stato iOS al 27 ottobre 2026:** M1 chiusa per lo sviluppo; M2.1 lettura e
+> player foto installati e accettati come funzionanti dal proprietario. Prossimo
+> incremento: M2.2 pubblicazione foto, da iniziare alla ripresa.
+> [Stato](STATO-IOS.md) · [Piano M2](PIANO-IOS-M2.md) · [Ripresa](PROSSIMA-SESSIONE.md)
+> I verbali sotto restano storici; l’accettazione non aggiunge prove automatiche o ascolti VoiceOver.
+<!-- sn-ios-context:end -->
+
 SN usa Supabase Auth per generare i link di conferma e recupero e Resend come trasporto SMTP. L'app continua a chiamare `signUp` e `resetPasswordForEmail`: non servono chiavi Resend nel runtime Next.js. I corpi HTML e gli oggetti sono in `supabase/templates/` e `supabase/config.toml` per il Supabase locale. Il progetto Supabase ospitato **non** importa automaticamente queste impostazioni dal repository.
 
 ## Mittente

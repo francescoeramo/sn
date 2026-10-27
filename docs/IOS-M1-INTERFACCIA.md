@@ -1,5 +1,13 @@
 # Interfaccia nativa iOS — incremento M1
 
+<!-- sn-ios-context:start -->
+> **Stato iOS al 27 ottobre 2026:** M1 chiusa per lo sviluppo; M2.1 lettura e
+> player foto installati e accettati come funzionanti dal proprietario. Prossimo
+> incremento: M2.2 pubblicazione foto, da iniziare alla ripresa.
+> [Stato](STATO-IOS.md) · [Piano M2](PIANO-IOS-M2.md) · [Ripresa](PROSSIMA-SESSIONE.md)
+> I verbali sotto restano storici; l’accettazione non aggiunge prove automatiche o ascolti VoiceOver.
+<!-- sn-ios-context:end -->
+
 Registrazione del codice al 23 ottobre 2026. Il contratto resta
 [PIANO-APP-NATIVA.md](PIANO-APP-NATIVA.md), sezioni 1, 2 e 7; lo stato operativo e
 le prove sul telefono sono in [../ios/README.md](../ios/README.md).

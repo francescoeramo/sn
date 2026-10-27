@@ -1,11 +1,23 @@
 # Collaudo M1 su iPhone — 24 ottobre 2026
 
 <!-- sn-ios-context:start -->
-> **Stato iOS al 27 ottobre 2026:** M1 accettata per lo sviluppo: picker/VoiceOver confermati,
-> contrasto corretto e testo massimo verificato su iPhone; M2 storie pianificata, non implementata.
-> [Stato ed evidenze](STATO-IOS.md) · [Piano M2](PIANO-IOS-M2.md) · [Ripresa sessione](PROSSIMA-SESSIONE.md).
-> Le sezioni datate conservano il loro valore storico; questa revisione documentale non aggiunge nuove prove.
+> **Stato iOS al 27 ottobre 2026:** M1 chiusa per lo sviluppo; M2.1 lettura e
+> player foto installati e accettati come funzionanti dal proprietario. Prossimo
+> incremento: M2.2 pubblicazione foto, da iniziare alla ripresa.
+> [Stato](STATO-IOS.md) · [Piano M2](PIANO-IOS-M2.md) · [Ripresa](PROSSIMA-SESSIONE.md)
+> I verbali sotto restano storici; l’accettazione non aggiunge prove automatiche o ascolti VoiceOver.
 <!-- sn-ios-context:end -->
+
+## Accettazione del proprietario — 27 ottobre 2026, fine sessione
+
+Il proprietario ha chiesto: «consideralo funzionante, aggiorna i file .md, i push e fermati».
+M2.1 è quindi accettata come funzionante per proseguire lo sviluppo. Questa è
+un’accettazione esplicita del proprietario: non attesta un nuovo ascolto VoiceOver,
+un nuovo audit o una nuova esecuzione dei test. Il rapporto tecnico conserva i
+limiti originali. Sessione fermata dopo aggiornamento documentale e push.
+Prossimo incremento alla ripresa: **M2.2 — pubblicazione storie foto**.
+
+
 
 ## Chiusura M1 — verifica finale del 27 ottobre sera
 

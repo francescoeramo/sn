@@ -1,6 +1,22 @@
 # Risultati delle verifiche
 
-## iOS — 24 ottobre 2026
+<!-- sn-ios-context:start -->
+> **Stato iOS al 27 ottobre 2026:** M1 chiusa per lo sviluppo; M2.1 lettura e
+> player foto installati e accettati come funzionanti dal proprietario. Prossimo
+> incremento: M2.2 pubblicazione foto, da iniziare alla ripresa.
+> [Stato](STATO-IOS.md) · [Piano M2](PIANO-IOS-M2.md) · [Ripresa](PROSSIMA-SESSIONE.md)
+> I verbali sotto restano storici; l’accettazione non aggiunge prove automatiche o ascolti VoiceOver.
+<!-- sn-ios-context:end -->
+
+## Consolidamento iOS — 27 ottobre 2026
+
+Secondo i rapporti già acquisiti: 193 test nella verifica web completa, 56 XCTest
+Linux, build Darwin, installazione USB verificata, 28 controlli interni iPhone e
+sei controlli UI avvisi. Fonti e gate aperti sono in [STATO-IOS.md](STATO-IOS.md).
+Nessuna di queste prove è rieseguita durante l'aggiornamento documentale/piano M2.
+M2 non ha ancora codice, build o verbali di esecuzione.
+
+## iOS — 24 ottobre 2026 (storico)
 
 Storico del profilo: **30 XCTest Linux**, **13 controlli JSON Swift**, **75 test
 server/regole** su native-social/native-auth/security-api/rules; typecheck e lint

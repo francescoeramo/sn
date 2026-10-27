@@ -1,5 +1,13 @@
 # Checklist di collegamento — Supabase e Vercel
 
+<!-- sn-ios-context:start -->
+> **Stato iOS al 27 ottobre 2026:** M1 chiusa per lo sviluppo; M2.1 lettura e
+> player foto installati e accettati come funzionanti dal proprietario. Prossimo
+> incremento: M2.2 pubblicazione foto, da iniziare alla ripresa.
+> [Stato](STATO-IOS.md) · [Piano M2](PIANO-IOS-M2.md) · [Ripresa](PROSSIMA-SESSIONE.md)
+> I verbali sotto restano storici; l’accettazione non aggiunge prove automatiche o ascolti VoiceOver.
+<!-- sn-ios-context:end -->
+
 
 > Stato parziale al 15 ottobre 2026: `sndb` collegato con 47 migrazioni applicate,
 > `francescoeramo` moderatore, vincolo MFA SQL e ban a durata implementati. M0 iOS

@@ -34,10 +34,20 @@ Per la migrazione SwiftUI usa `ios/README.md` (ambiente e stato verificato) e
 con iPhone USB per il runtime. Le istruzioni Mac/Xcode nei documenti precedenti sono
 superate. `primaDiContinuare.md` rimanda ora al README operativo.
 Compila da `ios/` con `xtool dev build`; non confondere build riuscita e verifica su device.
-Stato al 15 ottobre 2026: flussi M0 confermati dall'utente e M0.5 verificata su
-iPhone con CryptoKit; prossimo incremento M1 (feed, profilo, post con immagine).
-Il rapporto è `docs/evidence/ios-crypto-interop-2026-10-15.json`; procedura in
-`docs/IOS-CRYPTO-INTEROP.md`. I due XCTest crypto Linux sono distinti dai test
-`ios/SNTests`, il cui runner non è stato eseguito. Consultare il README per lo stato
-corrente invece di rifare le tappe concluse. Le API M1 vanno ancora adattate al bearer.
+Stato al 27 ottobre 2026: M0 funzionante, M0.5 completata con CryptoKit,
+M1 chiusa per lo sviluppo; M2.1 lettura/player foto installati e accettati come
+funzionanti dal proprietario. Prossimo incremento M2.2 pubblicazione foto.
+Le API bearer M1 e la lettura storie M2 sono già adattate:
+leggere `docs/STATO-IOS.md`, `docs/PIANO-IOS-M2.md` e `docs/PROSSIMA-SESSIONE.md`.
+I test sessione/HTTP sono eseguiti su Linux con shim Combine; non sono il runner
+Darwin/SwiftUI. Non rifare tappe concluse o rigenerare i vettori M0.5 senza regressione.
 Per OpenCode leggi `docs/OPENCODE.md`; la skill locale è `sn-ios-xtool`.
+
+## Documentazione e passaggio di consegne
+
+Lo stato corrente iOS è centralizzato in `docs/STATO-IOS.md`; comandi/evidenze
+in `ios/README.md`. Leggere `docs/PROSSIMA-SESSIONE.md` quando si riprende il lavoro.
+Conservare i verbali storici, marcandoli come tali quando sono superati; un piano
+non dimostra implementazione, un test locale non dimostra il runtime o il cloud.
+Il vault `/home/fra/Documents/SN Graphify` contiene soltanto documentazione collegata:
+non ricreare l'esportazione Graphify per simboli o la lavagna rimossa dall'utente.

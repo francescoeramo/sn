@@ -1,24 +1,17 @@
 # Continuare SN su iOS
 
-Stato aggiornato al 15 ottobre 2026: **M0 funzionale confermata dall'utente,
-M0.5 completata sul dispositivo. Prossimo incremento: M1.**
+Leggere `AGENTS.md` e tutto [il manuale](docs/MANUALE-PROGETTO.md), poi
+[le istruzioni di ripresa](docs/PROSSIMA-SESSIONE.md), [lo stato corrente](docs/STATO-IOS.md)
+e [il README operativo](ios/README.md).
 
-Leggi `AGENTS.md` e [manuale](docs/MANUALE-PROGETTO.md), poi
-[ios/README.md](ios/README.md) e [piano nativo](docs/PIANO-APP-NATIVA.md).
-La prova web ↔ iPhone è documentata in [IOS-CRYPTO-INTEROP.md](docs/IOS-CRYPTO-INTEROP.md)
-con il [rapporto CryptoKit](docs/evidence/ios-crypto-interop-2026-10-15.json):
-35 controlli, tre risposte su tre dispositivi e allegato verificato.
+Al 27 ottobre 2026 M0 è funzionante, M0.5 è completata e M1 è implementata e
+installata. Restano picker manuale e verifica accessibilità/VoiceOver prima di
+chiudere M1. Non ripartire da M0/M0.5 o dall'implementazione iniziale del feed.
 
-Si lavora su Linux con SwiftUI, SwiftPM e xtool. La build è compilata, firmata e
-installata; l'app mostra ancora Login/MFA/Sessione. M1 deve aggiungere feed, profilo
-e pubblicazione con immagine, adattando prima al bearer le rispettive API.
-Non ripartire dalla prima prova di rete o rifare M0.5 senza una regressione concreta.
+Il [piano M2](docs/PIANO-IOS-M2.md) definisce le storie native: prima lettura/player
+foto, poi pubblicazione foto, video e visualizzazioni private. È un piano, non
+codice già presente. Dopo chiusura M1 iniziare dal contratto di M2.1.
 
-Restano non eseguiti gli XCTest sessione/SwiftUI e alcuni casi tecnici della matrice
-M0; i due XCTest crypto Linux sono invece passati. Un login MFA dopo il rafforzamento
-SQL resta una regressione runtime da controllare durante M1. Il collaudo cloud
-completo e la distribuzione pubblica sono separati e non risultano conclusi.
-
-Conserva tutte le modifiche esistenti e `creaInvito.txt`. Non usare VM macOS né
-reinstallare il toolchain senza diagnosi. Per OpenCode e DeepSeek Flash usa
-[docs/OPENCODE.md](docs/OPENCODE.md): il prompt di `sn_ios` è già allineato a M1.
+Usare SwiftPM + xtool su Linux e iPhone USB, mantenere bearer/MFA/RLS e protezioni
+web. Per comandi, verifiche, limiti delle prove e prompt pronto per qualsiasi
+modello usare `docs/PROSSIMA-SESSIONE.md`; per OpenCode vedere `docs/OPENCODE.md`.

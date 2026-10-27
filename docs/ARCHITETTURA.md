@@ -1,5 +1,13 @@
 # Architettura e lavoro ancora necessario
 
+<!-- sn-ios-context:start -->
+> **Stato iOS al 27 ottobre 2026:** M1 chiusa per lo sviluppo; M2.1 lettura e
+> player foto installati e accettati come funzionanti dal proprietario. Prossimo
+> incremento: M2.2 pubblicazione foto, da iniziare alla ripresa.
+> [Stato](STATO-IOS.md) · [Piano M2](PIANO-IOS-M2.md) · [Ripresa](PROSSIMA-SESSIONE.md)
+> I verbali sotto restano storici; l’accettazione non aggiunge prove automatiche o ascolti VoiceOver.
+<!-- sn-ios-context:end -->
+
 ## Confini
 
 `components/` contiene l’interfaccia React. `lib/core/` contiene tipi, regole e identità indipendenti da Next.js, riutilizzabili nei contratti API del client SwiftUI. `lib/client/` gestisce demo e preparazione media. `lib/server/` gestisce sessioni e query Supabase. Le API web usano cookie HttpOnly; l’app nativa usa un adapter di autenticazione con bearer token (`lib/server/auth.ts`), mantenendo le stesse regole di dominio e le stesse RLS.
@@ -60,10 +68,10 @@ P-256, HKDF-SHA-256, AES-GCM, JWK, impronte, revisioni, scadenza e allegati.
 La prova usa esclusivamente chiavi sintetiche pubbliche e nessuna chat reale.
 Procedura ed evidenza: `docs/IOS-CRYPTO-INTEROP.md`.
 
-M1 deve aggiungere feed, profilo e post con immagine; solo auth native e bootstrap
-sono già bearer. Gli adapter delle altre API sono lavoro da implementare, senza
-disattivare le protezioni web o ricorrere al client amministrativo per operazioni
-utente. Le chiavi crypto persistenti e la registrazione dispositivi appartengono
+M1 ha aggiunto feed, profilo, foto e adapter bearer mirati, come nei consolidamenti
+sopra. Il nuovo perimetro pianificato è M2 storie: [contratto proposto](PIANO-IOS-M2.md).
+Le letture storie saranno indipendenti dal bootstrap M1; nessun bypass delle
+protezioni web o uso del client amministrativo per operazioni utente. Le chiavi crypto persistenti e la registrazione dispositivi appartengono
 alla successiva integrazione chat, non sono implementate dalla sola prova M0.5.
 
 Supabase applica ora MFA anche in SQL: `private.member()` richiede aal2 se il
