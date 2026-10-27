@@ -68,6 +68,9 @@ class M1RunnerTests(unittest.TestCase):
         self.assertEqual(install[-3:], ['--interface', 'usb-fixture', '--install'])
         self.assertEqual(report['installation'], 'passed')
         self.assertEqual(report['auth_ui'], 'passed')
+        auth_ui = next(call for call in calls if 'scripts/check-ios-auth-ui.py' in call)
+        self.assertEqual(auth_ui[auth_ui.index('--screens') + 1:auth_ui.index('--output')],
+                         ['login', 'mfa', 'storage', 'warning'])
 
     def test_failed_local_gate_prevents_install_and_device(self):
         code, calls, report = self.invoke(['--install-interface', 'usb-fixture', '--probe'], failing='typecheck')

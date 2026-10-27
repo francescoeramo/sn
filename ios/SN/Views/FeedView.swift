@@ -132,10 +132,17 @@ private struct PostRow: View {
                 Text(date, format: .dateTime.day().month(.abbreviated).hour().minute())
                     .font(.caption).foregroundStyle(.primary)
             }
-            if let warning = post.content_warning, !warning.isEmpty, !revealed {
+            if let warning = post.content_warning, !warning.isEmpty {
                 Text(warning).font(.headline)
-                Button("Mostra contenuto") { revealed = true }
-            } else {
+                Button { revealed.toggle() } label: {
+                    Text(revealed ? "Nascondi contenuto" : "Mostra contenuto")
+                        .frame(minHeight: 44, alignment: .leading)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.borderless)
+                .accessibilityHint(revealed ? "Nasconde testo e foto del post." : "Mostra testo e foto del post.")
+            }
+            if post.content_warning?.isEmpty != false || revealed {
                 if !post.body.isEmpty { Text(post.body).textSelection(.enabled) }
                 ForEach(post.attachments) { media in
                     if media.media_type?.hasPrefix("image/") == true {
@@ -148,6 +155,7 @@ private struct PostRow: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .onChange(of: post.content_warning) { _, _ in revealed = false }
     }
 }
 

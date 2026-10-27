@@ -23,7 +23,8 @@ struct SNApp: App {
         case .loading: return " · Attesa"
         case .signedOut: return " · Accesso"
         case .mfaRequired: return " · MFA"
-        case .signedIn: return " · Feed"
+        case .signedIn:
+            return ProcessInfo.processInfo.environment["SN_M1_FIXTURE_SCREEN"] == "warning" ? " · Avviso" : " · Feed"
         }
     }
     #endif

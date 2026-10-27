@@ -2,6 +2,26 @@
 
 ## Consolidamento del 27 ottobre 2026
 
+### Avvisi: rivelazione reversibile e prova automatica
+
+I post con avviso offrono ora Mostra/Nascondi contenuto; l’avviso resta leggibile
+dopo la rivelazione e una sua modifica richiude il contenuto. Pulsante nativo
+con area minima esplicita di 44 punti, senza rendere cliccabile tutto il post.
+
+Prova automatica sull’iPhone in chiaro/scuro: contenuto inizialmente nascosto,
+mostrato e nuovamente nascosto. Sei controlli UI superati, marker fixture
+verificato prima di ogni tocco; nessun attraversamento AX, selettore foto,
+contenuto personale o post cloud. Impostazioni e avvio normale ripristinati.
+Il comando M1 con --auth-ui include anche questa prova; cinque contratti runner,
+56 XCTest Linux e build Darwin superati. CI del bootstrap nativo verde.
+
+Limite dell’ultimo passaggio: Mostra/Nascondi è verificato sulla build installata;
+il successivo spostamento della frame 44pt dentro l’etichetta è compilato, ma
+l’installer è rimasto al trasferimento 100% senza Verifying. Interrotto senza
+attestare l’installazione finale. Rapporto:
+`docs/evidence/ios-m1-content-warning-2026-10-27.json`.
+Picker e ascolto VoiceOver restano gate manuali distinti; M1 non dichiarata chiusa.
+
 ### Bootstrap nativo limitato a M1
 
 L’app usa ora `GET /api/native/bootstrap`, bearer obbligatorio anche se esistono

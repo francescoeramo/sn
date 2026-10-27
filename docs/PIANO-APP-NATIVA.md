@@ -393,4 +393,3 @@ refresh 200 e nuovo bootstrap 200 in 3,1 s nei log. È una singola osservazione,
 non una misura comparativa dell’aumento di velocità.
 Evidenza: `docs/evidence/ios-m1-native-feed-2026-10-27.json`.
 Nessuna migrazione o modifica cloud; i gate manuali M1 restano distinti.
-

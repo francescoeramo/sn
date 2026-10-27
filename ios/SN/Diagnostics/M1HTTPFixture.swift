@@ -13,6 +13,7 @@ final class M1HTTPFixture: URLProtocol, @unchecked Sendable {
     @MainActor
     static func coordinator(screen: String? = nil) -> AuthCoordinator {
         control.reset()
+        control.setWarningFixture(screen == "warning")
         let store = FixtureStore(screen: screen)
         let defaults = UserDefaults(suiteName: "it.sn.m1-fixture")!
         defaults.removePersistentDomain(forName: "it.sn.m1-fixture")
@@ -45,10 +46,13 @@ final class M1HTTPFixture: URLProtocol, @unchecked Sendable {
         private let lock = NSLock()
         private var disconnected = false
         private var malformed = false
+        private var showWarning = false
         private var paths: [String] = []
         private var contractValid = true
 
-        func reset() { lock.withLock { disconnected = false; malformed = false; paths = []; contractValid = true } }
+        func reset() { lock.withLock { disconnected = false; malformed = false; showWarning = false; paths = []; contractValid = true } }
+        func setWarningFixture(_ value: Bool) { lock.withLock { showWarning = value } }
+        var warningFixture: Bool { lock.withLock { showWarning } }
         func setOffline(_ value: Bool) { lock.withLock { disconnected = value } }
         func setMalformedResponse(_ value: Bool) { lock.withLock { malformed = value } }
         var malformedResponse: Bool { lock.withLock { malformed } }
@@ -76,9 +80,9 @@ final class M1HTTPFixture: URLProtocol, @unchecked Sendable {
     static func posts() -> [[String: Any]] {
         (1...85).reversed().map { index in
             ["id": String(format: "00000000-0000-4000-8000-%012d", index),
-             "author_id": userId, "body": String(format: "Post collaudo %03d", index),
+             "author_id": userId, "body": index == 85 && control.warningFixture ? "Testo sotto avviso" : String(format: "Post collaudo %03d", index),
              "kind": "post", "media_path": NSNull(), "media_type": NSNull(), "alt": "",
-             "created_at": timestamp, "content_warning": "", "media": [], "circle_links": []]
+             "created_at": timestamp, "content_warning": index == 85 && control.warningFixture ? "Avviso di collaudo" : "", "media": [], "circle_links": []]
         }
     }
 

@@ -42,7 +42,7 @@ def main():
     device.add_argument('--device-bundle', help='Also exercise the installed DEBUG app with this signed bundle ID')
     device.add_argument('--probe', action='store_true', help='Run internal iPhone diagnostics without UI automation')
     parser.add_argument('--install-interface', help='After local gates, prepare and install using only this interface')
-    parser.add_argument('--auth-ui', action='store_true', help='Capture synthetic login/MFA screens on the installed iPhone')
+    parser.add_argument('--auth-ui', action='store_true', help='Check synthetic auth/storage screens and local show/hide warning controls on iPhone')
     args = parser.parse_args()
     root = Path(__file__).resolve().parent.parent
     output = root / '.impeccable/review' / ('m1-check-' + datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ'))
@@ -110,7 +110,7 @@ def main():
             report['device'] = 'passed'
         if args.auth_ui:
             run('auth-ui', [sys.executable, 'scripts/check-ios-auth-ui.py',
-                            '--screens', 'login', 'mfa', 'storage', '--output', str(output / 'auth-ui')])
+                            '--screens', 'login', 'mfa', 'storage', 'warning', '--output', str(output / 'auth-ui')])
             report['auth_ui'] = 'passed'
         report['status'] = 'passed'
     except (RuntimeError, KeyboardInterrupt):

@@ -1,0 +1,49 @@
+{
+  "status": "passed",
+  "scope": "Synthetic SN screens; input only on local warning controls; no AX traversal",
+  "checks": [
+    {
+      "screen": "warning",
+      "appearance": "dark",
+      "passed": true
+    },
+    {
+      "screen": "warning",
+      "appearance": "dark",
+      "action": "mostra",
+      "content_visible": true,
+      "passed": true
+    },
+    {
+      "screen": "warning",
+      "appearance": "dark",
+      "action": "nascondi",
+      "content_visible": false,
+      "passed": true
+    },
+    {
+      "screen": "warning",
+      "appearance": "light",
+      "passed": true
+    },
+    {
+      "screen": "warning",
+      "appearance": "light",
+      "action": "mostra",
+      "content_visible": true,
+      "passed": true
+    },
+    {
+      "screen": "warning",
+      "appearance": "light",
+      "action": "nascondi",
+      "content_visible": false,
+      "passed": true
+    }
+  ],
+  "normal_launch_restored": true,
+  "settings_restored": true,
+  "final_build": "passed; 44pt frame moved inside the button label",
+  "last_installer_verification": "not_confirmed; transfer reached 100% without Verifying, then intentionally interrupted",
+  "limitation": "Show/hide gestures verified on the preceding installed build; last hit-area placement compiled but not separately rechecked by UI gestures."
+}
