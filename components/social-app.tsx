@@ -192,7 +192,13 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
   const [clock, setClock] = useState(0);
   const locked = useRef(false);
   const lastActionError = useRef('');
+  const overviewPending = useRef(false);
+  const stateRevision = useRef(0);
+  const fullSnapshotLoaded = useRef(demo);
+  const navigationRevision = useRef(0);
+  const currentUserId = state?.me.id;
   const refresh = useCallback(async () => {
+    const revision = ++stateRevision.current;
     try {
       const next = demo
         ? await import('@/lib/client/demo').then((module) => module.loadDemo())
@@ -203,8 +209,12 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
         );
         next.messages = [...new Map([...local, ...next.messages].map((m) => [m.id, m])).values()];
       }
-      setState(next);
+      if (revision === stateRevision.current) {
+        setState(next);
+        fullSnapshotLoaded.current = true;
+      }
     } catch (error) {
+      if (revision !== stateRevision.current) return;
       if ((error as { status?: number }).status === 401) setState(null);
       else
         setNotice(
@@ -221,7 +231,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
     let cancelled = false;
     const pending = demo
       ? import('@/lib/client/demo').then((module) => module.loadDemo())
-      : request('bootstrap');
+      : request('bootstrap?home=1');
     pending
       .then((next) => {
         if (!cancelled) {
@@ -240,17 +250,56 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
     };
   }, [configured, demo]);
   useEffect(() => {
+    let cancelled = false;
+    const refreshOverview = async () => {
+      if (!currentUserId || overviewPending.current || locked.current) return;
+      overviewPending.current = true;
+      const userId = currentUserId;
+      const revision = stateRevision.current;
+      try {
+        const [overview, store] = await Promise.all([
+          request('messages/overview'),
+          import('@/lib/client/chat-store'),
+        ]);
+        const local = await store.localMessages(userId);
+        if (!cancelled && revision === stateRevision.current)
+          setState((current) =>
+            current?.me.id === userId
+              ? {
+                  ...current,
+                  messages: [
+                    ...new Map([...local, ...overview.messages].map((m) => [m.id, m])).values(),
+                  ] as Snapshot['messages'],
+                  shares: overview.shares,
+                }
+              : current,
+          );
+      } catch (error) {
+        if (!cancelled && revision === stateRevision.current) {
+          if ((error as { status?: number }).status === 401) setState(null);
+          else setNotice(error instanceof Error ? error.message : 'Messaggi non aggiornati.');
+        }
+      } finally {
+        overviewPending.current = false;
+      }
+    };
     const timer = setInterval(() => {
       setClock(Date.now());
-      if (
-        (demo || view === 'messages') &&
-        document.visibilityState === 'visible' &&
-        !locked.current
-      )
-        void refresh();
+      if (document.visibilityState !== 'visible' || locked.current) return;
+      if (demo) void refresh();
+      else if (view === 'messages' && !conversation) void refreshOverview();
     }, 30000);
-    return () => clearInterval(timer);
-  }, [view, demo, refresh]);
+    const onVisibilityChange = () => {
+      if (!demo && view === 'messages' && !conversation && document.visibilityState === 'visible')
+        void refreshOverview();
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [view, conversation, demo, refresh, currentUserId]);
   useEffect(() => {
     if (demo || view !== 'messages' || !state?.me.id) return;
     Promise.all([
@@ -292,8 +341,8 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
     };
   }, [demo, query, view]);
   useEffect(() => {
-    if (demo || view !== 'profile' || !state) return;
-    const targetId = profileId ?? state.me.id;
+    if (demo || view !== 'profile' || !currentUserId) return;
+    const targetId = profileId ?? currentUserId;
     let cancelled = false;
     request(`profile/connections?id=${encodeURIComponent(targetId)}`)
       .then((connections) => {
@@ -306,10 +355,11 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
     return () => {
       cancelled = true;
     };
-  }, [demo, profileId, state, view]);
+  }, [demo, profileId, currentUserId, state?.follows, view]);
   async function act(action: Action) {
     const immediate = action.type === 'like' || action.type === 'view-story';
-    if (!state || (!immediate && locked.current)) return false;
+    if (!state || locked.current) return false;
+    stateRevision.current++;
     if (!immediate) {
       locked.current = true;
       setBusy(true);
@@ -358,11 +408,32 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
       );
     }
     try {
+      const homeOnly = !demo && !fullSnapshotLoaded.current;
+      const compactAction = ['bookmark', 'read-notifications'].includes(action.type);
+      const parameters = new URLSearchParams();
+      if (homeOnly) parameters.set('home', '1');
+      if (compactAction) parameters.set('compact', '1');
       const next = demo
         ? await import('@/lib/client/demo').then((module) => module.mutateDemo(action))
-        : await request('action', action);
+        : await request(`action${parameters.size ? `?${parameters}` : ''}`, action);
       if (immediate && !demo) {
         // The compact endpoint has already been reflected optimistically.
+      } else if (action.type === 'bookmark' && !demo) {
+        setState((current) =>
+          current ? { ...current, bookmarks: next.bookmarks, saved: next.saved } : current,
+        );
+      } else if (action.type === 'read-notifications' && !demo) {
+        setState((current) =>
+          current
+            ? {
+                ...current,
+                notifications: current.notifications.map((notification) => ({
+                  ...notification,
+                  read: true,
+                })),
+              }
+            : current,
+        );
       } else if (action.type === 'share' && !demo) {
         setState((current) =>
           current
@@ -384,7 +455,10 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
               }
             : current,
         );
-      } else setState(next);
+      } else {
+        setState(next);
+        fullSnapshotLoaded.current = !homeOnly;
+      }
       setNotice(
         action.type === 'bookmark'
           ? action.saved
@@ -465,7 +539,41 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
       }
     }
   }
-  function navigate(next: View, id?: string) {
+  async function navigate(next: View, id?: string) {
+    if (locked.current && next !== 'home') return;
+    const navigation = ++navigationRevision.current;
+    if (!demo && next !== 'home' && !fullSnapshotLoaded.current) {
+      if (locked.current || !currentUserId) return;
+      locked.current = true;
+      setBusy(true);
+      setNotice('Caricamento della sezione…');
+      const revision = stateRevision.current;
+      try {
+        const [snapshot, store] = await Promise.all([
+          request('bootstrap'),
+          import('@/lib/client/chat-store'),
+        ]);
+        const local = await store.localMessages(currentUserId);
+        if (
+          revision !== stateRevision.current ||
+          snapshot.me.id !== currentUserId ||
+          navigation !== navigationRevision.current
+        )
+          return;
+        snapshot.messages = [
+          ...new Map([...local, ...snapshot.messages].map((m) => [m.id, m])).values(),
+        ];
+        setState(snapshot);
+        fullSnapshotLoaded.current = true;
+      } catch (error) {
+        if ((error as { status?: number }).status === 401) setState(null);
+        else setNotice(error instanceof Error ? error.message : 'Sezione non caricata. Riprova.');
+        return;
+      } finally {
+        locked.current = false;
+        setBusy(false);
+      }
+    }
     setView(next);
     if (next !== 'post') setFocusedPostId(null);
     setProfileId(id ?? null);

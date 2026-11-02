@@ -163,8 +163,10 @@ export async function savedPage(before?: SavedCursor) {
 
 type Identity = Awaited<ReturnType<typeof identity>>;
 
-export async function snapshot(existingIdentity?: Identity) {
+export async function snapshot(existingIdentity?: Identity, homeOnly = false) {
   const { db, user, profile } = existingIdentity ?? (await identity());
+  const later = <T>(query: PromiseLike<T>) =>
+    homeOnly ? Promise.resolve({ data: [], error: null }) : query;
   const results = await Promise.all([
     db
       .from('profiles')
@@ -185,38 +187,64 @@ export async function snapshot(existingIdentity?: Identity) {
     db.from('comments').select('*').order('created_at', { ascending: false }).limit(300),
     db.from('likes').select('*').limit(1000),
     db.from('follows').select('*'),
-    db
-      .from('messages')
-      .select('*')
-      .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
-      .order('created_at', { ascending: false })
-      .limit(100),
+    later(
+      db
+        .from('messages')
+        .select('*')
+        .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
+        .order('created_at', { ascending: false })
+        .limit(100),
+    ),
     db.from('notifications').select('*').order('created_at', { ascending: false }).limit(50),
-    db.from('reports').select('*').order('created_at', { ascending: false }).limit(50),
-    db.from('moderation_audit').select('*').order('created_at', { ascending: false }).limit(100),
+    later(db.from('reports').select('*').order('created_at', { ascending: false }).limit(50)),
+    later(
+      db.from('moderation_audit').select('*').order('created_at', { ascending: false }).limit(100),
+    ),
     db.from('blocks').select('*'),
     db.rpc('my_usage'),
-    db
-      .from('community_notes')
-      .select('*, post:posts(body)')
-      .order('created_at', { ascending: false })
-      .limit(500),
+    later(
+      db
+        .from('community_notes')
+        .select('*, post:posts(body)')
+        .order('created_at', { ascending: false })
+        .limit(500),
+    ),
     db.from('circles').select('*').order('updated_at', { ascending: false }),
     db.from('circle_members').select('*').order('created_at'),
     db.from('circle_posts').select('*').order('created_at', { ascending: false }).limit(500),
-    db.from('events').select('*').order('starts_at', { ascending: true }).limit(200),
-    db.from('event_responses').select('*').order('updated_at', { ascending: false }).limit(2000),
-    db.from('event_updates').select('*').order('created_at', { ascending: true }).limit(1000),
-    db.from('event_photos').select('*').order('created_at', { ascending: true }).limit(1000),
-    db.from('digest_preferences').select('*').limit(1),
-    db.from('digest_sources').select('*').order('created_at', { ascending: true }).limit(200),
-    db.from('digest_deliveries').select('*').order('generated_at', { ascending: false }).limit(10),
-    db.from('collaborative_posts').select('*').order('created_at', { ascending: false }).limit(200),
-    db.from('collaborators').select('*').order('created_at', { ascending: true }).limit(1000),
-    db.from('album_items').select('*').order('created_at', { ascending: true }).limit(1000),
+    later(db.from('events').select('*').order('starts_at', { ascending: true }).limit(200)),
+    later(
+      db.from('event_responses').select('*').order('updated_at', { ascending: false }).limit(2000),
+    ),
+    later(
+      db.from('event_updates').select('*').order('created_at', { ascending: true }).limit(1000),
+    ),
+    later(db.from('event_photos').select('*').order('created_at', { ascending: true }).limit(1000)),
+    later(db.from('digest_preferences').select('*').limit(1)),
+    later(
+      db.from('digest_sources').select('*').order('created_at', { ascending: true }).limit(200),
+    ),
+    later(
+      db
+        .from('digest_deliveries')
+        .select('*')
+        .order('generated_at', { ascending: false })
+        .limit(10),
+    ),
+    later(
+      db
+        .from('collaborative_posts')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(200),
+    ),
+    later(
+      db.from('collaborators').select('*').order('created_at', { ascending: true }).limit(1000),
+    ),
+    later(db.from('album_items').select('*').order('created_at', { ascending: true }).limit(1000)),
     db.from('reactions').select('*').eq('user_id', user.id).limit(3000),
-    db.from('mention_preferences').select('*').eq('user_id', user.id).limit(1),
-    db.from('mentions').select('*').limit(500),
+    later(db.from('mention_preferences').select('*').eq('user_id', user.id).limit(1)),
+    later(db.from('mentions').select('*').limit(500)),
     db.from('shares').select('*').order('created_at', { ascending: false }).limit(500),
     db.from('explore_preferences').select('*').eq('user_id', user.id).limit(10),
     db.from('story_views').select('*').order('viewed_at', { ascending: true }).limit(2000),
@@ -256,35 +284,32 @@ export async function snapshot(existingIdentity?: Identity) {
   ] = results.map((r) => checked(r));
   const [bookmarks, saved, pollResults, remotePosts] = await Promise.all([
     bookmarksFor(db),
-    savedPageFor(db),
+    homeOnly ? Promise.resolve({ posts: [], nextCursor: null }) : savedPageFor(db),
     db.rpc('poll_results', { target_polls: posts.map((post: Post) => post.id) }).then(checked),
     remotePostsFor(user.id),
   ]);
-  const moderationAccounts = usage.isAdmin
-    ? (checked(await db.rpc('moderation_accounts')) as ModerationAccount[])
-    : [];
-  const remoteReports = usage.isAdmin
-    ? (checked(
-        await db
-          .from('federation_remote_reports')
-          .select('*')
-          .eq('status', 'open')
-          .order('created_at', { ascending: false })
-          .limit(50),
-      ) as RemoteReport[])
-    : [];
-  const federationBlocks = usage.isAdmin
-    ? (checked(await db.rpc('federation_blocked_instances')) as FederationBlock[])
-    : [];
-  const productMetrics = usage.isAdmin
-    ? (checked(
-        await db
-          .from('product_metrics_daily')
-          .select('*')
-          .order('day', { ascending: false })
-          .limit(300),
-      ) as ProductMetric[])
-    : [];
+  const [moderationAccounts, remoteReports, federationBlocks, productMetrics] =
+    usage.isAdmin && !homeOnly
+      ? await Promise.all([
+          db.rpc('moderation_accounts').then((result) => checked(result) as ModerationAccount[]),
+          db
+            .from('federation_remote_reports')
+            .select('*')
+            .eq('status', 'open')
+            .order('created_at', { ascending: false })
+            .limit(50)
+            .then((result) => checked(result) as RemoteReport[]),
+          db
+            .rpc('federation_blocked_instances')
+            .then((result) => checked(result) as FederationBlock[]),
+          db
+            .from('product_metrics_daily')
+            .select('*')
+            .order('day', { ascending: false })
+            .limit(300)
+            .then((result) => checked(result) as ProductMetric[]),
+        ])
+      : [[], [], [], []];
   return {
     bookmarks,
     saved,
@@ -339,7 +364,12 @@ export async function snapshot(existingIdentity?: Identity) {
   };
 }
 
-export async function mutate(input: unknown, includeSnapshot = true, existingIdentity?: Identity) {
+export async function mutate(
+  input: unknown,
+  includeSnapshot = true,
+  existingIdentity?: Identity,
+  homeOnly = false,
+) {
   const { db, user, profile } = existingIdentity ?? (await identity());
   const obj = z.object({ type: z.string() }).passthrough().parse(input);
   switch (obj.type) {
@@ -1050,7 +1080,12 @@ export async function mutate(input: unknown, includeSnapshot = true, existingIde
     default:
       throw new ApiError('Operazione non riconosciuta.');
   }
-  return includeSnapshot ? snapshot({ db, user, profile }) : { ok: true };
+  if (includeSnapshot) return snapshot({ db, user, profile }, homeOnly);
+  if (obj.type === 'bookmark') {
+    const [bookmarks, saved] = await Promise.all([bookmarksFor(db), savedPageFor(db)]);
+    return { bookmarks, saved };
+  }
+  return { ok: true };
 }
 
 export async function exportData() {

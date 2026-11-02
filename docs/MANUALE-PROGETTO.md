@@ -299,6 +299,20 @@ nessuna modifica cloud o avanzamento M2. Dettagli correnti in `ios/README.md`.
 
 ## 1. In breve
 
+### Caricamento web e cache — 2 novembre 2026
+
+La webapp richiede inizialmente `bootstrap?home=1`: il feed conserva i dati
+necessari a post, cerchie, sondaggi e notifiche, mentre messaggi, salvati,
+eventi, moderazione e altre sezioni sono caricati con lo snapshot completo al
+primo accesso fuori dalla Home. Le azioni dalla Home possono richiedere lo
+stesso perimetro ridotto. `bootstrap` e le azioni senza questo parametro
+mantengono il contratto precedente. Il caricamento successivo segnala l'attesa
+e permette di riprovare in caso di errore; le letture continuano a usare
+l'identità e le policy RLS del chiamante. Le risposte personali e i media
+restano `private, no-store`: non è stata aggiunta una cache persistente o
+condivisa. La verifica locale delle query e la demo non misurano la latenza
+del backend cloud né il comportamento con account e dati reali.
+
 SN è un social web generalista in italiano, inizialmente per un gruppo ristretto di amici. Il prodotto privilegia relazioni e controllo personale: beta su invito (limite iniziale 20 account), feed cronologico e finito, niente contatori pubblici di like, niente pubblicità o monetizzazione tramite ads, privacy predefinita e moderazione umana. La demo è locale e utilizzabile senza credenziali o servizi esterni.
 
 Il repository contiene un’app Next.js 16 / React 19, API server-side, dominio TypeScript, client Supabase e migrazioni Postgres con RLS. Non considerare “implementato nel codice” equivalente a “verificato in produzione”: al momento della documentazione il collaudo cloud e il deploy non risultano completati. In particolare, le funzionalità più sensibili richiedono test su un progetto Supabase dedicato.

@@ -167,7 +167,13 @@ export async function GET(request: NextRequest, { params }: Context) {
       requireBearer(request);
       return json(await nativeFeedSnapshot(await identityFrom(request)));
     }
-    if (route === 'bootstrap') return json(await snapshot(await identityFrom(request)));
+    if (route === 'bootstrap')
+      return json(
+        await snapshot(
+          await identityFrom(request),
+          request.nextUrl.searchParams.get('home') === '1',
+        ),
+      );
     if (route === 'profile/posts') {
       const { db, user } = await identityFrom(request);
       const before = request.nextUrl.searchParams.get('before');
@@ -309,6 +315,19 @@ export async function GET(request: NextRequest, { params }: Context) {
       return json(await chatGroupDevices(request.nextUrl.searchParams.get('group')));
     if (route === 'chat/groups/messages')
       return json(await chatGroupMessages(request.nextUrl.searchParams.get('group')));
+    if (route === 'messages/overview') {
+      const { db } = await identity();
+      const [messages, shares] = await Promise.all([
+        db
+          .from('messages')
+          .select('*')
+          .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
+          .order('created_at', { ascending: false })
+          .limit(100),
+        db.from('shares').select('*').order('created_at', { ascending: false }).limit(500),
+      ]);
+      return json({ messages: checked(messages), shares: checked(shares) });
+    }
     if (route === 'messages') {
       const { db, user } = await identity();
       const other = userId.parse(request.nextUrl.searchParams.get('user'));
@@ -529,10 +548,16 @@ export async function POST(request: NextRequest, { params }: Context) {
       return json(await acknowledgeChatGroupMessage(await body(request)));
     if (route === 'action') {
       const action = await body(request);
-      const compact = ['share', 'like', 'view-story'].includes(
-        z.object({ type: z.string() }).passthrough().parse(action).type,
+      const actionType = z.object({ type: z.string() }).passthrough().parse(action).type;
+      const compact =
+        ['share', 'like', 'view-story'].includes(actionType) ||
+        (['bookmark', 'read-notifications'].includes(actionType) &&
+          request.nextUrl.searchParams.get('compact') === '1');
+      return json(
+        await (request.nextUrl.searchParams.get('home') === '1'
+          ? mutate(action, !compact, undefined, true)
+          : mutate(action, !compact)),
       );
-      return json(await mutate(action, !compact));
     }
     if (route === 'account/delete') {
       const data = z
