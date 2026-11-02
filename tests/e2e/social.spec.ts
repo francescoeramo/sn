@@ -934,8 +934,17 @@ test('avviso: testo, media e commenti si aprono solo su richiesta', async ({ pag
   await expect(post.getByText('Il finale è una sorpresa', { exact: false })).toHaveCount(0);
   await expect(post.locator('img')).toHaveCount(0);
   await expect(post.getByRole('button', { name: 'Commenti', exact: true })).toBeDisabled();
+  await expect(
+    post.getByText('Mostra il contenuto per mettere mi piace o commentare.'),
+  ).toBeVisible();
+  await expect(post.getByRole('button', { name: 'Commenti', exact: true })).toHaveCSS(
+    'cursor',
+    'not-allowed',
+  );
   await page.screenshot({ path: `artifacts/warning-${testInfo.project.name}.png`, fullPage: true });
   await post.getByRole('button', { name: 'Mostra contenuto' }).click();
+  await expect(post.getByRole('button', { name: 'Mi piace', exact: true })).toBeEnabled();
+  await expect(post.getByRole('button', { name: 'Commenti', exact: true })).toBeEnabled();
   await expect(post.getByAltText('La scena finale')).toBeVisible();
   await post.getByRole('button', { name: 'Commenti', exact: true }).click();
   await post.getByLabel('Scrivi un commento').fill('Una risposta con spoiler');

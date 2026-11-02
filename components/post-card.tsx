@@ -179,6 +179,11 @@ export function PostCard({
         <div className="content-warning">
           <span>Avviso di contenuto</span>
           <p data-user-copy>{post.content_warning}</p>
+          {concealed && (
+            <p className="content-warning-hint">
+              Mostra il contenuto per mettere mi piace o commentare.
+            </p>
+          )}
           <button
             className="secondary"
             aria-expanded={!concealed}
@@ -259,6 +264,7 @@ export function PostCard({
           aria-label={liked ? 'Togli mi piace' : 'Mi piace'}
           aria-pressed={liked}
           disabled={pending || concealed}
+          data-concealed={concealed || undefined}
           onClick={toggleLike}
         >
           <Heart
@@ -274,6 +280,7 @@ export function PostCard({
           aria-expanded={commentsOpen}
           aria-label="Commenti"
           disabled={concealed}
+          data-concealed={concealed || undefined}
         >
           <MessageCircle size={22} />
           <span>{comments.length || 'Commenta'}</span>

@@ -362,6 +362,7 @@ const english: Record<string, string> = {
   Modificato: 'Edited',
   Mostra: 'Show',
   'Mostra contenuto': 'Show content',
+  'Mostra il contenuto per mettere mi piace o commentare.': 'Show the content to like or comment.',
   'Mostra storia': 'Show story',
   'Motivo della decisione': 'Reason for the decision',
   'Motivo:': 'Reason:',

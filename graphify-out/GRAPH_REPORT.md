@@ -1,7 +1,7 @@
 # Graph Report - sn  (2026-11-02)
 
 ## Corpus Check
-- 248 files · ~187,984 words
+- 248 files · ~188,062 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 11 file(s) not represented in the graph (top: (none) 5, .resolved 2, .example 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `0bc894dc`
+- Built from commit: `835eccf7`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -631,7 +631,7 @@ Nodes (3): TokenStoreError, keychain, Security
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `AuthCoordinator` connect `AuthCoordinator` to `Interfaccia nativa iOS — incremento M1`, `View`, `State`, `SN — Piano app nativa iOS (SwiftUI)`, `AuthCoordinatorTests`, `ApiError`, `FeedView.swift`, `ComposePostView`, `.logout`, `Sendable`, `.loadProfile`, `Foundation`, `MockAPI`, `NativeStory`, `StorySlide`, `MemoryTokenStore`, `Data`, `M1HTTPFixture`?**
-  _High betweenness centrality (0.181) - this node is a cross-community bridge._
+  _High betweenness centrality (0.183) - this node is a cross-community bridge._
 - **Are the 57 inferred relationships involving `AuthCoordinator` (e.g. with `4.12 Ordine di esecuzione` and `4.6 Logout e revoca (F2, F4)`) actually correct?**
   _`AuthCoordinator` has 57 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `CryptoKit`, `Crypto`, `invalidPacket` to the rest of the system?**
@@ -639,7 +639,7 @@ _Questions this graph is uniquely positioned to answer:_
 - **Should `api/[...path]/route.ts` be split into smaller, more focused modules?**
   _Cohesion score 0.10558069381598793 - nodes in this community are weakly interconnected._
 - **Why does `4.12 Ordine di esecuzione` connect `ApiError` to `AuthCoordinator`, `APIClient`, `SN — Piano app nativa iOS (SwiftUI)`?**
-  _High betweenness centrality (0.178) - this node is a cross-community bridge._
+  _High betweenness centrality (0.181) - this node is a cross-community bridge._
 - **Are the 47 inferred relationships involving `MockAPI` (e.g. with `.testAmbiguousPublicationIsNotAutomaticallyRetried()` and `.testCachedImageDoesNotPretendConnectionRecovered()`) actually correct?**
   _`MockAPI` has 47 INFERRED edges - model-reasoned connections that need verification._
 - **Should `rules.ts` be split into smaller, more focused modules?**
