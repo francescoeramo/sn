@@ -40,7 +40,11 @@ export function PostCard({
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [revealed, setRevealed] = useState(false);
   const concealed = Boolean(post.content_warning) && !revealed;
-  const saved = state.bookmarks.some((b) => b.user_id === state.me.id && b.post_id === post.id);
+  const serverSaved = state.bookmarks.some(
+    (b) => b.user_id === state.me.id && b.post_id === post.id,
+  );
+  const [optimisticSaved, setOptimisticSaved] = useState<boolean | null>(null);
+  const saved = optimisticSaved ?? serverSaved;
   const [menu, setMenu] = useState(false);
   const [report, setReport] = useState(false);
   const [remove, setRemove] = useState(false);
@@ -125,6 +129,14 @@ export function PostCard({
     const previous = liked;
     setOptimisticLike({ basedOn: serverLiked, value: !previous });
     if (!(await act({ type: 'like', post_id: post.id }))) setOptimisticLike(null);
+  };
+  const toggleSaved = async () => {
+    setOptimisticSaved(!saved);
+    try {
+      await act({ type: 'bookmark', post_id: post.id, saved: !saved });
+    } finally {
+      setOptimisticSaved(null);
+    }
   };
   return (
     <article className="post-card">
@@ -290,7 +302,7 @@ export function PostCard({
           aria-label={saved ? 'Rimuovi dai salvati' : 'Salva post'}
           aria-pressed={saved}
           disabled={pending}
-          onClick={() => act({ type: 'bookmark', post_id: post.id, saved: !saved })}
+          onClick={toggleSaved}
         >
           <Bookmark size={21} fill={saved ? 'currentColor' : 'none'} />
           <span>{saved ? 'Salvato' : 'Salva'}</span>

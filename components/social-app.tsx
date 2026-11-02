@@ -1364,16 +1364,27 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                     className="secondary full"
                     disabled={busy}
                     onClick={async () => {
+                      const cursor = state.nextCursor!;
+                      const userId = state.me.id;
                       setBusy(true);
                       try {
-                        const result = await request(
-                          `posts?before=${encodeURIComponent(state.nextCursor!)}`,
+                        const result = await request(`posts?before=${encodeURIComponent(cursor)}`);
+                        setState((current) =>
+                          current && current.me.id === userId && current.nextCursor === cursor
+                            ? {
+                                ...current,
+                                posts: [
+                                  ...new Map(
+                                    [...current.posts, ...result.posts].map((post) => [
+                                      post.id,
+                                      post,
+                                    ]),
+                                  ).values(),
+                                ],
+                                nextCursor: result.nextCursor,
+                              }
+                            : current,
                         );
-                        setState({
-                          ...state,
-                          posts: [...state.posts, ...result.posts],
-                          nextCursor: result.nextCursor,
-                        });
                       } catch (e) {
                         setNotice(
                           e instanceof Error
@@ -1385,7 +1396,7 @@ export function SocialApp({ demo, configured }: { demo: boolean; configured: boo
                       }
                     }}
                   >
-                    Carica post precedenti
+                    {busy ? 'Caricamento…' : 'Carica post precedenti'}
                   </button>
                 )}
                 {combinedFeed.length > 0 && !state.nextCursor && (
